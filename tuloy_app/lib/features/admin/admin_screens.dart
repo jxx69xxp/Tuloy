@@ -98,14 +98,50 @@ class PaymentsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     const path = '/admin/payments';
+    num leftOf(J p) => num2(p['amount']) - num2(p['refundedAmount']);
+    bool canRefund(J p) =>
+        leftOf(p) > 0 && p['status'] != 'PENDING' && p['status'] != 'FAILED' && p['reservationId'] != null;
+    Future<void> refund(BuildContext context, J p) async {
+      final left = leftOf(p);
+      final v = await prompt(
+        context,
+        l.refund,
+        label: '${l.amount} (≤ ${left.toStringAsFixed(2)})',
+        number: true,
+        initial: left.toStringAsFixed(2),
+      );
+      final amount = double.tryParse(v ?? '');
+      if (amount == null || !context.mounted) return;
+      final reason = await prompt(context, l.refund, label: l.reason);
+      if (reason == null || reason.length < 3 || !context.mounted) return;
+      final ok = await act(
+        context,
+        () => ref.read(apiProvider).post('/admin/payments/${p['id']}/refunds', {'amount': amount, 'reason': reason}),
+        done: l.refunded,
+      );
+      if (ok) ref.invalidate(getProvider(path));
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(l.payments)),
       body: JsonList(
         path: path,
+        table: JsonTable(
+          columns: [l.amount, l.kind, l.status, l.dateLabel, l.refunded],
+          cells: (context, p) => [
+            money(num2(p['amount']), '${p['currency']}'),
+            '${p['kind']}',
+            '${p['status']}',
+            date(context, DateTime.parse('${p['createdAt']}').toLocal()),
+            '${num2(p['refundedAmount']) > 0 ? p['refundedAmount'] : ''}',
+          ],
+          onTap: (p) {
+            if (canRefund(p)) refund(context, p);
+          },
+        ),
         item: (context, p) {
           final refunds = jsonList(p['refunds']);
           final failed = refunds.where((r) => r['status'] == 'failed').length;
-          final left = num2(p['amount']) - num2(p['refundedAmount']);
           return ListTile(
             title: Text('${money(num2(p['amount']), '${p['currency']}')} · ${p['kind']} · ${p['status']}'),
             subtitle: Text(
@@ -113,33 +149,7 @@ class PaymentsScreen extends ConsumerWidget {
               '${num2(p['refundedAmount']) > 0 ? ' · ${l.refunded}: ${p['refundedAmount']}' : ''}'
               '${failed > 0 ? ' · ${l.failedRefunds}: $failed' : ''}',
             ),
-            trailing: left > 0 && p['status'] != 'PENDING' && p['status'] != 'FAILED' && p['reservationId'] != null
-                ? TextButton(
-                    onPressed: () async {
-                      final v = await prompt(
-                        context,
-                        l.refund,
-                        label: '${l.amount} (≤ ${left.toStringAsFixed(2)})',
-                        number: true,
-                        initial: left.toStringAsFixed(2),
-                      );
-                      final amount = double.tryParse(v ?? '');
-                      if (amount == null || !context.mounted) return;
-                      final reason = await prompt(context, l.refund, label: l.reason);
-                      if (reason == null || reason.length < 3 || !context.mounted) return;
-                      final ok = await act(
-                        context,
-                        () => ref.read(apiProvider).post('/admin/payments/${p['id']}/refunds', {
-                          'amount': amount,
-                          'reason': reason,
-                        }),
-                        done: l.refunded,
-                      );
-                      if (ok) ref.invalidate(getProvider(path));
-                    },
-                    child: Text(l.refund),
-                  )
-                : null,
+            trailing: canRefund(p) ? TextButton(onPressed: () => refund(context, p), child: Text(l.refund)) : null,
           );
         },
       ),
@@ -157,6 +167,20 @@ class AuditScreen extends StatelessWidget {
     appBar: AppBar(title: Text(AppLocalizations.of(context).auditLog)),
     body: JsonList(
       path: '/admin/audit',
+      table: JsonTable(
+        columns: [
+          AppLocalizations.of(context).action,
+          AppLocalizations.of(context).entity,
+          AppLocalizations.of(context).dateLabel,
+          AppLocalizations.of(context).actor,
+        ],
+        cells: (context, a) => [
+          '${a['action']}',
+          '${a['entityType']}',
+          date(context, DateTime.parse('${a['at']}').toLocal()),
+          '${a['actorId'] ?? ''}',
+        ],
+      ),
       item: (context, a) => ListTile(
         dense: true,
         title: Text('${a['action']} · ${a['entityType']}'),

@@ -63,3 +63,32 @@ class AdaptiveShell extends StatelessWidget {
     );
   }
 }
+
+/// Simple read-only table for wide screens: header row, one row per entry,
+/// scrolls horizontally when too narrow. A row tap calls [onTap] with its index.
+class DataTableView extends StatelessWidget {
+  const DataTableView({super.key, required this.columns, required this.rows, this.onTap});
+
+  final List<String> columns;
+  final List<List<String>> rows;
+  final void Function(int index)? onTap;
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: DataTable(
+      showCheckboxColumn: false,
+      columns: [for (final c in columns) DataColumn(label: Text(c))],
+      rows: [
+        for (var i = 0; i < rows.length; i++)
+          DataRow(
+            onSelectChanged: onTap == null ? null : (_) => onTap!(i),
+            cells: [
+              for (final cell in rows[i])
+                DataCell(ConstrainedBox(constraints: const BoxConstraints(maxWidth: 320), child: Text(cell))),
+            ],
+          ),
+      ],
+    ),
+  );
+}

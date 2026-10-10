@@ -948,4 +948,16 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get webGuestBody =>
       'Ang pag-book at mga feature ng pananatili ay available sa iOS at Android app. Dito maaaring mag-sign in ang mga staff at admin.';
+
+  @override
+  String get action => 'Aksyon';
+
+  @override
+  String get entity => 'Entidad';
+
+  @override
+  String get dateLabel => 'Petsa';
+
+  @override
+  String get actor => 'Gumawa';
 }

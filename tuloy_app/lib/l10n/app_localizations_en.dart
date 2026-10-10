@@ -944,4 +944,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get webGuestBody =>
       'Booking and stay features are available in the iOS and Android app. Staff and admins can sign in here.';
+
+  @override
+  String get action => 'Action';
+
+  @override
+  String get entity => 'Entity';
+
+  @override
+  String get dateLabel => 'Date';
+
+  @override
+  String get actor => 'Actor';
 }

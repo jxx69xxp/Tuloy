@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/auth/presentation/widgets.dart';
 import '../features/booking/presentation/booking_providers.dart';
 import '../l10n/app_localizations.dart';
+import 'adaptive.dart';
 import 'config.dart';
 import 'http.dart';
 
@@ -159,13 +160,24 @@ class Tr {
   ];
 }
 
+/// Wide-screen table layout of a [JsonList]: header labels, cells per row, row tap.
+class JsonTable {
+  const JsonTable({required this.columns, required this.cells, this.onTap});
+  final List<String> columns;
+  final List<String> Function(BuildContext, J row) cells;
+  final void Function(J row)? onTap;
+}
+
 /// List of JSON rows from a GET path with pull-to-refresh, empty and error states.
 class JsonList extends ConsumerWidget {
-  const JsonList({super.key, required this.path, required this.item, this.empty, this.header});
+  const JsonList({super.key, required this.path, required this.item, this.empty, this.header, this.table});
   final String path;
   final Widget Function(BuildContext, J row) item;
   final String? empty;
   final Widget? header;
+
+  /// When set, wide screens show these rows as a table instead of [item] cards.
+  final JsonTable? table;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => RefreshIndicator(
@@ -183,7 +195,14 @@ class JsonList extends ConsumerWidget {
                 padding: const EdgeInsets.all(24),
                 child: Text(empty ?? AppLocalizations.of(context).nothingHere),
               ),
-            for (final r in rows) item(context, r),
+            if (table != null && isWide(context))
+              DataTableView(
+                columns: table!.columns,
+                rows: [for (final r in rows) table!.cells(context, r)],
+                onTap: table!.onTap == null ? null : (i) => table!.onTap!(rows[i]),
+              )
+            else
+              for (final r in rows) item(context, r),
           ],
         );
       },

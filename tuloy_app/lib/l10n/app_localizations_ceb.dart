@@ -947,4 +947,16 @@ class AppLocalizationsCeb extends AppLocalizations {
   @override
   String get webGuestBody =>
       'Ang pag-book ug mga feature sa pagpuyo anaa sa iOS ug Android app. Dinhi makasulod ang mga staff ug admin.';
+
+  @override
+  String get action => 'Aksyon';
+
+  @override
+  String get entity => 'Entidad';
+
+  @override
+  String get dateLabel => 'Petsa';
+
+  @override
+  String get actor => 'Nagbuhat';
 }

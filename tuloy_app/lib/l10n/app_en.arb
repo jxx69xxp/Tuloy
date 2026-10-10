@@ -474,5 +474,9 @@
   "wifiQrHint": "Scan with your camera to join.",
   "wifiSharedPassword": "Shared Wi-Fi password (psk mode)",
   "webGuestTitle": "Guests, please use the Tuloy mobile app",
-  "webGuestBody": "Booking and stay features are available in the iOS and Android app. Staff and admins can sign in here."
+  "webGuestBody": "Booking and stay features are available in the iOS and Android app. Staff and admins can sign in here.",
+  "action": "Action",
+  "entity": "Entity",
+  "dateLabel": "Date",
+  "actor": "Actor"
 }

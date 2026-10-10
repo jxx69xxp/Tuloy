@@ -293,5 +293,9 @@
   "wifiQrHint": "I-scan gamit ang camera para kumonekta.",
   "wifiSharedPassword": "Shared na Wi-Fi password (psk mode)",
   "webGuestTitle": "Mga bisita, gamitin po ang Tuloy mobile app",
-  "webGuestBody": "Ang pag-book at mga feature ng pananatili ay available sa iOS at Android app. Dito maaaring mag-sign in ang mga staff at admin."
+  "webGuestBody": "Ang pag-book at mga feature ng pananatili ay available sa iOS at Android app. Dito maaaring mag-sign in ang mga staff at admin.",
+  "action": "Aksyon",
+  "entity": "Entidad",
+  "dateLabel": "Petsa",
+  "actor": "Gumawa"
 }

@@ -55,6 +55,11 @@ class _StaffTab extends ConsumerWidget {
       ),
       body: JsonList(
         path: '/admin/staff',
+        table: JsonTable(
+          columns: [l.fullName, l.email, l.role, l.department],
+          cells: (context, s) => ['${s['fullName']}', '${s['email']}', '${s['role']}', '${s['department']?['name'] ?? ''}'],
+          onTap: (s) => _edit(context, ref, s),
+        ),
         item: (context, s) => ListTile(
           title: Text('${s['fullName']}'),
           subtitle: Text(

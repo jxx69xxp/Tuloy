@@ -293,5 +293,9 @@
   "wifiQrHint": "I-scan gamit ang camera aron makakonektar.",
   "wifiSharedPassword": "Shared nga Wi-Fi password (psk mode)",
   "webGuestTitle": "Mga bisita, palihog gamita ang Tuloy mobile app",
-  "webGuestBody": "Ang pag-book ug mga feature sa pagpuyo anaa sa iOS ug Android app. Dinhi makasulod ang mga staff ug admin."
+  "webGuestBody": "Ang pag-book ug mga feature sa pagpuyo anaa sa iOS ug Android app. Dinhi makasulod ang mga staff ug admin.",
+  "action": "Aksyon",
+  "entity": "Entidad",
+  "dateLabel": "Petsa",
+  "actor": "Nagbuhat"
 }

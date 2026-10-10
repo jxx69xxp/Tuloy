@@ -1863,6 +1863,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Booking and stay features are available in the iOS and Android app. Staff and admins can sign in here.'**
   String get webGuestBody;
+
+  /// No description provided for @action.
+  ///
+  /// In en, this message translates to:
+  /// **'Action'**
+  String get action;
+
+  /// No description provided for @entity.
+  ///
+  /// In en, this message translates to:
+  /// **'Entity'**
+  String get entity;
+
+  /// No description provided for @dateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get dateLabel;
+
+  /// No description provided for @actor.
+  ///
+  /// In en, this message translates to:
+  /// **'Actor'**
+  String get actor;
 }
 
 class _AppLocalizationsDelegate

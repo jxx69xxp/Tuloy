@@ -151,6 +151,18 @@ class _QueueState extends ConsumerState<ReservationsQueueScreen> {
           Expanded(
             child: JsonList(
               path: path,
+              table: JsonTable(
+                columns: [l.name, l.codeLabel, l.roomTypeLabel, l.roomLabel, l.dates, l.status],
+                cells: (context, r) => [
+                  '${r['guestName']}',
+                  '${r['code']}',
+                  '${r['roomType']}',
+                  '${r['room'] ?? ''}',
+                  dateRange(context, DateTime.parse('${r['checkIn']}'), DateTime.parse('${r['checkOut']}')),
+                  statusLabel(l, parseStatus('${r['status']}')),
+                ],
+                onTap: (r) => context.push('${widget.base}/reservations/${r['id']}'),
+              ),
               item: (context, r) => ListTile(
                 title: Text('${r['guestName']} · ${r['code']}'),
                 subtitle: Text(

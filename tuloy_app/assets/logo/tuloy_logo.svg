@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 512">
+  <!-- Mark: "T" as a doorway lintel + open lit door ("Tuloy" = come in) -->
+  <rect width="512" height="512" rx="112" fill="#0F6E6E"/>
+  <rect x="112" y="120" width="288" height="60" rx="30" fill="#FFFFFF"/>
+  <rect x="216" y="180" width="80" height="212" fill="#F4B860"/>
+  <path d="M216 180 L168 204 V416 L216 392 Z" fill="#FFFFFF"/>
+  <path d="M216 392 H296 L344 416 H168 Z" fill="#FAD9A0"/>
+  <!-- Wordmark -->
+  <text x="584" y="318" font-family="Poppins, 'Avenir Next', 'Helvetica Neue', Arial, sans-serif"
+        font-size="200" font-weight="700" letter-spacing="-4" fill="#0F6E6E">Tuloy</text>
+</svg>

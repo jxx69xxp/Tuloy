@@ -27,6 +27,8 @@ GoRouter _router({String initial = '/admin'}) => GoRouter(
 );
 
 void main() {
+  _rails();
+
   Future<void> size(WidgetTester t, double w) async {
     t.view.devicePixelRatio = 1;
     t.view.physicalSize = Size(w, 800);
@@ -74,5 +76,31 @@ void main() {
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.text('page-reports'), findsOneWidget);
     expect(t.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex, 2);
+  });
+}
+
+void _rails() {
+  testWidgets('rail scrolls on short screens with many items', (t) async {
+    t.view.devicePixelRatio = 1;
+    t.view.physicalSize = const Size(1200, 500);
+    addTearDown(t.view.reset);
+    final items = [for (var i = 0; i < 12; i++) RailItem(Icons.circle, 'Item $i', '/p$i')];
+    final router = GoRouter(
+      initialLocation: '/p0',
+      routes: [
+        ShellRoute(
+          builder: (c, s, child) => AdaptiveShell(items: items, location: s.uri.path, child: child),
+          routes: [for (var i = 0; i < 12; i++) GoRoute(path: '/p$i', builder: (_, __) => Text('page-$i'))],
+        ),
+      ],
+    );
+    await t.pumpWidget(_app(router));
+    await t.pumpAndSettle();
+    expect(t.takeException(), isNull);
+    await t.ensureVisible(find.text('Item 11'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Item 11'));
+    await t.pumpAndSettle();
+    expect(find.text('page-11'), findsOneWidget);
   });
 }

@@ -39,13 +39,22 @@ class AdaptiveShell extends StatelessWidget {
     return Scaffold(
       body: Row(
         children: [
-          NavigationRail(
-            selectedIndex: _selected,
-            labelType: NavigationRailLabelType.all,
-            onDestinationSelected: (i) => context.go(items[i].path),
-            destinations: [
-              for (final i in items) NavigationRailDestination(icon: Icon(i.icon), label: Text(i.label)),
-            ],
+          LayoutBuilder(
+            builder: (context, box) => SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: box.maxHeight),
+                child: IntrinsicHeight(
+                  child: NavigationRail(
+                    selectedIndex: _selected,
+                    labelType: NavigationRailLabelType.all,
+                    onDestinationSelected: (i) => context.go(items[i].path),
+                    destinations: [
+                      for (final i in items) NavigationRailDestination(icon: Icon(i.icon), label: Text(i.label)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
           const VerticalDivider(width: 1),
           Expanded(child: child),

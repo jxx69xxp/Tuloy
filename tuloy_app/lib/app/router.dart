@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../core/adaptive.dart';
 import '../core/config.dart';
-import '../l10n/app_localizations.dart';
 import '../features/auth/domain/auth.dart';
 import '../features/auth/presentation/auth_controller.dart';
 import '../features/auth/presentation/auth_screens.dart';
@@ -26,6 +25,7 @@ import '../features/staff/staff_screens.dart';
 import '../features/settings/presentation/profile_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/settings/presentation/web_guest_screen.dart';
+import '../l10n/app_localizations.dart';
 
 const _public = {'/language', '/signin', '/signup', '/reset'};
 

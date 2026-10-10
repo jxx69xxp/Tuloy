@@ -4,9 +4,6 @@ Hotel app for guests, staff and admins: book a room, request services, order foo
 
 ```
 tuloy_app/   Flutter app: Guest, Staff and Admin areas in one codebase
-tuloy-api/   NestJS + Prisma + PostgreSQL
-outputs/     Design pack (flows, API contract, tickets) and schema reference
-.github/     CI: API tests + Docker build, Flutter analyze/test/APK
 ```
 
 Design and API contract: `outputs/tuloy-design.md`. Database: `tuloy-api/prisma/schema.prisma`.

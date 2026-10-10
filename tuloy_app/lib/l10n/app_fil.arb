@@ -26,6 +26,7 @@
   "adminHome": "Admin",
   "comingSoon": "Darating ang iba pang feature sa susunod na release.",
   "errorGeneric": "Hindi maabot ang server. Suriin ang koneksyon.",
+  "cannotReachServer": "Hindi maabot ang server. Suriin ang koneksyon, o hilingin sa administrator na payagan ang website na ito.",
   "hello": "Kumusta, {name}",
   "retry": "Subukan muli",
   "howCanWeHelp": "Paano kami makatutulong?",

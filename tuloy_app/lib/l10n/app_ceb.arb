@@ -26,6 +26,7 @@
   "adminHome": "Admin",
   "comingSoon": "Moabot ang uban pang feature sa sunod nga release.",
   "errorGeneric": "Dili maabot ang server. Susiha ang koneksyon.",
+  "cannotReachServer": "Dili maabot ang server. Susiha ang koneksyon, o pangayoa ang administrator nga tugotan kini nga website.",
   "hello": "Kumusta, {name}",
   "retry": "Sulayi pag-usab",
   "howCanWeHelp": "Unsaon namo pagtabang?",

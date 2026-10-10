@@ -87,6 +87,23 @@ If `pod install` fails with `Encoding::CompatibilityError`, add `export LANG=en_
 
 Notifications: set `EMAIL_PROVIDER=resend`, `SMS_PROVIDER=semaphore` or `PUSH_PROVIDER=fcm`, plus each provider's keys (see `.env.example`). SMS goes only to verified numbers, except reset codes.
 
+## Run on web
+
+Staff and admins can use the app in a browser. Guests see a placeholder that points them to the mobile app.
+
+```bash
+cd tuloy_app
+flutter run -d chrome
+flutter run -d chrome --dart-define=API_URL=https://api.example.com/v1
+flutter build web          # output in tuloy_app/build/web
+```
+
+- **CORS.** Set `CORS_ORIGINS` in the API environment to the web app's origins, comma-separated, exact and without a trailing slash (for example `https://staff.example.com`). `localhost` origins are allowed automatically, but only outside production.
+- **Photo upload.** In production, add a CORS rule to the object storage bucket (S3 or R2) that allows `PUT` from the web origin. Uploads go straight to the bucket.
+- **Token storage.** On web, tokens live in browser storage, which is weaker than the secure storage used on mobile. Short 15-minute access tokens and rotating refresh tokens limit the damage.
+- **Layout.** Staff and admin get a navigation rail at widths of 840 px and up, and the usual bottom navigation below that.
+- **Not on web.** QR scanning (use the mobile app). Chat and queues refresh by polling.
+
 ## Design
 
 - Theme and shared visuals: `tuloy_app/lib/app/theme.dart` (teal `#0F6E6E`, amber `#F4B860`, arch-shaped cards, bordered fields with the label inside).
@@ -101,6 +118,7 @@ Notifications: set `EMAIL_PROVIDER=resend`, `SMS_PROVIDER=semaphore` or `PUSH_PR
 
 - Room and service photos: the app shows gradient placeholders (`RoomArt`). Admin photo upload and serving photo URLs are still to do.
 - Live updates: there is no WebSocket yet, so chat and queues refresh by polling.
+- Web: guest screens (guests see a placeholder) and QR scanning are not available. Chat and queues poll, as on mobile.
 - In-app push registration: needs a Firebase project (`google-services.json` / `GoogleService-Info.plist`). The API side is ready (`POST /v1/me/push-tokens`).
 - Saved cards: checkout is hosted by PayMongo, so the app shows payment history but not card brand or last digits.
 - Airport directions use the destination "airport", so the maps app picks the nearest one. Store the airport per hotel if that guesses wrong.

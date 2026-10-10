@@ -87,6 +87,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorGeneric => 'Can\'t reach the server. Check your connection.';
 
   @override
+  String get cannotReachServer =>
+      'Can\'t reach the server. Check your connection, or ask your administrator to allow this website.';
+
+  @override
   String hello(String name) {
     return 'Hello, $name';
   }

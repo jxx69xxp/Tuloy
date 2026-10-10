@@ -5,9 +5,13 @@ import '../../../app/theme.dart';
 import '../../../core/failure.dart';
 import '../../../l10n/app_localizations.dart';
 
-/// Server message when there is one (already localized), else a generic offline message.
-String failureText(BuildContext context, Object e) =>
-    (e is Failure ? e.message : null) ?? AppLocalizations.of(context).errorGeneric;
+/// Server message when there is one (already localized), the unreachable-server message for
+/// network failures, else a generic offline message.
+String failureText(BuildContext context, Object e) {
+  final l = AppLocalizations.of(context);
+  if (e is Failure && e.code == 'NETWORK') return l.cannotReachServer;
+  return (e is Failure ? e.message : null) ?? l.errorGeneric;
+}
 
 Widget _logo(double size) => ClipRRect(
   borderRadius: BorderRadius.circular(size * .22),

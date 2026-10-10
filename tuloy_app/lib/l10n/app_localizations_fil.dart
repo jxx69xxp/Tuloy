@@ -88,6 +88,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get errorGeneric => 'Hindi maabot ang server. Suriin ang koneksyon.';
 
   @override
+  String get cannotReachServer =>
+      'Hindi maabot ang server. Suriin ang koneksyon, o hilingin sa administrator na payagan ang website na ito.';
+
+  @override
   String hello(String name) {
     return 'Kumusta, $name';
   }

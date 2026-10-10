@@ -26,6 +26,7 @@
   "adminHome": "Admin",
   "comingSoon": "More features arrive in the next release.",
   "errorGeneric": "Can't reach the server. Check your connection.",
+  "cannotReachServer": "Can't reach the server. Check your connection, or ask your administrator to allow this website.",
   "hello": "Hello, {name}",
   "@hello": {
     "placeholders": {

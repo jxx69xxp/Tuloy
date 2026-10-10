@@ -256,6 +256,12 @@ abstract class AppLocalizations {
   /// **'Can\'t reach the server. Check your connection.'**
   String get errorGeneric;
 
+  /// No description provided for @cannotReachServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t reach the server. Check your connection, or ask your administrator to allow this website.'**
+  String get cannotReachServer;
+
   /// No description provided for @hello.
   ///
   /// In en, this message translates to:

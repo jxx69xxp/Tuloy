@@ -87,6 +87,10 @@ class AppLocalizationsCeb extends AppLocalizations {
   String get errorGeneric => 'Dili maabot ang server. Susiha ang koneksyon.';
 
   @override
+  String get cannotReachServer =>
+      'Dili maabot ang server. Susiha ang koneksyon, o pangayoa ang administrator nga tugotan kini nga website.';
+
+  @override
   String hello(String name) {
     return 'Kumusta, $name';
   }

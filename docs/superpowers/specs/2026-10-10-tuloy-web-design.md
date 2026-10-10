@@ -39,20 +39,26 @@ httpOnly-cookie auth, a full desktop redesign of every form.
 4. **Deep-link safety.** Routes that pass objects via `extra` (`rooms/type`,
    `services/edit`, `content/edit`, and the guarded `rooms/rates`, `restaurant/menu`)
    lose `extra` on browser refresh. Unguarded edit routes would silently open as
-   "create new". Change them to id-based paths that load the item from the API.
+   "create new". Change them to id-based paths. `GET /admin/services/:id` exists; for
+   room types, content items and outlets there is no get-by-id endpoint, so the screen
+   loads the list endpoint and finds the item by id (a small `FindById` widget).
 5. **Guest placeholder.** In `redirectFor` (`lib/app/router.dart`), when running on
    web and the role is guest, redirect to a "Please use the Tuloy mobile app" screen.
    Pure function; unit-tested.
 6. **API CORS.** `tuloy-api/src/main.ts` enables CORS from a `CORS_ORIGINS`
    (comma-separated) allowlist; default is localhost origins in development only.
    No wildcard. Document in `.env.example`.
-7. **CI.** Add `flutter build web` to `.github/workflows/ci.yml`.
+7. **Photo upload on web.** `Api.upload` (`lib/core/api.dart`) sends a `Stream` body to the
+   presigned URL; the browser HTTP adapter cannot send streams. Send the bytes as
+   `Uint8List` instead (works on mobile too). Local MinIO allows cross-origin PUT by
+   default; production storage (S3/R2) needs a bucket CORS rule allowing PUT from the
+   web origin. Document it in the README.
+8. **CI.** Add `flutter build web` to `.github/workflows/ci.yml`.
 
 ## Data flow
 
 Unchanged: same `/v1` endpoints, bearer access tokens (15 min), rotating refresh
-tokens (30 days). Existing behavior already web-safe: photo upload uses
-`readAsBytes()`; CSV export copies to clipboard.
+tokens (30 days). Already web-safe: picking a photo uses `readAsBytes()`; CSV export copies to the clipboard.
 
 ## Errors
 
@@ -81,4 +87,4 @@ CORS and network failures are indistinguishable to the browser.
 2. Adaptive shell + guest placeholder.
 3. Table views for Reservations, Payments, Audit, Staff.
 4. Deep-link fixes for admin edit screens.
-5. Docs: README "Run on web" section.
+5. Photo upload on web + docs: README "Run on web" section.

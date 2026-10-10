@@ -1851,6 +1851,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shared Wi-Fi password (psk mode)'**
   String get wifiSharedPassword;
+
+  /// No description provided for @webGuestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guests, please use the Tuloy mobile app'**
+  String get webGuestTitle;
+
+  /// No description provided for @webGuestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking and stay features are available in the iOS and Android app. Staff and admins can sign in here.'**
+  String get webGuestBody;
 }
 
 class _AppLocalizationsDelegate

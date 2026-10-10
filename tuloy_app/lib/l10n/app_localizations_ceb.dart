@@ -940,4 +940,11 @@ class AppLocalizationsCeb extends AppLocalizations {
 
   @override
   String get wifiSharedPassword => 'Shared nga Wi-Fi password (psk mode)';
+
+  @override
+  String get webGuestTitle => 'Mga bisita, palihog gamita ang Tuloy mobile app';
+
+  @override
+  String get webGuestBody =>
+      'Ang pag-book ug mga feature sa pagpuyo anaa sa iOS ug Android app. Dinhi makasulod ang mga staff ug admin.';
 }

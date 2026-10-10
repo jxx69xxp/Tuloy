@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,6 +23,7 @@ import '../features/services/services_screens.dart';
 import '../features/staff/staff_screens.dart';
 import '../features/settings/presentation/profile_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
+import '../features/settings/presentation/web_guest_screen.dart';
 
 const _public = {'/language', '/signin', '/signup', '/reset'};
 
@@ -63,12 +65,20 @@ String homeFor(Role role) => switch (role) {
 };
 
 /// Pure so it can be unit-tested: decides the redirect for a location.
-String? redirectFor({required String location, required bool languageChosen, required AsyncValue<User?> auth}) {
+String? redirectFor({
+  required String location,
+  required bool languageChosen,
+  required AsyncValue<User?> auth,
+  bool isWeb = kIsWeb,
+}) {
   if (!languageChosen) return location == '/language' ? null : '/language';
   if (auth.isLoading && !auth.hasValue) return location == '/splash' ? null : '/splash';
   final user = auth.valueOrNull;
   if (user == null) return _public.contains(location) ? null : '/signin';
-  final home = homeFor(user.roleAt(hotelId));
+  final role = user.roleAt(hotelId);
+  final home = homeFor(role);
+  // Web is Staff/Admin only: guests get a placeholder pointing at the mobile app.
+  if (isWeb && role == Role.guest) return location == '/web-guest' || location == '/settings' ? null : '/web-guest';
   if (location == '/settings' || location.startsWith(home)) return null;
   return home;
 }
@@ -94,6 +104,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/signup', builder: (_, __) => const SignUpScreen()),
       GoRoute(path: '/reset', builder: (_, __) => const ResetScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+      GoRoute(path: '/web-guest', builder: (_, __) => const WebGuestScreen()),
       GoRoute(
         path: '/guest',
         builder: (_, __) => const GuestHomeScreen(),

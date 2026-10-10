@@ -291,5 +291,7 @@
   "wifiMode": "Wi-Fi mode (portal o psk)",
   "wifiPortalHint": "Kumonekta sa network; magbubukas ang login page. Ilagay ang username at password sa itaas.",
   "wifiQrHint": "I-scan gamit ang camera para kumonekta.",
-  "wifiSharedPassword": "Shared na Wi-Fi password (psk mode)"
+  "wifiSharedPassword": "Shared na Wi-Fi password (psk mode)",
+  "webGuestTitle": "Mga bisita, gamitin po ang Tuloy mobile app",
+  "webGuestBody": "Ang pag-book at mga feature ng pananatili ay available sa iOS at Android app. Dito maaaring mag-sign in ang mga staff at admin."
 }

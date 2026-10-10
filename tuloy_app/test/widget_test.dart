@@ -32,6 +32,24 @@ void main() {
     expect(go('/settings', auth: staff), isNull);
   });
 
+  test('web redirects: guests get the placeholder, staff/admin unchanged', () {
+    String? go(String loc, {AsyncValue<User?> auth = const AsyncData(null), bool isWeb = true}) =>
+        redirectFor(location: loc, languageChosen: true, auth: auth, isWeb: isWeb);
+    final guest = AsyncData<User?>(_user(const []));
+    final staff = AsyncData<User?>(_user(const [Membership(hotelId: hotelId, role: Role.staff)]));
+
+    expect(go('/guest', auth: guest), '/web-guest');
+    expect(go('/staff', auth: guest), '/web-guest');
+    expect(go('/admin', auth: guest), '/web-guest');
+    expect(go('/web-guest', auth: guest), isNull);
+    expect(go('/settings', auth: guest), isNull);
+    expect(go('/web-guest', auth: guest, isWeb: false), '/guest');
+    expect(go('/signin', auth: guest, isWeb: false), '/guest');
+    expect(go('/signin', auth: staff), '/staff');
+    expect(go('/web-guest', auth: staff), '/staff');
+    expect(go('/guest'), '/signin');
+  });
+
   test('status parsing covers every API value', () {
     expect(parseStatus('CHECKED_IN'), BookingStatus.checkedIn);
     expect(parseStatus('NO_SHOW'), BookingStatus.noShow);

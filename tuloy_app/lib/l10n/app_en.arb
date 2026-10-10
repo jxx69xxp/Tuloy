@@ -472,5 +472,7 @@
   "wifiMode": "Wi-Fi mode (portal or psk)",
   "wifiPortalHint": "Join the network; the login page opens. Enter the username and password above.",
   "wifiQrHint": "Scan with your camera to join.",
-  "wifiSharedPassword": "Shared Wi-Fi password (psk mode)"
+  "wifiSharedPassword": "Shared Wi-Fi password (psk mode)",
+  "webGuestTitle": "Guests, please use the Tuloy mobile app",
+  "webGuestBody": "Booking and stay features are available in the iOS and Android app. Staff and admins can sign in here."
 }

@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/adaptive.dart';
 import '../core/config.dart';
+import '../l10n/app_localizations.dart';
 import '../features/auth/domain/auth.dart';
 import '../features/auth/presentation/auth_controller.dart';
 import '../features/auth/presentation/auth_screens.dart';
@@ -54,6 +56,30 @@ List<RouteBase> _deskRoutes(String base) => [
     path: 'chat/:id',
     builder: (_, s) => ChatScreen(id: s.pathParameters['id']!, title: s.extra as String?),
   ),
+];
+
+List<RailItem> _staffItems(AppLocalizations l) => [
+  RailItem(Icons.support_agent, l.frontDesk, '/staff'),
+  RailItem(Icons.book_online_outlined, l.reservations, '/staff/reservations'),
+  RailItem(Icons.checklist, l.tasks, '/staff/tasks'),
+  RailItem(Icons.restaurant, l.restaurant, '/staff/orders'),
+  RailItem(Icons.chat_bubble_outline, l.chat, '/staff/inbox'),
+  RailItem(Icons.beach_access_outlined, l.leaveRequests, '/staff/leave'),
+];
+
+List<RailItem> _adminItems(AppLocalizations l) => [
+  RailItem(Icons.dashboard_outlined, l.adminHome, '/admin'),
+  RailItem(Icons.support_agent, l.frontDesk, '/admin/desk'),
+  RailItem(Icons.bed_outlined, l.roomsAndRates, '/admin/rooms'),
+  RailItem(Icons.room_service_outlined, l.services, '/admin/services'),
+  RailItem(Icons.restaurant, l.restaurant, '/admin/restaurant'),
+  RailItem(Icons.payments_outlined, l.payments, '/admin/payments'),
+  RailItem(Icons.bar_chart, l.reports, '/admin/reports'),
+  RailItem(Icons.badge_outlined, l.staff, '/admin/staff'),
+  RailItem(Icons.loyalty_outlined, l.loyalty, '/admin/loyalty'),
+  RailItem(Icons.article_outlined, l.content, '/admin/content'),
+  RailItem(Icons.hotel_outlined, l.hotelSettings, '/admin/hotel'),
+  RailItem(Icons.history, l.auditLog, '/admin/audit'),
 ];
 
 /// Where a signed-in user belongs. Each role only sees its own area (plus /settings).
@@ -169,7 +195,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           _chat,
         ],
       ),
-      GoRoute(path: '/staff', builder: (_, __) => const StaffHomeScreen(), routes: _deskRoutes('/staff')),
+      ShellRoute(
+        builder: (c, s, child) =>
+            AdaptiveShell(items: _staffItems(AppLocalizations.of(c)), location: s.uri.path, child: child),
+        routes: [
+          GoRoute(path: '/staff', builder: (_, __) => const StaffHomeScreen(), routes: _deskRoutes('/staff')),
+        ],
+      ),
+      ShellRoute(
+        builder: (c, s, child) =>
+            AdaptiveShell(items: _adminItems(AppLocalizations.of(c)), location: s.uri.path, child: child),
+        routes: [
       GoRoute(
         path: '/admin',
         builder: (_, __) => const AdminHomeScreen(),
@@ -212,6 +248,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(path: 'hotel', builder: (_, __) => const HotelSettingsScreen()),
           GoRoute(path: 'audit', builder: (_, __) => const AuditScreen()),
+        ],
+      ),
         ],
       ),
     ],

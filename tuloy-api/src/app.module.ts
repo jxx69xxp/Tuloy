@@ -88,7 +88,7 @@ export function setupApp(app: INestApplication) {
   app.useGlobalFilters(new AppExceptionFilter());
   app.enableCors({
     origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
-    allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key', 'Accept-Language'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key', 'Accept-Language', 'X-Hotel-Id'],
     credentials: false,
   });
   app.enableShutdownHooks();

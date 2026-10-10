@@ -32,7 +32,8 @@ describe('CORS allowlist', () => {
   function restore() {
     if (saved.cors === undefined) delete process.env.CORS_ORIGINS;
     else process.env.CORS_ORIGINS = saved.cors;
-    process.env.NODE_ENV = saved.env;
+    if (saved.env === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = saved.env;
   }
 
   describe('with CORS_ORIGINS set', () => {
@@ -66,6 +67,27 @@ describe('CORS allowlist', () => {
       expect(res.headers['access-control-allow-origin']).toBe('https://admin.example.com');
       expect(res.headers['access-control-allow-headers'].toLowerCase()).toContain('idempotency-key');
     });
+
+    it('answers preflight for the headers the app sends on every request', async () => {
+      const res = await request(app.getHttpServer())
+        .options(HOTEL)
+        .set('Origin', 'https://admin.example.com')
+        .set('Access-Control-Request-Method', 'POST')
+        .set('Access-Control-Request-Headers', 'x-hotel-id,accept-language');
+      expect(res.headers['access-control-allow-origin']).toBe('https://admin.example.com');
+      const allowed = res.headers['access-control-allow-headers'].toLowerCase();
+      expect(allowed).toContain('x-hotel-id');
+      expect(allowed).toContain('accept-language');
+    });
+
+    it('gives no allow-origin to a preflight from an unlisted origin', async () => {
+      const res = await request(app.getHttpServer())
+        .options(HOTEL)
+        .set('Origin', 'https://evil.example.com')
+        .set('Access-Control-Request-Method', 'POST')
+        .set('Access-Control-Request-Headers', 'x-hotel-id');
+      expect(res.headers['access-control-allow-origin']).toBeUndefined();
+    });
   });
 
   describe('with CORS_ORIGINS unset', () => {
@@ -83,6 +105,12 @@ describe('CORS allowlist', () => {
       process.env.NODE_ENV = 'test';
       const res = await request(app.getHttpServer()).get(HOTEL).set('Origin', 'http://127.0.0.1:8080');
       expect(res.headers['access-control-allow-origin']).toBe('http://127.0.0.1:8080');
+    });
+
+    it('does not allow a localhost lookalike origin', async () => {
+      process.env.NODE_ENV = 'test';
+      const res = await request(app.getHttpServer()).get(HOTEL).set('Origin', 'http://localhost.evil.com');
+      expect(res.headers['access-control-allow-origin']).toBeUndefined();
     });
 
     it('allows nothing in production', async () => {

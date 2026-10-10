@@ -98,6 +98,7 @@ flutter run -d chrome --dart-define=API_URL=https://api.example.com/v1
 flutter build web          # output in tuloy_app/build/web
 ```
 
+- **HTTPS required.** Serve the web build over HTTPS (or from `localhost` while developing). Token storage on web uses the browser's Web Crypto API (`crypto.subtle`), which browsers only provide in secure contexts. Over plain HTTP on any other host the app cannot store a session, so sign-in will not work.
 - **CORS.** Set `CORS_ORIGINS` in the API environment to the web app's origins, comma-separated, exact and without a trailing slash (for example `https://staff.example.com`). `localhost` origins are allowed automatically, but only outside production.
 - **Photo upload.** In production, add a CORS rule to the object storage bucket (S3 or R2) that allows `PUT` from the web origin. Uploads go straight to the bucket.
 - **Token storage.** On web, tokens live in browser storage, which is weaker than the secure storage used on mobile. Short 15-minute access tokens and rotating refresh tokens limit the damage.

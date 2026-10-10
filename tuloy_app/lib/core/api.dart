@@ -11,9 +11,19 @@ class TokenStore {
   String? access;
   String? refresh;
 
+  /// Storage can be unreadable (on web it needs a secure context: HTTPS or localhost).
+  /// Fall back to signed out rather than failing app start.
   Future<void> load() async {
-    access = await _s.read(key: 'access');
-    refresh = await _s.read(key: 'refresh');
+    access = await _tryRead('access');
+    refresh = await _tryRead('refresh');
+  }
+
+  Future<String?> _tryRead(String key) async {
+    try {
+      return await _s.read(key: key);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> save(String access, String refresh) async {
@@ -29,7 +39,8 @@ class TokenStore {
     await _s.delete(key: 'refresh');
   }
 
-  Future<String?> readLanguage() => _s.read(key: 'language');
+  /// Read before runApp: a failure here must not leave a blank page, so it yields null (language picker).
+  Future<String?> readLanguage() => _tryRead('language');
   Future<void> writeLanguage(String code) => _s.write(key: 'language', value: code);
 }
 

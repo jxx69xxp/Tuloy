@@ -91,23 +91,44 @@ String homeFor(Role role) => switch (role) {
 };
 
 /// Pure so it can be unit-tested: decides the redirect for a location.
+///
+/// [uri] is the full requested URI. When given, a deep link (e.g. a browser refresh while the
+/// session is still restoring, or an expired session) rides through /splash and /signin as
+/// `?from=` and is reopened afterwards if it is internal and the user's role may open it.
 String? redirectFor({
   required String location,
   required bool languageChosen,
   required AsyncValue<User?> auth,
+  Uri? uri,
   bool isWeb = kIsWeb,
 }) {
   if (!languageChosen) return location == '/language' ? null : '/language';
-  if (auth.isLoading && !auth.hasValue) return location == '/splash' ? null : '/splash';
+  final detour = location == '/splash' || _public.contains(location);
+  // Where the user was heading: carried along while detouring, else the requested URI itself.
+  final target = detour ? uri?.queryParameters['from'] : uri?.toString();
+  String withFrom(String path) => target == null ? path : '$path?from=${Uri.encodeComponent(target)}';
+
+  if (auth.isLoading && !auth.hasValue) return location == '/splash' ? null : withFrom('/splash');
   final user = auth.valueOrNull;
-  if (user == null) return _public.contains(location) ? null : '/signin';
+  if (user == null) return _public.contains(location) ? null : withFrom('/signin');
   final role = user.roleAt(hotelId);
   final home = homeFor(role);
   // Web is Staff/Admin only: guests get a placeholder pointing at the mobile app.
   if (isWeb && role == Role.guest) return location == '/web-guest' || location == '/settings' ? null : '/web-guest';
+  if (detour && target != null && _isInternal(target) && _allowed(Uri.parse(target).path, home)) return target;
   if (location == '/settings' || location.startsWith(home)) return null;
   return home;
 }
+
+/// An in-app path: no scheme or host, and not protocol-relative (`//x`, `/\x`).
+bool _isInternal(String s) {
+  if (!s.startsWith('/') || s.startsWith('//') || s.contains(r'\')) return false;
+  final u = Uri.tryParse(s);
+  return u != null && !u.hasScheme && !u.hasAuthority;
+}
+
+bool _allowed(String path, String home) =>
+    path == '/settings' || path.startsWith('/settings/') || path == home || path.startsWith('$home/');
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
@@ -120,6 +141,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: refresh,
     redirect: (_, state) => redirectFor(
       location: state.matchedLocation,
+      uri: state.uri,
       languageChosen: ref.read(languageProvider) != null,
       auth: ref.read(authProvider),
     ),

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tuloy_app/app/router.dart';
 import 'package:tuloy_app/core/config.dart';
 import 'package:tuloy_app/core/http.dart';
@@ -19,14 +22,25 @@ class _Admin extends AuthController {
   );
 }
 
+/// Restores the session only when [restored] completes, like the real async restore().
+class _SlowAdmin extends _Admin {
+  _SlowAdmin(this.restored);
+  final Completer<void> restored;
+  @override
+  Future<User?> build() async {
+    await restored.future;
+    return super.build();
+  }
+}
+
 void main() {
-  Future<void> open(WidgetTester t, String location) async {
+  Future<GoRouter> start(WidgetTester t, AuthController Function() auth) async {
     t.view.devicePixelRatio = 1;
     t.view.physicalSize = const Size(1200, 900);
     addTearDown(t.view.reset);
     final container = ProviderContainer(
       overrides: [
-        authProvider.overrideWith(_Admin.new),
+        authProvider.overrideWith(auth),
         languageProvider.overrideWith((_) => 'en'),
         getProvider('/admin/room-types').overrideWith(
           (ref) async => [
@@ -48,10 +62,31 @@ void main() {
         ),
       ),
     );
+    return router;
+  }
+
+  /// In-app navigation once signed in (auth already loaded). A real browser refresh is
+  /// covered by the 'refresh on a deep link' test below.
+  Future<void> open(WidgetTester t, String location) async {
+    final router = await start(t, _Admin.new);
     await t.pumpAndSettle();
-    router.go(location); // what a browser refresh on this URL amounts to
+    router.go(location);
     await t.pumpAndSettle();
   }
+
+  testWidgets('refresh on a deep link reopens it once the session is restored', (t) async {
+    // The browser URL is the platform's initial route; auth is still loading on the first frame.
+    t.platformDispatcher.defaultRouteNameTestValue = '/admin/rooms/type/b';
+    addTearDown(t.platformDispatcher.clearDefaultRouteNameTestValue);
+    final restored = Completer<void>();
+    await start(t, () => _SlowAdmin(restored));
+    await t.pump();
+    expect(find.byType(RoomTypeEditScreen), findsNothing); // splash while restoring
+    restored.complete();
+    await t.pumpAndSettle();
+    expect(find.byType(RoomTypeEditScreen), findsOneWidget);
+    expect(find.widgetWithText(TextField, 'Beta'), findsOneWidget);
+  });
 
   testWidgets('room type edit URL reopens the item from the list endpoint', (t) async {
     await open(t, '/admin/rooms/type/b');

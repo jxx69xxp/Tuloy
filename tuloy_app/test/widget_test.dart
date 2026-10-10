@@ -50,6 +50,51 @@ void main() {
     expect(go('/guest'), '/signin');
   });
 
+  test('deep links survive the splash and sign-in detours', () {
+    String? go(String loc, {AsyncValue<User?> auth = const AsyncData(null), bool isWeb = false}) {
+      final uri = Uri.parse(loc);
+      return redirectFor(location: uri.path, uri: uri, languageChosen: true, auth: auth, isWeb: isWeb);
+    }
+
+    String splash(String from) => '/splash?from=${Uri.encodeComponent(from)}';
+    String signin(String from) => '/signin?from=${Uri.encodeComponent(from)}';
+    final admin = AsyncData<User?>(_user(const [Membership(hotelId: hotelId, role: Role.admin)]));
+    final staff = AsyncData<User?>(_user(const [Membership(hotelId: hotelId, role: Role.staff)]));
+    final guest = AsyncData<User?>(_user(const []));
+    const deep = '/admin/rooms/type/abc';
+
+    // While auth is restoring, remember where we were going.
+    expect(go(deep, auth: const AsyncLoading()), splash(deep));
+    expect(go('/admin/reports?tab=2', auth: const AsyncLoading()), splash('/admin/reports?tab=2'));
+    expect(go(splash(deep), auth: const AsyncLoading()), isNull);
+    expect(go('/splash', auth: const AsyncLoading()), isNull);
+
+    // Resolved: go back to it when the role may open it.
+    expect(go(splash(deep), auth: admin), deep);
+    expect(go(splash('/settings'), auth: staff), '/settings');
+    expect(go(splash('/admin/reports?tab=2'), auth: admin), '/admin/reports?tab=2');
+    // Another role's area falls back to home.
+    expect(go(splash(deep), auth: staff), '/staff');
+    expect(go(splash('/staff/tasks'), auth: admin), '/admin');
+    expect(go(splash('/adminx'), auth: admin), '/admin');
+    // On web a guest still lands on the placeholder.
+    expect(go(splash('/guest/bookings'), auth: guest, isWeb: true), '/web-guest');
+    expect(go(splash('/guest/bookings'), auth: guest), '/guest/bookings');
+    // Only internal paths are honoured.
+    expect(go(splash('//evil.com/admin'), auth: admin), '/admin');
+    expect(go(splash('https://evil.com/admin'), auth: admin), '/admin');
+    expect(go(splash('admin'), auth: admin), '/admin');
+    expect(go(splash(r'/\evil.com'), auth: admin), '/admin');
+
+    // Signed out: keep the target through sign-in.
+    expect(go(deep), signin(deep));
+    expect(go(splash(deep)), signin(deep));
+    expect(go(signin(deep)), isNull);
+    expect(go(signin(deep), auth: admin), deep);
+    expect(go(signin(deep), auth: staff), '/staff');
+    expect(go('/splash'), '/signin');
+  });
+
   test('status parsing covers every API value', () {
     expect(parseStatus('CHECKED_IN'), BookingStatus.checkedIn);
     expect(parseStatus('NO_SHOW'), BookingStatus.noShow);

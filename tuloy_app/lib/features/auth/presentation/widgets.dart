@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -5,11 +6,16 @@ import '../../../app/theme.dart';
 import '../../../core/failure.dart';
 import '../../../l10n/app_localizations.dart';
 
-/// Server message when there is one (already localized), the unreachable-server message for
-/// network failures, else a generic offline message.
+/// Platform switch for [failureText]; tests flip it to cover both web and mobile.
+@visibleForTesting
+bool isWebPlatform = kIsWeb;
+
+/// Server message when there is one (already localized), else a generic offline message.
+/// On web a network failure may also be CORS, so it gets the unreachable-server message
+/// (which mentions allowing the website); mobile keeps the generic message.
 String failureText(BuildContext context, Object e) {
   final l = AppLocalizations.of(context);
-  if (e is Failure && e.code == 'NETWORK') return l.cannotReachServer;
+  if (isWebPlatform && e is Failure && e.code == 'NETWORK') return l.cannotReachServer;
   return (e is Failure ? e.message : null) ?? l.errorGeneric;
 }
 

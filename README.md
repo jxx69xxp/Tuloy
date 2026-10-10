@@ -1,9 +1,8 @@
-# Tuloy — Phases 1–2 (Foundation + Guest booking)
+# Tuloy
 
 ```
 tuloy-api/   NestJS + Prisma + PostgreSQL
 tuloy_app/   Flutter app: Guest, Staff and Admin areas in one codebase
-.github/     CI (API tests + Docker build, Flutter analyze/test/APK)
 ```
 
 Design: `outputs/tuloy-design.md`. Database: `tuloy-api/prisma/schema.prisma`.

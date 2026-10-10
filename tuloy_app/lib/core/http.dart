@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,8 +17,9 @@ String newKey() {
 /// ponytail: these features have no client-side rules (the API owns them), so they read JSON maps
 /// directly instead of per-feature entities/repositories. Add a domain layer to a feature when it gains rules.
 class Api {
-  Api(this._dio);
+  Api(this._dio, {Dio? uploadDio}) : _uploadDio = uploadDio;
   final Dio _dio;
+  final Dio? _uploadDio; // presigned PUTs go to storage, not the API; defaults to a fresh Dio
 
   Future<dynamic> get(String path, [Map<String, dynamic>? query]) => _run(_dio.get(path, queryParameters: query));
   Future<dynamic> post(String path, [Object? body, bool once = false]) => _run(
@@ -35,9 +37,9 @@ class Api {
   Future<String> upload(String folder, List<int> bytes, String ext) async {
     final p = await post('/admin/uploads', {'folder': folder, 'ext': ext}) as Map;
     await _run(
-      Dio().put(
+      (_uploadDio ?? Dio()).put(
         p['uploadUrl'] as String,
-        data: Stream.fromIterable([bytes]),
+        data: Uint8List.fromList(bytes), // browser adapters can't send a Stream body
         options: Options(headers: {Headers.contentLengthHeader: bytes.length, 'Content-Type': 'image/$ext'}),
       ),
     );

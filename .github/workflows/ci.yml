@@ -51,4 +51,5 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+      - run: flutter build web
       - run: flutter build apk --debug

@@ -15,16 +15,22 @@ class FindById extends ConsumerWidget {
   final Widget Function(BuildContext, J item) builder;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => AsyncBody(
-    value: ref.watch(getProvider(listPath)),
-    onRetry: () => ref.invalidate(getProvider(listPath)),
-    builder: (data) {
-      for (final r in jsonList(data)) {
-        if ('${r['id']}' == id) return builder(context, r);
-      }
-      return Center(child: Text(AppLocalizations.of(context).notFound));
-    },
-  );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final value = ref.watch(getProvider(listPath));
+    return AsyncBody(
+      // Once loaded, keep showing the item through reloads (e.g. a language change) and failed
+      // refreshes, so an open edit screen is not disposed with its unsaved edits.
+      // The spinner and error+retry only appear before the first load.
+      value: value.hasValue ? AsyncData<dynamic>(value.value) : value,
+      onRetry: () => ref.invalidate(getProvider(listPath)),
+      builder: (data) {
+        for (final r in jsonList(data)) {
+          if ('${r['id']}' == id) return builder(context, r);
+        }
+        return Center(child: Text(AppLocalizations.of(context).notFound));
+      },
+    );
+  }
 }
 
 /// Pops after a save; when the page was opened directly by URL (nothing to pop) goes to [fallback].

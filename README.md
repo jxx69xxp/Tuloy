@@ -102,7 +102,7 @@ flutter build web          # output in tuloy_app/build/web
 - **CORS.** Set `CORS_ORIGINS` in the API environment to the web app's origins, comma-separated, exact and without a trailing slash (for example `https://staff.example.com`). `localhost` origins are allowed automatically, but only outside production.
 - **Photo upload.** In production, add a CORS rule to the object storage bucket (S3 or R2) that allows `PUT` from the web origin. Uploads go straight to the bucket.
 - **Token storage.** On web, tokens live in browser storage, which is weaker than the secure storage used on mobile. Short 15-minute access tokens and rotating refresh tokens limit the damage.
-- **Layout.** Staff and admin get a navigation rail at widths of 840 px and up, and the usual bottom navigation below that.
+- **Layout.** Staff and admin get a navigation rail at widths of 840 px and up. Below that the rail is hidden and you move around from the home screen's tile menu, as on mobile.
 - **Not on web.** QR scanning (use the mobile app). Chat and queues refresh by polling.
 
 ## Design

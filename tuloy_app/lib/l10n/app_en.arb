@@ -1,0 +1,476 @@
+{
+  "@@locale": "en",
+  "appTitle": "Tuloy",
+  "chooseLanguage": "Choose your language",
+  "continueLabel": "Continue",
+  "signIn": "Sign in",
+  "signUp": "Create account",
+  "signOut": "Sign out",
+  "noAccount": "No account yet? Create one",
+  "emailOrPhone": "Email or phone number",
+  "password": "Password",
+  "passwordHint": "At least 8 characters",
+  "fullName": "Full name",
+  "required": "Required",
+  "forgotPassword": "Forgot password?",
+  "sendCode": "Send code",
+  "codeSent": "If an account exists, we sent a 6-digit code.",
+  "code": "6-digit code",
+  "newPassword": "New password",
+  "resetPassword": "Reset password",
+  "passwordChanged": "Password changed. Please sign in.",
+  "settings": "Settings",
+  "language": "Language",
+  "guestHome": "Welcome",
+  "staffHome": "Staff",
+  "adminHome": "Admin",
+  "comingSoon": "More features arrive in the next release.",
+  "errorGeneric": "Can't reach the server. Check your connection.",
+  "hello": "Hello, {name}",
+  "@hello": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "retry": "Try again",
+  "howCanWeHelp": "How can we help?",
+  "profile": "Profile",
+  "stays": "Stays",
+  "servicesUsed": "Services used",
+  "paymentHistory": "Payment history",
+  "cardOrEwallet": "Card / e-wallet",
+  "testPayment": "Test payment",
+  "noneYet": "Nothing here yet",
+  "gettingHere": "Getting here",
+  "openInMaps": "Open in Maps",
+  "airportRoute": "Route to the airport",
+  "personalDetails": "Personal details",
+  "authTagline": "Your stay and every service, one tap away",
+  "showPassword": "Show password",
+  "hidePassword": "Hide password",
+  "findRoom": "Find a room",
+  "adults": "Adults",
+  "children": "Children",
+  "guests": "Guests",
+  "nightsCount": "Nights: {count}",
+  "@nightsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "noRooms": "No rooms available for these dates. Try other dates.",
+  "perNight": "{price} / night",
+  "@perNight": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "roomsLeft": "Only {count} left",
+  "@roomsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "totalLabel": "Total",
+  "amenities": "Amenities",
+  "policies": "Policies",
+  "checkInTime": "Check-in from {time}",
+  "@checkInTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "checkOutTime": "Check-out by {time}",
+  "@checkOutTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "specialRequests": "Special requests (optional)",
+  "reserve": "Reserve",
+  "review": "Review and pay",
+  "holdTimer": "We're holding this room for {time}",
+  "@holdTimer": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "holdExpired": "Your hold expired. Please search again.",
+  "serviceCharge": "Service charge",
+  "vat": "VAT",
+  "payDeposit": "Pay deposit {amount}",
+  "@payDeposit": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payFull": "Pay in full {amount}",
+  "@payFull": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payBalance": "Pay balance {amount}",
+  "@payBalance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "waitingPayment": "Waiting for payment…",
+  "waitingPaymentHint": "Finish paying in the browser. This page updates by itself.",
+  "openPaymentAgain": "Open payment page again",
+  "bookingConfirmed": "Booking confirmed!",
+  "bookingCode": "Booking {code}",
+  "@bookingCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "roomNumber": "Room {room}",
+  "@roomNumber": {
+    "placeholders": {
+      "room": {
+        "type": "String"
+      }
+    }
+  },
+  "viewBooking": "View booking",
+  "backHome": "Back to home",
+  "paymentFailed": "This booking is no longer held. If you were charged, it will be refunded.",
+  "myBookings": "My bookings",
+  "noBookings": "No bookings yet.",
+  "statusHold": "Awaiting payment",
+  "statusPending": "Pending",
+  "statusConfirmed": "Confirmed",
+  "statusCheckedIn": "Checked in",
+  "statusCheckedOut": "Checked out",
+  "statusCancelled": "Cancelled",
+  "statusNoShow": "No-show",
+  "statusDeclined": "Declined",
+  "statusExpired": "Expired",
+  "cancelBooking": "Cancel booking",
+  "cancelConfirm": "Cancel this booking? You will get {refund} back.",
+  "@cancelConfirm": {
+    "placeholders": {
+      "refund": {
+        "type": "String"
+      }
+    }
+  },
+  "keepBooking": "Keep booking",
+  "cancelled": "Booking cancelled",
+  "invoice": "Invoice",
+  "paid": "Paid",
+  "balance": "Balance",
+  "charges": "Charges",
+  "myStay": "My stay",
+  "currentStay": "Your stay",
+  "hotelGuide": "Hotel guide",
+  "feedback": "Feedback",
+  "rateStay": "How was your stay?",
+  "comment": "Comments (optional)",
+  "send": "Send",
+  "thanksFeedback": "Thank you for your feedback!",
+  "accept": "Accept",
+  "acceptQuote": "Accept quote {amount}",
+  "@acceptQuote": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "acceptance": "Acceptance",
+  "active": "Active",
+  "add": "Add",
+  "addField": "Add field",
+  "addOption": "Add option",
+  "addOutlet": "Add outlet",
+  "addPhoto": "Add photo",
+  "addRoom": "Add room",
+  "addStaff": "Add staff",
+  "addTable": "Add table",
+  "adjustPoints": "Adjust points",
+  "alerts": "Alerts",
+  "all": "All",
+  "allergens": "Allergens",
+  "allergyNotes": "Allergies or special instructions",
+  "amount": "Amount",
+  "applyLeave": "Apply for leave",
+  "approve": "Approve",
+  "approved": "Approved",
+  "arrivals": "Arrivals",
+  "asSoonAsPossible": "As soon as possible",
+  "auditLog": "Audit log",
+  "autoAccept": "Accept automatically",
+  "basePrice": "Base price",
+  "blocks": "Room blocks",
+  "body": "Text",
+  "cancel": "Cancel",
+  "cancelOrder": "Cancel order",
+  "cancelRequest": "Cancel request",
+  "cancellationPolicy": "Cancellation policy",
+  "category": "Category",
+  "chargeToRoom": "Charge to my room",
+  "chat": "Chat",
+  "chatEmpty": "Send a message to the front desk.",
+  "chatWithHotel": "Chat with the hotel",
+  "checkInAction": "Check in",
+  "checkOutAction": "Check out",
+  "choices": "Choices (comma-separated)",
+  "closes": "Closes",
+  "codeLabel": "Code",
+  "collectedToday": "Collected today",
+  "content": "Guides & promotions",
+  "copied": "Copied",
+  "copy": "Copy",
+  "copyCsv": "Copy as CSV",
+  "dates": "Dates",
+  "decline": "Decline",
+  "delete": "Delete",
+  "department": "Department",
+  "departments": "Departments",
+  "departures": "Departures",
+  "depositPercent": "Deposit %",
+  "description": "Description",
+  "draft": "Draft",
+  "earnPer100": "Points per ₱100",
+  "earnRate": "You earn {points} point(s) for every ₱100.",
+  "@earnRate": {
+    "placeholders": {
+      "points": {
+        "type": "String"
+      }
+    }
+  },
+  "earnsPoints": "Earns loyalty points",
+  "email": "Email",
+  "emptyResets": "empty = base price",
+  "enterCode": "Enter code",
+  "escalate": "Escalate",
+  "etaMin": "Ready in (minutes)",
+  "etaMinutes": "Ready in about {minutes} min",
+  "@etaMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "failedNotifications": "Failed notifications",
+  "failedRefunds": "Failed refunds",
+  "fieldKey": "Field key",
+  "formFields": "Guest form fields",
+  "free": "Free",
+  "freeCancelHours": "Free cancellation (hours before check-in)",
+  "frontDesk": "Front desk",
+  "history": "History",
+  "hotelName": "Hotel name",
+  "hotelSettings": "Hotel settings",
+  "inHouse": "In-house",
+  "inactive": "inactive",
+  "internalNotes": "Internal notes",
+  "kind": "Type",
+  "label": "Label",
+  "lateRefundPercent": "Refund after free period %",
+  "leadTimeMin": "Order ahead (minutes)",
+  "leaveRequests": "Leave requests",
+  "loyalty": "Loyalty points",
+  "markNoShow": "Mark no-show",
+  "maxGuests": "Max guests",
+  "members": "Members",
+  "menu": "Menu",
+  "mine": "Mine",
+  "missingToPublish": "Missing before publishing",
+  "myDepartment": "My department",
+  "myLeave": "My leave",
+  "myRequests": "My requests",
+  "name": "Name",
+  "netToday": "Net today",
+  "network": "Network",
+  "newQr": "New QR code",
+  "newQrWarning": "The old code for this table will stop working.",
+  "nextTier": "{points} more points to {tier}",
+  "@nextTier": {
+    "placeholders": {
+      "points": {
+        "type": "String"
+      },
+      "tier": {
+        "type": "String"
+      }
+    }
+  },
+  "nothingHere": "Nothing here yet.",
+  "occupancyTonight": "Occupancy tonight",
+  "ok": "OK",
+  "openTasks": "Open tasks",
+  "opens": "Opens",
+  "options": "Options",
+  "orderStatus": "Your order",
+  "pause": "Pause",
+  "payAtOutlet": "Pay at the table / outlet",
+  "payOnline": "Pay online",
+  "paymentMethod": "Payment",
+  "payments": "Payments & refunds",
+  "pendingApproval": "Pending",
+  "permissions": "Permissions",
+  "photos": "Photos",
+  "points": "Points",
+  "pointsBalance": "{points} points",
+  "@pointsBalance": {
+    "placeholders": {
+      "points": {
+        "type": "String"
+      }
+    }
+  },
+  "pointsCost": "{points} points",
+  "@pointsCost": {
+    "placeholders": {
+      "points": {
+        "type": "String"
+      }
+    }
+  },
+  "pointsPlusMinus": "Points (+ add, − remove)",
+  "preferredTime": "Preferred time",
+  "price": "Price",
+  "priceDelta": "Extra price",
+  "priceModel": "Price model",
+  "priceOnQuote": "Price on request",
+  "pricePerItem": "{price} each",
+  "@pricePerItem": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "pricePerNight2": "{price} per night",
+  "@pricePerNight2": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "pricePerPerson": "{price} per person",
+  "@pricePerPerson": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "publish": "Publish",
+  "published": "Published",
+  "qrCode": "QR code",
+  "rates": "Rates",
+  "reason": "Reason",
+  "redeem": "Redeem",
+  "redeemNeedsStay": "Points can be used on a confirmed or current stay.",
+  "redeemed": "Applied to your stay",
+  "refund": "Refund",
+  "refunded": "Refunded",
+  "refundedToday": "Refunded today",
+  "reissueWifi": "Re-issue Wi-Fi",
+  "rejected": "Rejected",
+  "removeAccess": "Remove staff access",
+  "reportOccupancy": "Occupancy",
+  "reportRevenue": "Revenue",
+  "reports": "Reports",
+  "requestStatus": "Request status",
+  "requireApproval": "Staff approve each paid booking",
+  "reservation": "Reservation",
+  "reservations": "Reservations",
+  "restaurant": "Restaurant",
+  "restaurantOrders": "Restaurant orders",
+  "reviewOrder": "Review order ({count}) · {total}",
+  "@reviewOrder": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "rewards": "Rewards",
+  "role": "Role",
+  "roomLabel": "Room",
+  "roomTypeLabel": "Room type",
+  "roomsAndRates": "Rooms & rates",
+  "save": "Save",
+  "saveDraft": "Save draft",
+  "saved": "Saved",
+  "scanTable": "Order food (scan table QR)",
+  "scanTableHint": "Point the camera at the QR code on your table.",
+  "schedule": "Schedule",
+  "searchGuest": "Search name, email, phone or code",
+  "sendQuote": "Send quote",
+  "sendRequest": "Send request",
+  "serviceBuilder": "Service builder",
+  "services": "Services",
+  "setRate": "Set price for dates",
+  "staff": "Staff",
+  "staffAndLeave": "Staff & leave",
+  "staffApproval": "Staff accepts each request",
+  "status": "Status",
+  "statusSteps": "Status steps",
+  "submitOrder": "Submit order",
+  "tableLabel": "Table {table}",
+  "@tableLabel": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "tasks": "Tasks",
+  "taxIncluded": "Price includes tax",
+  "tempPassword": "Temporary password",
+  "tier": "Tier: {tier}",
+  "@tier": {
+    "placeholders": {
+      "tier": {
+        "type": "String"
+      }
+    }
+  },
+  "title": "Title",
+  "typeMessage": "Type a message",
+  "unassigned": "Unassigned",
+  "unblock": "Unblock",
+  "upcoming": "Upcoming",
+  "username": "Username",
+  "validUntil": "Valid until",
+  "wifi": "Wi-Fi",
+  "wifiMode": "Wi-Fi mode (portal or psk)",
+  "wifiPortalHint": "Join the network; the login page opens. Enter the username and password above.",
+  "wifiQrHint": "Scan with your camera to join.",
+  "wifiSharedPassword": "Shared Wi-Fi password (psk mode)"
+}

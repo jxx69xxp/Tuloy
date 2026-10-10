@@ -651,6 +651,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nothingHere => 'Nothing here yet.';
 
   @override
+  String get notFound => 'Not found.';
+
+  @override
   String get occupancyTonight => 'Occupancy tonight';
 
   @override

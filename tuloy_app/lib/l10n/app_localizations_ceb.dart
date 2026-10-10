@@ -653,6 +653,9 @@ class AppLocalizationsCeb extends AppLocalizations {
   String get nothingHere => 'Wala pay sulod.';
 
   @override
+  String get notFound => 'Wala makit-i.';
+
+  @override
   String get occupancyTonight => 'Okupado karong gabii';
 
   @override

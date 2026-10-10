@@ -654,6 +654,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get nothingHere => 'Wala pa rito.';
 
   @override
+  String get notFound => 'Hindi nahanap.';
+
+  @override
   String get occupancyTonight => 'Okupado ngayong gabi';
 
   @override

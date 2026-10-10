@@ -7,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/config.dart';
 import '../../core/format.dart';
 import '../../core/http.dart';
+import '../../core/find_by_id.dart';
 import '../../core/ui.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -39,7 +40,7 @@ class RoomsAdminScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: l.add,
-        onPressed: () => context.push('/admin/rooms/type'),
+        onPressed: () => context.push('/admin/rooms/type/new'),
         child: const Icon(Icons.add),
       ),
       body: JsonList(
@@ -55,7 +56,7 @@ class RoomsAdminScreen extends ConsumerWidget {
                   '${money(num2(t['basePrice']), 'PHP')} · ${l.guests}: ${t['maxGuests']}${t['active'] == false ? ' · ${l.inactive}' : ''}',
                 ),
                 trailing: const Icon(Icons.edit),
-                onTap: () => context.push('/admin/rooms/type', extra: t),
+                onTap: () => context.push('/admin/rooms/type/${t['id']}'),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -94,7 +95,7 @@ class RoomsAdminScreen extends ConsumerWidget {
               TextButton.icon(
                 icon: const Icon(Icons.price_change),
                 label: Text(l.rates),
-                onPressed: () => context.push('/admin/rooms/rates', extra: t),
+                onPressed: () => context.push('/admin/rooms/${t['id']}/rates'),
               ),
             ],
           ),
@@ -204,7 +205,7 @@ class _RoomTypeEditState extends ConsumerState<RoomTypeEditScreen> {
                 done: l.saved,
               )) {
                 ref.invalidate(getProvider('/admin/room-types'));
-                if (context.mounted) context.pop();
+                if (context.mounted) popOr(context, '/admin/rooms');
               }
             },
           ),
@@ -366,7 +367,7 @@ class ServicesAdminScreen extends StatelessWidget {
       appBar: AppBar(title: Text(l.services)),
       floatingActionButton: FloatingActionButton(
         tooltip: l.add,
-        onPressed: () => context.push('/admin/services/edit'),
+        onPressed: () => context.push('/admin/services/new'),
         child: const Icon(Icons.add),
       ),
       body: JsonList(
@@ -374,7 +375,7 @@ class ServicesAdminScreen extends StatelessWidget {
         item: (context, s) => ListTile(
           title: Text(trOf(context, s['name'])),
           subtitle: Text('${s['category']} · ${s['status']}'),
-          onTap: () => context.push('/admin/services/edit', extra: '${s['id']}'),
+          onTap: () => context.push('/admin/services/${s['id']}'),
         ),
       ),
     );
@@ -861,7 +862,7 @@ class RestaurantAdminScreen extends ConsumerWidget {
               ListTile(
                 title: Text(trOf(context, o['name'])),
                 trailing: TextButton(
-                  onPressed: () => context.push('/admin/restaurant/menu', extra: o),
+                  onPressed: () => context.push('/admin/restaurant/${o['id']}/menu'),
                   child: Text(l.menu),
                 ),
               ),

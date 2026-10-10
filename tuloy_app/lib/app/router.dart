@@ -13,7 +13,7 @@ import '../features/booking/domain/booking.dart';
 import '../features/booking/presentation/booking_screens.dart';
 import '../features/booking/presentation/my_bookings_screens.dart';
 import '../features/booking/presentation/stay_screens.dart';
-import '../core/http.dart' show J;
+import '../core/find_by_id.dart';
 import '../features/admin/admin_catalog_screens.dart';
 import '../features/admin/admin_people_screens.dart';
 import '../features/admin/admin_screens.dart';
@@ -216,35 +216,52 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: _deskRoutes('/admin/desk'),
           ),
           GoRoute(path: 'rooms', builder: (_, __) => const RoomsAdminScreen()),
+          GoRoute(path: 'rooms/type/new', builder: (_, __) => const RoomTypeEditScreen()),
           GoRoute(
-            path: 'rooms/type',
-            builder: (_, s) => RoomTypeEditScreen(type: s.extra as J?),
+            path: 'rooms/type/:id',
+            builder: (_, s) => FindById(
+              listPath: '/admin/room-types',
+              id: s.pathParameters['id']!,
+              builder: (_, t) => RoomTypeEditScreen(type: t),
+            ),
           ),
           GoRoute(
-            path: 'rooms/rates',
-            redirect: (_, s) => s.extra is Map ? null : '/admin/rooms',
-            builder: (_, s) => RatesScreen(type: s.extra! as J),
+            path: 'rooms/:id/rates',
+            builder: (_, s) => FindById(
+              listPath: '/admin/room-types',
+              id: s.pathParameters['id']!,
+              builder: (_, t) => RatesScreen(type: t),
+            ),
           ),
           GoRoute(path: 'rooms/blocks', builder: (_, __) => const BlocksScreen()),
           GoRoute(path: 'services', builder: (_, __) => const ServicesAdminScreen()),
+          GoRoute(path: 'services/new', builder: (_, __) => const ServiceEditScreen()),
           GoRoute(
-            path: 'services/edit',
-            builder: (_, s) => ServiceEditScreen(id: s.extra as String?),
+            path: 'services/:id',
+            builder: (_, s) => ServiceEditScreen(id: s.pathParameters['id']),
           ),
           GoRoute(path: 'restaurant', builder: (_, __) => const RestaurantAdminScreen()),
           GoRoute(
-            path: 'restaurant/menu',
-            redirect: (_, s) => s.extra is Map ? null : '/admin/restaurant',
-            builder: (_, s) => MenuAdminScreen(outlet: s.extra! as J),
+            path: 'restaurant/:id/menu',
+            builder: (_, s) => FindById(
+              listPath: '/admin/outlets',
+              id: s.pathParameters['id']!,
+              builder: (_, o) => MenuAdminScreen(outlet: o),
+            ),
           ),
           GoRoute(path: 'payments', builder: (_, __) => const PaymentsScreen()),
           GoRoute(path: 'reports', builder: (_, __) => const ReportsScreen()),
           GoRoute(path: 'staff', builder: (_, __) => const StaffAdminScreen()),
           GoRoute(path: 'loyalty', builder: (_, __) => const LoyaltyAdminScreen()),
           GoRoute(path: 'content', builder: (_, __) => const ContentScreen()),
+          GoRoute(path: 'content/new', builder: (_, __) => const ContentEditScreen()),
           GoRoute(
-            path: 'content/edit',
-            builder: (_, s) => ContentEditScreen(item: s.extra as J?),
+            path: 'content/:id',
+            builder: (_, s) => FindById(
+              listPath: '/admin/content',
+              id: s.pathParameters['id']!,
+              builder: (_, c) => ContentEditScreen(item: c),
+            ),
           ),
           GoRoute(path: 'hotel', builder: (_, __) => const HotelSettingsScreen()),
           GoRoute(path: 'audit', builder: (_, __) => const AuditScreen()),

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/config.dart';
 import '../../core/format.dart';
 import '../../core/http.dart';
+import '../../core/find_by_id.dart';
 import '../../core/ui.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -302,7 +303,7 @@ class ContentScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(l.content)),
       floatingActionButton: FloatingActionButton(
         tooltip: l.add,
-        onPressed: () => context.push('/admin/content/edit'),
+        onPressed: () => context.push('/admin/content/new'),
         child: const Icon(Icons.add),
       ),
       body: JsonList(
@@ -310,7 +311,7 @@ class ContentScreen extends ConsumerWidget {
         item: (context, c) => ListTile(
           title: Text('${(c['title'] as Map)[lang] ?? (c['title'] as Map)['en']}'),
           subtitle: Text('${c['kind']} · ${c['publishedAt'] == null ? l.draft : l.published}'),
-          onTap: () => context.push('/admin/content/edit', extra: c),
+          onTap: () => context.push('/admin/content/${c['id']}'),
         ),
       ),
     );
@@ -354,7 +355,7 @@ class _ContentEditState extends ConsumerState<ContentEditScreen> {
                 if (!await confirm(context, l.delete) || !context.mounted) return;
                 if (await act(context, () => api.delete('/admin/content/$id'))) {
                   ref.invalidate(getProvider('/admin/content'));
-                  if (context.mounted) context.pop();
+                  if (context.mounted) popOr(context, '/admin/content');
                 }
               },
             ),
@@ -393,7 +394,7 @@ class _ContentEditState extends ConsumerState<ContentEditScreen> {
               );
               if (ok) {
                 ref.invalidate(getProvider('/admin/content'));
-                if (context.mounted) context.pop();
+                if (context.mounted) popOr(context, '/admin/content');
               }
             },
           ),

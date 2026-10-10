@@ -1312,6 +1312,12 @@ abstract class AppLocalizations {
   /// **'Nothing here yet.'**
   String get nothingHere;
 
+  /// No description provided for @notFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Not found.'**
+  String get notFound;
+
   /// No description provided for @occupancyTonight.
   ///
   /// In en, this message translates to:

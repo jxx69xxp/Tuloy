@@ -1039,4 +1039,25 @@ class AppLocalizationsCeb extends AppLocalizations {
 
   @override
   String get hideDetails => 'Itago ang detalye';
+
+  @override
+  String get selectThread => 'Pagpili og panag-istorya';
+
+  @override
+  String get keyboardShortcuts => 'Mga keyboard shortcut';
+
+  @override
+  String get goToPage => 'Adto sa panid';
+
+  @override
+  String get shortcutSearch => 'Pangita niining panid';
+
+  @override
+  String get shortcutClose => 'Sirad-i ang panel o dialog';
+
+  @override
+  String get shortcutHelp => 'Ipakita ang mga keyboard shortcut';
+
+  @override
+  String get shortcutSend => 'Ipadala ang mensahe (Shift+Enter: bag-ong linya)';
 }

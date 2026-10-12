@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
+import 'web/shortcuts.dart';
 
 /// Width from which the web/desktop layout (navigation rail, tables) is used.
 const double kWideBreakpoint = 840;
@@ -67,6 +68,8 @@ class AdaptiveShell extends StatelessWidget {
   /// Desktop density for the wide shell only; the app's ThemeData stays as is for mobile.
   static ThemeData _desk(ThemeData t) => t.copyWith(
     visualDensity: VisualDensity.compact,
+    // Keyboard users: a clearly visible focus highlight on sidebar items, table rows and buttons.
+    focusColor: t.colorScheme.primary.withValues(alpha: 0.16),
     textTheme: t.textTheme.apply(fontSizeFactor: 0.95),
     cardTheme: t.cardTheme.copyWith(
       elevation: 0,
@@ -101,34 +104,42 @@ class AdaptiveShell extends StatelessWidget {
       ),
       if (onSignOut != null) IconButton(tooltip: l.signOut, icon: const Icon(Icons.logout), onPressed: onSignOut),
     ];
+    final help = IconButton(
+      tooltip: l.keyboardShortcuts,
+      icon: const Icon(Icons.keyboard_outlined),
+      onPressed: () => showDialog<void>(context: context, builder: (_) => const ShortcutsHelp()),
+    );
     return Theme(
       data: _desk(Theme.of(context)),
-      child: Scaffold(
-        body: Row(
-          children: [
-            SizedBox(
-              width: 232,
-              child: _Sidebar(items: items, selected: _selected, userName: userName, actions: actions),
-            ),
-            const VerticalDivider(width: 1),
-            Expanded(
-              child: Column(
-                children: [
-                  _TopBar(crumbs: _crumbs(l.details), actions: actions),
-                  const Divider(height: 1),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1280),
-                        child: Padding(padding: const EdgeInsets.all(24), child: child),
+      child: ShellShortcuts(
+        items: items,
+        child: Scaffold(
+          body: Row(
+            children: [
+              SizedBox(
+                width: 232,
+                child: _Sidebar(items: items, selected: _selected, userName: userName, actions: actions),
+              ),
+              const VerticalDivider(width: 1),
+              Expanded(
+                child: Column(
+                  children: [
+                    _TopBar(crumbs: _crumbs(l.details), actions: [help, ...actions]),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1280),
+                          child: Padding(padding: const EdgeInsets.all(24), child: child),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

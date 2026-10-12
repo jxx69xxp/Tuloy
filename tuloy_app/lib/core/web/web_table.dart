@@ -67,9 +67,20 @@ class WebTable extends StatefulWidget {
   State<WebTable> createState() => _WebTableState();
 }
 
+/// Search boxes of the tables on screen, newest last; "/" focuses the one on the current route.
+final tableSearchFocus = <FocusNode>[];
+
 class _WebTableState extends State<WebTable> {
   static const pageSize = 50;
   final _search = TextEditingController();
+  final _searchFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    tableSearchFocus.add(_searchFocus);
+  }
+
   Timer? _debounce;
   String _q = '';
   int? _sortCol;
@@ -85,6 +96,8 @@ class _WebTableState extends State<WebTable> {
   @override
   void dispose() {
     _debounce?.cancel();
+    tableSearchFocus.remove(_searchFocus);
+    _searchFocus.dispose();
     _search.dispose();
     super.dispose();
   }
@@ -145,6 +158,7 @@ class _WebTableState extends State<WebTable> {
                   constraints: const BoxConstraints(maxWidth: 360),
                   child: TextField(
                     controller: _search,
+                    focusNode: _searchFocus,
                     onChanged: _onType,
                     decoration: InputDecoration(
                       isDense: true,

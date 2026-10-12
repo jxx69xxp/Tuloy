@@ -2037,6 +2037,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hide details'**
   String get hideDetails;
+
+  /// No description provided for @selectThread.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a conversation'**
+  String get selectThread;
+
+  /// No description provided for @keyboardShortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts'**
+  String get keyboardShortcuts;
+
+  /// No description provided for @goToPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to a page'**
+  String get goToPage;
+
+  /// No description provided for @shortcutSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search this page'**
+  String get shortcutSearch;
+
+  /// No description provided for @shortcutClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close a panel or dialog'**
+  String get shortcutClose;
+
+  /// No description provided for @shortcutHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Show keyboard shortcuts'**
+  String get shortcutHelp;
+
+  /// No description provided for @shortcutSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a chat message (Shift+Enter: new line)'**
+  String get shortcutSend;
 }
 
 class _AppLocalizationsDelegate

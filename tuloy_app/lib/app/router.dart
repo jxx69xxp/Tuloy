@@ -56,9 +56,21 @@ List<RouteBase> _deskRoutes(String base) => [
   ),
   GoRoute(path: 'tasks', builder: (_, __) => const TasksScreen()),
   GoRoute(path: 'orders', builder: (_, __) => const OrdersQueueScreen()),
+  // Wide: inbox and inbox/chat/:id share one page key, so the list keeps its state while threads switch.
   GoRoute(
     path: 'inbox',
-    builder: (_, __) => InboxScreen(base: base),
+    pageBuilder: (c, s) => _inboxPage(c, s, base, InboxScreen(base: base)),
+  ),
+  GoRoute(
+    path: 'inbox/chat/:id',
+    pageBuilder: (c, s) => _inboxPage(
+      c,
+      s,
+      base,
+      isWide(c)
+          ? InboxScreen(base: base, openId: s.pathParameters['id'], openTitle: s.extra as String?)
+          : ChatScreen(id: s.pathParameters['id']!, title: s.extra as String?),
+    ),
   ),
   GoRoute(path: 'leave', builder: (_, __) => const LeaveScreen()),
   GoRoute(
@@ -66,6 +78,10 @@ List<RouteBase> _deskRoutes(String base) => [
     builder: (_, s) => ChatScreen(id: s.pathParameters['id']!, title: s.extra as String?),
   ),
 ];
+
+Page<void> _inboxPage(BuildContext c, GoRouterState s, String base, Widget child) => isWide(c)
+    ? NoTransitionPage(key: ValueKey('$base/inbox'), child: child)
+    : MaterialPage(key: s.pageKey, restorationId: s.pageKey.value, child: child);
 
 List<RailItem> _staffItems(AppLocalizations l) => [
   RailItem(Icons.support_agent, l.frontDesk, '/staff', section: l.frontDesk),

@@ -11,6 +11,7 @@ import '../auth/domain/auth.dart';
 import '../auth/presentation/auth_controller.dart';
 import '../booking/domain/booking.dart';
 import '../booking/presentation/booking_providers.dart';
+import '../chat/chat_screen.dart';
 import '../services/services_screens.dart' show paymentMethodLabel, stepLabel;
 
 /// Staff routes live under /staff; admins reach the same screens under /admin/desk.
@@ -555,13 +556,18 @@ class OrdersQueueScreen extends ConsumerWidget {
 // ───────────── T8 chat inbox ─────────────
 
 class InboxScreen extends ConsumerWidget {
-  const InboxScreen({super.key, required this.base});
+  const InboxScreen({super.key, required this.base, this.openId, this.openTitle});
   final String base;
+
+  /// Wide two-pane mode: the thread shown on the right (from `inbox/chat/:id`).
+  final String? openId;
+  final String? openTitle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     const path = '/staff/conversations';
+    if (isWide(context)) return _InboxPanes(base: base, openId: openId, openTitle: openTitle);
     return Scaffold(
       appBar: AppBar(title: Text(l.chat)),
       body: Poller(
@@ -579,6 +585,95 @@ class InboxScreen extends ConsumerWidget {
             subtitle: Text(date(context, DateTime.parse('${c['lastMessageAt']}').toLocal())),
             onTap: () => context.push('$base/chat/${c['id']}', extra: '${c['guestName']}'),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Wide inbox: searchable thread list on the left, the open thread on the right.
+class _InboxPanes extends ConsumerStatefulWidget {
+  const _InboxPanes({required this.base, this.openId, this.openTitle});
+  final String base;
+  final String? openId;
+  final String? openTitle;
+  @override
+  ConsumerState<_InboxPanes> createState() => _InboxPanesState();
+}
+
+class _InboxPanesState extends ConsumerState<_InboxPanes> {
+  static const path = '/staff/conversations';
+  String _q = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final value = ref.watch(getProvider(path));
+    final rows = jsonList(value.valueOrNull ?? const []);
+    final open = widget.openId;
+    final title = rows.where((c) => c['id'] == open).map((c) => '${c['guestName']}').firstOrNull ?? widget.openTitle;
+    return Scaffold(
+      appBar: AppBar(title: Text(l.chat)),
+      body: Poller(
+        every: const Duration(seconds: 10),
+        onTick: () => ref.invalidate(getProvider(path)),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 320,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                    child: TextField(
+                      onChanged: (v) => setState(() => _q = v.trim().toLowerCase()),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        prefixIcon: const Icon(Icons.search),
+                        hintText: l.search,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: AsyncBody(
+                      value: value,
+                      onRetry: () => ref.invalidate(getProvider(path)),
+                      builder: (_) {
+                        final shown = [
+                          for (final c in rows)
+                            if ('${c['guestName']}'.toLowerCase().contains(_q)) c,
+                        ];
+                        if (shown.isEmpty) return Center(child: Text(l.nothingHere));
+                        return ListView(
+                          children: [
+                            for (final c in shown)
+                              ListTile(
+                                selected: c['id'] == open,
+                                leading: Badge(
+                                  isLabelVisible: (c['unread'] as num) > 0,
+                                  label: Text('${c['unread']}'),
+                                  child: const Icon(Icons.person),
+                                ),
+                                title: Text('${c['guestName']}', overflow: TextOverflow.ellipsis),
+                                subtitle: Text(date(context, DateTime.parse('${c['lastMessageAt']}').toLocal())),
+                                onTap: () => context.go('${widget.base}/inbox/chat/${c['id']}'),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const VerticalDivider(width: 1),
+            Expanded(
+              child: open == null
+                  ? Center(child: Text(l.selectThread))
+                  // Keyed by thread: switching disposes the old ChatScreen and stops its poll timer.
+                  : ChatScreen(key: ValueKey(open), id: open, title: title, embedded: true),
+            ),
+          ],
         ),
       ),
     );

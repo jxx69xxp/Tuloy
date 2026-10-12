@@ -520,5 +520,12 @@
   "rooms": "Rooms",
   "tables": "Tables",
   "showDetails": "Show details",
-  "hideDetails": "Hide details"
+  "hideDetails": "Hide details",
+  "selectThread": "Select a conversation",
+  "keyboardShortcuts": "Keyboard shortcuts",
+  "goToPage": "Go to a page",
+  "shortcutSearch": "Search this page",
+  "shortcutClose": "Close a panel or dialog",
+  "shortcutHelp": "Show keyboard shortcuts",
+  "shortcutSend": "Send a chat message (Shift+Enter: new line)"
 }

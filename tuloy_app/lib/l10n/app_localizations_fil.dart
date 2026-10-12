@@ -1040,4 +1040,25 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get hideDetails => 'Itago ang detalye';
+
+  @override
+  String get selectThread => 'Pumili ng usapan';
+
+  @override
+  String get keyboardShortcuts => 'Mga keyboard shortcut';
+
+  @override
+  String get goToPage => 'Pumunta sa pahina';
+
+  @override
+  String get shortcutSearch => 'Maghanap sa pahinang ito';
+
+  @override
+  String get shortcutClose => 'Isara ang panel o dialog';
+
+  @override
+  String get shortcutHelp => 'Ipakita ang mga keyboard shortcut';
+
+  @override
+  String get shortcutSend => 'Ipadala ang mensahe (Shift+Enter: bagong linya)';
 }

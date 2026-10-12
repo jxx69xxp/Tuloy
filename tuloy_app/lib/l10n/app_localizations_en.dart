@@ -1036,4 +1036,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hideDetails => 'Hide details';
+
+  @override
+  String get selectThread => 'Select a conversation';
+
+  @override
+  String get keyboardShortcuts => 'Keyboard shortcuts';
+
+  @override
+  String get goToPage => 'Go to a page';
+
+  @override
+  String get shortcutSearch => 'Search this page';
+
+  @override
+  String get shortcutClose => 'Close a panel or dialog';
+
+  @override
+  String get shortcutHelp => 'Show keyboard shortcuts';
+
+  @override
+  String get shortcutSend => 'Send a chat message (Shift+Enter: new line)';
 }

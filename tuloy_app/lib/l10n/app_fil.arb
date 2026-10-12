@@ -322,5 +322,12 @@
   "rooms": "Mga kuwarto",
   "tables": "Mga mesa",
   "showDetails": "Ipakita ang detalye",
-  "hideDetails": "Itago ang detalye"
+  "hideDetails": "Itago ang detalye",
+  "selectThread": "Pumili ng usapan",
+  "keyboardShortcuts": "Mga keyboard shortcut",
+  "goToPage": "Pumunta sa pahina",
+  "shortcutSearch": "Maghanap sa pahinang ito",
+  "shortcutClose": "Isara ang panel o dialog",
+  "shortcutHelp": "Ipakita ang mga keyboard shortcut",
+  "shortcutSend": "Ipadala ang mensahe (Shift+Enter: bagong linya)"
 }

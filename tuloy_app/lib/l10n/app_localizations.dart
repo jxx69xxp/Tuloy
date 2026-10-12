@@ -1965,6 +1965,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'My tasks'**
   String get myTasks;
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
+
+  /// No description provided for @showMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more'**
+  String get showMore;
+
+  /// No description provided for @viewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get viewLabel;
+
+  /// No description provided for @sortedAscending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sorted ascending'**
+  String get sortedAscending;
+
+  /// No description provided for @sortedDescending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sorted descending'**
+  String get sortedDescending;
+
+  /// No description provided for @sortBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by {column}'**
+  String sortBy(String column);
+
+  /// No description provided for @rowsShown.
+  ///
+  /// In en, this message translates to:
+  /// **'{shown} of {total}'**
+  String rowsShown(int shown, int total);
+
+  /// No description provided for @note.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get note;
 }
 
 class _AppLocalizationsDelegate

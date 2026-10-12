@@ -310,5 +310,13 @@
   "needsAttention": "Kailangang asikasuhin",
   "allClear": "Walang kailangang asikasuhin",
   "unreadChats": "Hindi pa nababasang chat",
-  "myTasks": "Mga gawain ko"
+  "myTasks": "Mga gawain ko",
+  "search": "Maghanap",
+  "showMore": "Ipakita pa",
+  "viewLabel": "Tingnan",
+  "sortedAscending": "Nakaayos pataas",
+  "sortedDescending": "Nakaayos pababa",
+  "sortBy": "Ayusin ayon sa {column}",
+  "rowsShown": "{shown} sa {total}",
+  "note": "Tala"
 }

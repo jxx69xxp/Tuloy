@@ -491,5 +491,30 @@
   "needsAttention": "Needs attention",
   "allClear": "Nothing needs attention",
   "unreadChats": "Unread chats",
-  "myTasks": "My tasks"
+  "myTasks": "My tasks",
+  "search": "Search",
+  "showMore": "Show more",
+  "viewLabel": "View",
+  "sortedAscending": "Sorted ascending",
+  "sortedDescending": "Sorted descending",
+  "sortBy": "Sort by {column}",
+  "@sortBy": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "rowsShown": "{shown} of {total}",
+  "@rowsShown": {
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "note": "Note"
 }

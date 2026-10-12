@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/adaptive.dart';
 import '../../core/config.dart';
 import '../../core/format.dart';
 import '../../core/http.dart';
@@ -47,18 +48,36 @@ class _StaffTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
+    final wide = isWide(context);
+    List<String> cells(J s) => [
+      '${s['fullName']}',
+      '${s['email']}',
+      '${s['role']}',
+      '${s['department']?['name'] ?? ''}',
+    ];
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        tooltip: l.add,
-        onPressed: () => _edit(context, ref),
-        child: const Icon(Icons.person_add),
-      ),
+      // Wide: the tab has no app bar of its own, so Add sits in the table toolbar.
+      floatingActionButton: wide
+          ? null
+          : FloatingActionButton(
+              tooltip: l.add,
+              onPressed: () => _edit(context, ref),
+              child: const Icon(Icons.person_add),
+            ),
       body: JsonList(
         path: '/admin/staff',
         table: JsonTable(
           columns: [l.fullName, l.email, l.role, l.department],
-          cells: (context, s) => ['${s['fullName']}', '${s['email']}', '${s['role']}', '${s['department']?['name'] ?? ''}'],
+          cells: (context, s) => cells(s),
           onTap: (s) => _edit(context, ref, s),
+          sortKeys: [for (var i = 0; i < 4; i++) (s) => cells(s)[i].toLowerCase()],
+          toolbar: [
+            FilledButton.icon(
+              onPressed: () => _edit(context, ref),
+              icon: const Icon(Icons.person_add),
+              label: Text(l.add),
+            ),
+          ],
         ),
         item: (context, s) => ListTile(
           title: Text('${s['fullName']}'),

@@ -10,9 +10,11 @@ import '../l10n/app_localizations.dart';
 import 'adaptive.dart';
 import 'config.dart';
 import 'http.dart';
+import 'web/web_table.dart';
 
 export '../features/auth/presentation/widgets.dart' show BusyButton, failureText;
 export '../features/booking/presentation/booking_providers.dart' show AsyncBody;
+export 'web/web_table.dart' show JsonTable, SortKey;
 
 void snack(BuildContext context, String text) =>
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
@@ -160,14 +162,6 @@ class Tr {
   ];
 }
 
-/// Wide-screen table layout of a [JsonList]: header labels, cells per row, row tap.
-class JsonTable {
-  const JsonTable({required this.columns, required this.cells, this.onTap});
-  final List<String> columns;
-  final List<String> Function(BuildContext, J row) cells;
-  final void Function(J row)? onTap;
-}
-
 /// List of JSON rows from a GET path with pull-to-refresh, empty and error states.
 class JsonList extends ConsumerWidget {
   const JsonList({super.key, required this.path, required this.item, this.empty, this.header, this.table});
@@ -176,38 +170,43 @@ class JsonList extends ConsumerWidget {
   final String? empty;
   final Widget? header;
 
-  /// When set, wide screens show these rows as a table instead of [item] cards.
+  /// When set, wide screens show these rows as a [WebTable] instead of [item] cards.
   final JsonTable? table;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => RefreshIndicator(
-    onRefresh: () => ref.refresh(getProvider(path).future),
-    child: AsyncBody(
-      value: ref.watch(getProvider(path)),
-      onRetry: () => ref.invalidate(getProvider(path)),
-      builder: (data) {
-        final rows = jsonList(data);
-        return ListView(
-          children: [
-            if (header != null) header!,
-            if (rows.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(empty ?? AppLocalizations.of(context).nothingHere),
-              ),
-            if (table != null && isWide(context))
-              DataTableView(
-                columns: table!.columns,
-                rows: [for (final r in rows) table!.cells(context, r)],
-                onTap: table!.onTap == null ? null : (i) => table!.onTap!(rows[i]),
-              )
-            else
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (table != null && isWide(context)) {
+      return WebTable(
+        table: table!,
+        value: ref.watch(getProvider(path)),
+        onRetry: () => ref.invalidate(getProvider(path)),
+        onRefresh: () => ref.invalidate(getProvider(path)),
+        empty: empty,
+        header: header,
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: () => ref.refresh(getProvider(path).future),
+      child: AsyncBody(
+        value: ref.watch(getProvider(path)),
+        onRetry: () => ref.invalidate(getProvider(path)),
+        builder: (data) {
+          final rows = jsonList(data);
+          return ListView(
+            children: [
+              if (header != null) header!,
+              if (rows.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(empty ?? AppLocalizations.of(context).nothingHere),
+                ),
               for (final r in rows) item(context, r),
-          ],
-        );
-      },
-    ),
-  );
+            ],
+          );
+        },
+      ),
+    );
+  }
 }
 
 /// Tile for a home-screen menu.

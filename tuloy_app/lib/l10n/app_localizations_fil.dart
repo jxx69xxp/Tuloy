@@ -1000,4 +1000,32 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get myTasks => 'Mga gawain ko';
+
+  @override
+  String get search => 'Maghanap';
+
+  @override
+  String get showMore => 'Ipakita pa';
+
+  @override
+  String get viewLabel => 'Tingnan';
+
+  @override
+  String get sortedAscending => 'Nakaayos pataas';
+
+  @override
+  String get sortedDescending => 'Nakaayos pababa';
+
+  @override
+  String sortBy(String column) {
+    return 'Ayusin ayon sa $column';
+  }
+
+  @override
+  String rowsShown(int shown, int total) {
+    return '$shown sa $total';
+  }
+
+  @override
+  String get note => 'Tala';
 }

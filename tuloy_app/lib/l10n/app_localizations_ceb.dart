@@ -999,4 +999,32 @@ class AppLocalizationsCeb extends AppLocalizations {
 
   @override
   String get myTasks => 'Akong mga buluhaton';
+
+  @override
+  String get search => 'Pangita';
+
+  @override
+  String get showMore => 'Ipakita pa';
+
+  @override
+  String get viewLabel => 'Tan-awa';
+
+  @override
+  String get sortedAscending => 'Gihan-ay pataas';
+
+  @override
+  String get sortedDescending => 'Gihan-ay paubos';
+
+  @override
+  String sortBy(String column) {
+    return 'Han-aya sumala sa $column';
+  }
+
+  @override
+  String rowsShown(int shown, int total) {
+    return '$shown sa $total';
+  }
+
+  @override
+  String get note => 'Nota';
 }

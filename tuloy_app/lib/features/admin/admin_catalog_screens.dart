@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../core/adaptive.dart';
 import '../../core/config.dart';
 import '../../core/format.dart';
 import '../../core/http.dart';
@@ -15,6 +16,22 @@ String _d(DateTime x) => x.toIso8601String().substring(0, 10);
 String trOf(BuildContext context, dynamic v) {
   final m = (v as Map?) ?? const {};
   return '${m[Localizations.localeOf(context).languageCode] ?? m['en'] ?? ''}';
+}
+
+/// Wide screens: "Add" in the app bar instead of a floating button (same callback).
+class _AddButton extends StatelessWidget {
+  const _AddButton(this.onPressed);
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    child: FilledButton.icon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.add),
+      label: Text(AppLocalizations.of(context).add),
+    ),
+  );
 }
 
 // ───────────── A3/A4 rooms ─────────────
@@ -303,6 +320,7 @@ class BlocksScreen extends ConsumerWidget {
     final now = DateTime.now();
     final path = '/admin/blocks?from=${_d(now)}&to=${_d(now.add(const Duration(days: 365)))}';
     final api = ref.read(apiProvider);
+    final wide = isWide(context);
     Future<void> edit({required bool add}) async {
       final types = jsonList(await api.get('/admin/room-types'));
       final rooms = [for (final t in types) ...jsonList(t['rooms'])];
@@ -336,15 +354,21 @@ class BlocksScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(l.blocks),
-        actions: [TextButton(onPressed: () => edit(add: false), child: Text(l.unblock))],
+        actions: [
+          TextButton(onPressed: () => edit(add: false), child: Text(l.unblock)),
+          if (wide) _AddButton(() => edit(add: true)),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: l.add,
-        onPressed: () => edit(add: true),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: wide
+          ? null
+          : FloatingActionButton(tooltip: l.add, onPressed: () => edit(add: true), child: const Icon(Icons.add)),
       body: JsonList(
         path: path,
+        table: JsonTable(
+          columns: [l.roomLabel, l.dateLabel, l.note],
+          cells: (context, b) => ['${b['room']}', date(context, DateTime.parse('${b['date']}')), '${b['note'] ?? ''}'],
+          sortKeys: [(b) => '${b['room']}', (b) => DateTime.parse('${b['date']}'), (b) => '${b['note'] ?? ''}'],
+        ),
         item: (context, b) => ListTile(
           dense: true,
           title: Text('${l.roomNumber('${b['room']}')} · ${date(context, DateTime.parse('${b['date']}'))}'),
@@ -363,15 +387,27 @@ class ServicesAdminScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final wide = isWide(context);
     return Scaffold(
-      appBar: AppBar(title: Text(l.services)),
-      floatingActionButton: FloatingActionButton(
-        tooltip: l.add,
-        onPressed: () => context.push('/admin/services/new'),
-        child: const Icon(Icons.add),
+      appBar: AppBar(
+        title: Text(l.services),
+        actions: [if (wide) _AddButton(() => context.push('/admin/services/new'))],
       ),
+      floatingActionButton: wide
+          ? null
+          : FloatingActionButton(
+              tooltip: l.add,
+              onPressed: () => context.push('/admin/services/new'),
+              child: const Icon(Icons.add),
+            ),
       body: JsonList(
         path: '/admin/services',
+        table: JsonTable(
+          columns: [l.name, l.category, l.status],
+          cells: (context, s) => [trOf(context, s['name']), '${s['category']}', '${s['status']}'],
+          onTap: (s) => context.push('/admin/services/${s['id']}'),
+          sortKeys: [(s) => trOf(context, s['name']).toLowerCase(), (s) => '${s['category']}', (s) => '${s['status']}'],
+        ),
         item: (context, s) => ListTile(
           title: Text(trOf(context, s['name'])),
           subtitle: Text('${s['category']} · ${s['status']}'),

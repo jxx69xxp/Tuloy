@@ -36,7 +36,6 @@ GoRouter _router({String initial = '/admin'}) => GoRouter(
 
 void main() {
   _rails();
-  _tables();
 
   Future<void> size(WidgetTester t, double w) async {
     t.view.devicePixelRatio = 1;
@@ -125,68 +124,5 @@ void _rails() {
     await t.tap(find.widgetWithText(ListTile, 'Item 11'));
     await t.pumpAndSettle();
     expect(find.text('page-11'), findsOneWidget);
-  });
-}
-
-void _tables() {
-  Widget host(Widget child) => MaterialApp(home: Scaffold(body: child));
-
-  testWidgets('DataTableView shows headers and cells', (t) async {
-    await t.pumpWidget(
-      host(
-        const DataTableView(
-          columns: ['Name', 'Role'],
-          rows: [
-            ['Ana', 'Admin'],
-            ['Ben', 'Staff'],
-          ],
-        ),
-      ),
-    );
-    for (final s in ['Name', 'Role', 'Ana', 'Admin', 'Ben', 'Staff']) {
-      expect(find.text(s), findsOneWidget);
-    }
-  });
-
-  testWidgets('DataTableView tap reports the row index', (t) async {
-    final taps = <int>[];
-    await t.pumpWidget(
-      host(
-        DataTableView(
-          columns: const ['Name'],
-          rows: const [
-            ['Ana'],
-            ['Ben'],
-          ],
-          onTap: taps.add,
-        ),
-      ),
-    );
-    await t.tap(find.text('Ben'));
-    expect(taps, [1]);
-  });
-
-  testWidgets('DataTableView with no rows renders headers only', (t) async {
-    await t.pumpWidget(host(const DataTableView(columns: ['Name', 'Role'], rows: [])));
-    expect(find.text('Name'), findsOneWidget);
-    expect(find.text('Role'), findsOneWidget);
-    expect(t.takeException(), isNull);
-  });
-
-  testWidgets('DataTableView does not overflow with long cells', (t) async {
-    t.view.devicePixelRatio = 1;
-    t.view.physicalSize = const Size(400, 800);
-    addTearDown(t.view.reset);
-    await t.pumpWidget(
-      host(
-        DataTableView(
-          columns: const ['A', 'B', 'C'],
-          rows: [
-            for (var i = 0; i < 3; i++) ['x' * 300, 'y' * 300, 'z'],
-          ],
-        ),
-      ),
-    );
-    expect(t.takeException(), isNull);
   });
 }

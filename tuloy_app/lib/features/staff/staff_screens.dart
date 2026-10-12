@@ -159,35 +159,41 @@ class _QueueState extends ConsumerState<ReservationsQueueScreen> {
       'all': l.all,
     };
     final path = '/staff/reservations?view=$_view${_q.isEmpty ? '' : '&q=${Uri.encodeQueryComponent(_q)}'}';
+    final wide = isWide(context);
+    DateTime day(Object? v) => DateTime.parse('$v');
+    String text(Object? v) => '${v ?? ''}'.toLowerCase();
     return Scaffold(
       appBar: AppBar(title: Text(l.reservations)),
       body: Column(
         children: [
-          SizedBox(
-            height: 48,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              children: [
-                for (final e in views.entries)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: ChoiceChip(
-                      label: Text(e.value),
-                      selected: _view == e.key,
-                      onSelected: (_) => setState(() => _view = e.key),
+          // Wide: the view dropdown and search live in the table toolbar.
+          if (!wide)
+            SizedBox(
+              height: 48,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                children: [
+                  for (final e in views.entries)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: ChoiceChip(
+                        label: Text(e.value),
+                        selected: _view == e.key,
+                        onSelected: (_) => setState(() => _view = e.key),
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: TextField(
-              decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: l.searchGuest),
-              onSubmitted: (v) => setState(() => _q = v.trim()),
+          if (!wide)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: TextField(
+                decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: l.searchGuest),
+                onSubmitted: (v) => setState(() => _q = v.trim()),
+              ),
             ),
-          ),
           Expanded(
             child: JsonList(
               path: path,
@@ -202,6 +208,25 @@ class _QueueState extends ConsumerState<ReservationsQueueScreen> {
                   statusLabel(l, parseStatus('${r['status']}')),
                 ],
                 onTap: (r) => context.push('${widget.base}/reservations/${r['id']}'),
+                sortKeys: [
+                  (r) => text(r['guestName']),
+                  (r) => text(r['code']),
+                  (r) => text(r['roomType']),
+                  (r) => text(r['room']),
+                  (r) => day(r['checkIn']),
+                  (r) => text(r['status']),
+                ],
+                onSearch: (q) => setState(() => _q = q),
+                searchHint: l.searchGuest,
+                toolbar: [
+                  DropdownButton<String>(
+                    value: _view,
+                    hint: Text(l.viewLabel),
+                    underline: const SizedBox(),
+                    items: [for (final e in views.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
+                    onChanged: (v) => setState(() => _view = v ?? _view),
+                  ),
+                ],
               ),
               item: (context, r) => ListTile(
                 title: Text('${r['guestName']} · ${r['code']}'),

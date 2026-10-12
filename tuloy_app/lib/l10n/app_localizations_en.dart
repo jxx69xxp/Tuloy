@@ -996,4 +996,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get myTasks => 'My tasks';
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get showMore => 'Show more';
+
+  @override
+  String get viewLabel => 'View';
+
+  @override
+  String get sortedAscending => 'Sorted ascending';
+
+  @override
+  String get sortedDescending => 'Sorted descending';
+
+  @override
+  String sortBy(String column) {
+    return 'Sort by $column';
+  }
+
+  @override
+  String rowsShown(int shown, int total) {
+    return '$shown of $total';
+  }
+
+  @override
+  String get note => 'Note';
 }

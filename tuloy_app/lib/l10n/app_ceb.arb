@@ -310,5 +310,13 @@
   "needsAttention": "Kinahanglang atimanon",
   "allClear": "Walay kinahanglang atimanon",
   "unreadChats": "Wala pa mabasang chat",
-  "myTasks": "Akong mga buluhaton"
+  "myTasks": "Akong mga buluhaton",
+  "search": "Pangita",
+  "showMore": "Ipakita pa",
+  "viewLabel": "Tan-awa",
+  "sortedAscending": "Gihan-ay pataas",
+  "sortedDescending": "Gihan-ay paubos",
+  "sortBy": "Han-aya sumala sa {column}",
+  "rowsShown": "{shown} sa {total}",
+  "note": "Nota"
 }

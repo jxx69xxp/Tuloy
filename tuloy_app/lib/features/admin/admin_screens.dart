@@ -130,6 +130,8 @@ class AdminHomeScreen extends ConsumerWidget {
 
 // ───────────── A9 payments & refunds ─────────────
 
+int _failedRefunds(J p) => jsonList(p['refunds']).where((r) => r['status'] == 'failed').length;
+
 class PaymentsScreen extends ConsumerWidget {
   const PaymentsScreen({super.key});
 
@@ -172,15 +174,24 @@ class PaymentsScreen extends ConsumerWidget {
             '${p['kind']}',
             '${p['status']}',
             date(context, DateTime.parse('${p['createdAt']}').toLocal()),
-            '${num2(p['refundedAmount']) > 0 ? p['refundedAmount'] : ''}',
+            [
+              if (num2(p['refundedAmount']) > 0) '${p['refundedAmount']}',
+              if (_failedRefunds(p) > 0) '${l.failedRefunds}: ${_failedRefunds(p)}',
+            ].join(' · '),
           ],
-          onTap: (p) {
-            if (canRefund(p)) refund(context, p);
-          },
+          sortKeys: [
+            (p) => num2(p['amount']),
+            (p) => '${p['kind']}',
+            (p) => '${p['status']}',
+            (p) => DateTime.parse('${p['createdAt']}'),
+            (p) => num2(p['refundedAmount']),
+          ],
+          actions: (context, p) => [
+            if (canRefund(p)) TextButton(onPressed: () => refund(context, p), child: Text(l.refund)),
+          ],
         ),
         item: (context, p) {
-          final refunds = jsonList(p['refunds']);
-          final failed = refunds.where((r) => r['status'] == 'failed').length;
+          final failed = _failedRefunds(p);
           return ListTile(
             title: Text('${money(num2(p['amount']), '${p['currency']}')} · ${p['kind']} · ${p['status']}'),
             subtitle: Text(
@@ -218,6 +229,12 @@ class AuditScreen extends StatelessWidget {
           '${a['entityType']}',
           date(context, DateTime.parse('${a['at']}').toLocal()),
           '${a['actorId'] ?? ''}',
+        ],
+        sortKeys: [
+          (a) => '${a['action']}',
+          (a) => '${a['entityType']}',
+          (a) => DateTime.parse('${a['at']}'),
+          (a) => '${a['actorId'] ?? ''}',
         ],
       ),
       item: (context, a) => ListTile(

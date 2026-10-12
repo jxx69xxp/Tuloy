@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/adaptive.dart';
 import '../../core/format.dart';
 import '../../core/http.dart';
 import '../../core/ui.dart';
@@ -27,10 +28,17 @@ class StaffHomeScreen extends ConsumerWidget {
     const path = '/staff/dashboard';
     final d = (ref.watch(getProvider(path)).valueOrNull as Map?)?.cast<String, dynamic>() ?? const {};
     int n(String k) => (d[k] as num?)?.toInt() ?? 0;
+    final wide = isWide(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(l.staffHome),
         actions: [
+          if (wide)
+            IconButton(
+              tooltip: l.refresh,
+              icon: const Icon(Icons.refresh),
+              onPressed: () => ref.invalidate(getProvider(path)),
+            ),
           if (base == '/staff')
             IconButton(
               tooltip: l.settings,
@@ -46,24 +54,56 @@ class StaffHomeScreen extends ConsumerWidget {
           onRefresh: () => ref.refresh(getProvider(path).future),
           child: ListView(
             padding: const EdgeInsets.all(12),
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _Stat(l.arrivals, n('arrivals')),
-                  _Stat(l.departures, n('departures')),
-                  _Stat(l.inHouse, n('inHouse')),
-                  _Stat(l.pendingApproval, n('pending')),
-                ],
-              ),
-              const SizedBox(height: 8),
-              NavTile(Icons.event_note, l.reservations, () => context.push('$base/reservations'), badge: n('pending')),
-              NavTile(Icons.task_alt, l.tasks, () => context.push('$base/tasks'), badge: n('myTasks')),
-              NavTile(Icons.restaurant, l.restaurantOrders, () => context.push('$base/orders'), badge: n('openOrders')),
-              NavTile(Icons.chat_bubble_outline, l.chat, () => context.push('$base/inbox'), badge: n('unreadChats')),
-              NavTile(Icons.beach_access, l.myLeave, () => context.push('$base/leave')),
-            ],
+            children: wide
+                ? [
+                    // Wide: KPI grid and attention list; the sidebar replaces the menu tiles.
+                    KpiGrid([
+                      Kpi(l.arrivals, '${n('arrivals')}', onTap: () => context.go('$base/reservations')),
+                      Kpi(l.departures, '${n('departures')}', onTap: () => context.go('$base/reservations')),
+                      Kpi(l.inHouse, '${n('inHouse')}', onTap: () => context.go('$base/reservations')),
+                      Kpi(l.openTasks, '${n('openTasks')}', onTap: () => context.go('$base/tasks')),
+                    ]),
+                    const SizedBox(height: 16),
+                    AttentionCard([
+                      (Icons.pending_actions, l.pendingApproval, n('pending'), () => context.go('$base/reservations')),
+                      (Icons.task_alt, l.myTasks, n('myTasks'), () => context.go('$base/tasks')),
+                      (Icons.restaurant, l.restaurantOrders, n('openOrders'), () => context.go('$base/orders')),
+                      (Icons.chat_bubble_outline, l.unreadChats, n('unreadChats'), () => context.go('$base/inbox')),
+                    ]),
+                  ]
+                : [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _Stat(l.arrivals, n('arrivals')),
+                        _Stat(l.departures, n('departures')),
+                        _Stat(l.inHouse, n('inHouse')),
+                        _Stat(l.pendingApproval, n('pending')),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    NavTile(
+                      Icons.event_note,
+                      l.reservations,
+                      () => context.push('$base/reservations'),
+                      badge: n('pending'),
+                    ),
+                    NavTile(Icons.task_alt, l.tasks, () => context.push('$base/tasks'), badge: n('myTasks')),
+                    NavTile(
+                      Icons.restaurant,
+                      l.restaurantOrders,
+                      () => context.push('$base/orders'),
+                      badge: n('openOrders'),
+                    ),
+                    NavTile(
+                      Icons.chat_bubble_outline,
+                      l.chat,
+                      () => context.push('$base/inbox'),
+                      badge: n('unreadChats'),
+                    ),
+                    NavTile(Icons.beach_access, l.myLeave, () => context.push('$base/leave')),
+                  ],
           ),
         ),
       ),

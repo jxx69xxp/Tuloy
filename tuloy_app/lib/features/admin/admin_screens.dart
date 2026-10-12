@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/adaptive.dart';
 import '../../core/config.dart';
 import '../../core/format.dart';
 import '../../core/http.dart';
@@ -22,10 +23,17 @@ class AdminHomeScreen extends ConsumerWidget {
     final d = (ref.watch(getProvider(path)).valueOrNull as Map?)?.cast<String, dynamic>() ?? const {};
     final cur = '${d['currency'] ?? 'PHP'}';
     final alerts = (d['alerts'] as Map?) ?? const {};
+    final wide = isWide(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(l.adminHome),
         actions: [
+          if (wide)
+            IconButton(
+              tooltip: l.refresh,
+              icon: const Icon(Icons.refresh),
+              onPressed: () => ref.invalidate(getProvider(path)),
+            ),
           IconButton(
             tooltip: l.settings,
             icon: const Icon(Icons.settings_outlined),
@@ -40,53 +48,83 @@ class AdminHomeScreen extends ConsumerWidget {
           onRefresh: () => ref.refresh(getProvider(path).future),
           child: ListView(
             padding: const EdgeInsets.all(12),
-            children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    children: [
-                      KV(l.occupancyTonight, '${d['occupancy'] ?? 0}% (${d['roomsSold'] ?? 0}/${d['rooms'] ?? 0})'),
-                      KV(l.arrivals, '${d['arrivals'] ?? 0}'),
-                      KV(l.departures, '${d['departures'] ?? 0}'),
-                      KV(l.inHouse, '${d['inHouse'] ?? 0}'),
-                      KV(l.pendingApproval, '${d['pending'] ?? 0}'),
-                      KV(l.openTasks, '${d['openTasks'] ?? 0}'),
-                      KV(l.collectedToday, money(num2(d['collectedToday']), cur)),
-                      KV(l.refundedToday, money(num2(d['refundedToday']), cur)),
-                      KV(l.netToday, money(num2(d['netToday']), cur)),
-                    ],
-                  ),
-                ),
-              ),
-              if ((alerts['failedRefunds'] ?? 0) > 0 || (alerts['failedNotifications'] ?? 0) > 0)
-                Card(
-                  color: Theme.of(context).colorScheme.errorContainer,
-                  child: ListTile(
-                    leading: const Icon(Icons.warning_amber),
-                    title: Text(l.alerts),
-                    subtitle: Text(
-                      '${l.failedRefunds}: ${alerts['failedRefunds']} · ${l.failedNotifications}: ${alerts['failedNotifications']}',
+            children: wide
+                ? _wide(context, l, d, cur, alerts)
+                : [
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          children: [
+                            KV(
+                              l.occupancyTonight,
+                              '${d['occupancy'] ?? 0}% (${d['roomsSold'] ?? 0}/${d['rooms'] ?? 0})',
+                            ),
+                            KV(l.arrivals, '${d['arrivals'] ?? 0}'),
+                            KV(l.departures, '${d['departures'] ?? 0}'),
+                            KV(l.inHouse, '${d['inHouse'] ?? 0}'),
+                            KV(l.pendingApproval, '${d['pending'] ?? 0}'),
+                            KV(l.openTasks, '${d['openTasks'] ?? 0}'),
+                            KV(l.collectedToday, money(num2(d['collectedToday']), cur)),
+                            KV(l.refundedToday, money(num2(d['refundedToday']), cur)),
+                            KV(l.netToday, money(num2(d['netToday']), cur)),
+                          ],
+                        ),
+                      ),
                     ),
-                    onTap: () => context.push('/admin/payments'),
-                  ),
-                ),
-              NavTile(Icons.room_service, l.frontDesk, () => context.push('/admin/desk')),
-              NavTile(Icons.bed, l.roomsAndRates, () => context.push('/admin/rooms')),
-              NavTile(Icons.local_laundry_service, l.services, () => context.push('/admin/services')),
-              NavTile(Icons.restaurant_menu, l.restaurant, () => context.push('/admin/restaurant')),
-              NavTile(Icons.payments, l.payments, () => context.push('/admin/payments')),
-              NavTile(Icons.bar_chart, l.reports, () => context.push('/admin/reports')),
-              NavTile(Icons.badge, l.staffAndLeave, () => context.push('/admin/staff')),
-              NavTile(Icons.loyalty, l.loyalty, () => context.push('/admin/loyalty')),
-              NavTile(Icons.article, l.content, () => context.push('/admin/content')),
-              NavTile(Icons.tune, l.hotelSettings, () => context.push('/admin/hotel')),
-              NavTile(Icons.history, l.auditLog, () => context.push('/admin/audit')),
-            ],
+                    if ((alerts['failedRefunds'] ?? 0) > 0 || (alerts['failedNotifications'] ?? 0) > 0)
+                      Card(
+                        color: Theme.of(context).colorScheme.errorContainer,
+                        child: ListTile(
+                          leading: const Icon(Icons.warning_amber),
+                          title: Text(l.alerts),
+                          subtitle: Text(
+                            '${l.failedRefunds}: ${alerts['failedRefunds']} · ${l.failedNotifications}: ${alerts['failedNotifications']}',
+                          ),
+                          onTap: () => context.push('/admin/payments'),
+                        ),
+                      ),
+                    NavTile(Icons.room_service, l.frontDesk, () => context.push('/admin/desk')),
+                    NavTile(Icons.bed, l.roomsAndRates, () => context.push('/admin/rooms')),
+                    NavTile(Icons.local_laundry_service, l.services, () => context.push('/admin/services')),
+                    NavTile(Icons.restaurant_menu, l.restaurant, () => context.push('/admin/restaurant')),
+                    NavTile(Icons.payments, l.payments, () => context.push('/admin/payments')),
+                    NavTile(Icons.bar_chart, l.reports, () => context.push('/admin/reports')),
+                    NavTile(Icons.badge, l.staffAndLeave, () => context.push('/admin/staff')),
+                    NavTile(Icons.loyalty, l.loyalty, () => context.push('/admin/loyalty')),
+                    NavTile(Icons.article, l.content, () => context.push('/admin/content')),
+                    NavTile(Icons.tune, l.hotelSettings, () => context.push('/admin/hotel')),
+                    NavTile(Icons.history, l.auditLog, () => context.push('/admin/audit')),
+                  ],
           ),
         ),
       ),
     );
+  }
+
+  /// Wide layout: KPI grid and an attention card; the sidebar replaces the menu tiles.
+  List<Widget> _wide(BuildContext context, AppLocalizations l, Map<String, dynamic> d, String cur, Map alerts) {
+    void go(String p) => context.go(p);
+    int n(Object? v) => (v as num?)?.toInt() ?? 0;
+    return [
+      KpiGrid([
+        Kpi(l.occupancyTonight, '${d['occupancy'] ?? 0}%', sub: '${d['roomsSold'] ?? 0}/${d['rooms'] ?? 0}'),
+        Kpi(l.collectedToday, money(num2(d['collectedToday']), cur), onTap: () => go('/admin/payments')),
+        Kpi(l.refundedToday, money(num2(d['refundedToday']), cur), onTap: () => go('/admin/payments')),
+        Kpi(l.netToday, money(num2(d['netToday']), cur), onTap: () => go('/admin/payments')),
+        Kpi(l.arrivals, '${d['arrivals'] ?? 0}', onTap: () => go('/admin/desk/reservations')),
+        Kpi(l.departures, '${d['departures'] ?? 0}', onTap: () => go('/admin/desk/reservations')),
+        Kpi(l.inHouse, '${d['inHouse'] ?? 0}', onTap: () => go('/admin/desk/reservations')),
+        Kpi(l.openTasks, '${d['openTasks'] ?? 0}', onTap: () => go('/admin/desk/tasks')),
+      ]),
+      const SizedBox(height: 16),
+      AttentionCard([
+        (Icons.pending_actions, l.pendingApproval, n(d['pending']), () => go('/admin/desk/reservations')),
+        (Icons.money_off, l.failedRefunds, n(alerts['failedRefunds']), () => go('/admin/payments')),
+        // ponytail: no notifications screen yet, so this row is not tappable.
+        (Icons.notifications_off_outlined, l.failedNotifications, n(alerts['failedNotifications']), null),
+      ]),
+    ];
   }
 }
 

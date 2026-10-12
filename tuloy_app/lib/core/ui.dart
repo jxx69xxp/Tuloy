@@ -228,3 +228,102 @@ class NavTile extends StatelessWidget {
     ),
   );
 }
+
+/// One dashboard figure on wide screens: label, large value, optional sub-label; tappable when [onTap] is set.
+class Kpi {
+  const Kpi(this.label, this.value, {this.sub, this.onTap});
+  final String label;
+  final String value;
+  final String? sub;
+  final VoidCallback? onTap;
+}
+
+/// Wide-screen grid of [Kpi] cards: up to 4 per row, fewer when narrower.
+class KpiGrid extends StatelessWidget {
+  const KpiGrid(this.items, {super.key});
+  final List<Kpi> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return LayoutBuilder(
+      builder: (context, box) {
+        const gap = 12.0;
+        final cols = (box.maxWidth / 220).floor().clamp(1, 4);
+        final w = (box.maxWidth - gap * (cols - 1)) / cols;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final k in items)
+              SizedBox(
+                width: w,
+                child: Card(
+                  margin: EdgeInsets.zero,
+                  child: InkWell(
+                    onTap: k.onTap,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(k.label, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                          const SizedBox(height: 4),
+                          Text(k.value, style: t.textTheme.headlineMedium),
+                          if (k.sub != null) Text(k.sub!, style: t.textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Wide-screen card listing counts that need action; only non-zero rows show.
+class AttentionCard extends StatelessWidget {
+  const AttentionCard(this.rows, {super.key});
+
+  /// (icon, label, count, onTap).
+  final List<(IconData, String, int, VoidCallback?)> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final t = Theme.of(context);
+    final open = [
+      for (final r in rows)
+        if (r.$3 > 0) r,
+    ];
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(l.needsAttention, style: t.textTheme.titleMedium),
+          ),
+          if (open.isEmpty)
+            ListTile(
+              leading: Icon(Icons.check_circle_outline, color: t.colorScheme.primary),
+              title: Text(l.allClear),
+            )
+          else
+            for (final (icon, label, count, onTap) in open)
+              ListTile(
+                leading: Icon(icon, color: t.colorScheme.error),
+                title: Text(label),
+                trailing: Text('$count', style: t.textTheme.titleMedium),
+                onTap: onTap,
+              ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}

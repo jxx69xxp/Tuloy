@@ -486,5 +486,10 @@
   "navFinance": "Finance",
   "navPeople": "People",
   "navSystem": "System",
-  "details": "Details"
+  "details": "Details",
+  "refresh": "Refresh",
+  "needsAttention": "Needs attention",
+  "allClear": "Nothing needs attention",
+  "unreadChats": "Unread chats",
+  "myTasks": "My tasks"
 }

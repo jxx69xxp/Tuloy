@@ -1935,6 +1935,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Details'**
   String get details;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @needsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get needsAttention;
+
+  /// No description provided for @allClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing needs attention'**
+  String get allClear;
+
+  /// No description provided for @unreadChats.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread chats'**
+  String get unreadChats;
+
+  /// No description provided for @myTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'My tasks'**
+  String get myTasks;
 }
 
 class _AppLocalizationsDelegate

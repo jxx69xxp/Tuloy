@@ -985,4 +985,19 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get details => 'Mga detalye';
+
+  @override
+  String get refresh => 'I-refresh';
+
+  @override
+  String get needsAttention => 'Kailangang asikasuhin';
+
+  @override
+  String get allClear => 'Walang kailangang asikasuhin';
+
+  @override
+  String get unreadChats => 'Hindi pa nababasang chat';
+
+  @override
+  String get myTasks => 'Mga gawain ko';
 }

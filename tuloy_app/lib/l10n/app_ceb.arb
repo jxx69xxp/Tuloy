@@ -305,5 +305,10 @@
   "navFinance": "Pinansya",
   "navPeople": "Mga tawo",
   "navSystem": "Sistema",
-  "details": "Mga detalye"
+  "details": "Mga detalye",
+  "refresh": "I-refresh",
+  "needsAttention": "Kinahanglang atimanon",
+  "allClear": "Walay kinahanglang atimanon",
+  "unreadChats": "Wala pa mabasang chat",
+  "myTasks": "Akong mga buluhaton"
 }

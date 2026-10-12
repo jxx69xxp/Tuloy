@@ -305,5 +305,10 @@
   "navFinance": "Pananalapi",
   "navPeople": "Mga tao",
   "navSystem": "Sistema",
-  "details": "Mga detalye"
+  "details": "Mga detalye",
+  "refresh": "I-refresh",
+  "needsAttention": "Kailangang asikasuhin",
+  "allClear": "Walang kailangang asikasuhin",
+  "unreadChats": "Hindi pa nababasang chat",
+  "myTasks": "Mga gawain ko"
 }

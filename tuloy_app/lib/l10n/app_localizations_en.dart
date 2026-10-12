@@ -981,4 +981,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get details => 'Details';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get needsAttention => 'Needs attention';
+
+  @override
+  String get allClear => 'Nothing needs attention';
+
+  @override
+  String get unreadChats => 'Unread chats';
+
+  @override
+  String get myTasks => 'My tasks';
 }

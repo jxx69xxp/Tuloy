@@ -984,4 +984,19 @@ class AppLocalizationsCeb extends AppLocalizations {
 
   @override
   String get details => 'Mga detalye';
+
+  @override
+  String get refresh => 'I-refresh';
+
+  @override
+  String get needsAttention => 'Kinahanglang atimanon';
+
+  @override
+  String get allClear => 'Walay kinahanglang atimanon';
+
+  @override
+  String get unreadChats => 'Wala pa mabasang chat';
+
+  @override
+  String get myTasks => 'Akong mga buluhaton';
 }

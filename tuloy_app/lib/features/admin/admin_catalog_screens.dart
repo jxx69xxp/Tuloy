@@ -44,6 +44,43 @@ class RoomsAdminScreen extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     const path = '/admin/room-types';
     final api = ref.read(apiProvider);
+    final wide = isWide(context);
+    void add() => context.push('/admin/rooms/type/new');
+    void edit(J t) => context.push('/admin/rooms/type/${t['id']}');
+    void rates(J t) => context.push('/admin/rooms/${t['id']}/rates');
+    // Room chips (tap toggles active) and "Add room": in the mobile card and the wide expanded row.
+    Widget rooms(BuildContext context, J t) => Wrap(
+      spacing: 6,
+      children: [
+        for (final r in jsonList(t['rooms']))
+          InputChip(
+            label: Text('${r['number']}'),
+            selected: r['active'] != false,
+            onPressed: () async {
+              final ok = await act(
+                context,
+                () => api.patch('/admin/rooms/${r['id']}', {
+                  'roomTypeId': t['id'],
+                  'number': r['number'],
+                  'active': r['active'] == false,
+                }),
+              );
+              if (ok) ref.invalidate(getProvider(path));
+            },
+          ),
+        ActionChip(
+          avatar: const Icon(Icons.add, size: 16),
+          label: Text(l.addRoom),
+          onPressed: () async {
+            final n = await prompt(context, l.addRoom, label: l.roomLabel);
+            if (n == null || n.isEmpty || !context.mounted) return;
+            if (await act(context, () => api.post('/admin/rooms', {'roomTypeId': t['id'], 'number': n})))
+              ref.invalidate(getProvider(path));
+          },
+        ),
+      ],
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l.roomsAndRates),
@@ -53,15 +90,36 @@ class RoomsAdminScreen extends ConsumerWidget {
             icon: const Icon(Icons.block),
             onPressed: () => context.push('/admin/rooms/blocks'),
           ),
+          if (wide) _AddButton(add),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: l.add,
-        onPressed: () => context.push('/admin/rooms/type/new'),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: wide
+          ? null
+          : FloatingActionButton(tooltip: l.add, onPressed: add, child: const Icon(Icons.add)),
       body: JsonList(
         path: path,
+        table: JsonTable(
+          columns: [l.name, l.maxGuests, l.basePrice, l.rooms, l.status],
+          cells: (context, t) => [
+            trOf(context, t['name']),
+            '${t['maxGuests']}',
+            money(num2(t['basePrice']), 'PHP'),
+            '${jsonList(t['rooms']).length}',
+            t['active'] == false ? l.inactive : l.active,
+          ],
+          sortKeys: [
+            (t) => trOf(context, t['name']).toLowerCase(),
+            (t) => num2(t['maxGuests']),
+            (t) => num2(t['basePrice']),
+            (t) => jsonList(t['rooms']).length,
+            (t) => t['active'] == false ? 1 : 0,
+          ],
+          onTap: edit,
+          actions: (context, t) => [
+            TextButton.icon(icon: const Icon(Icons.price_change), label: Text(l.rates), onPressed: () => rates(t)),
+          ],
+          expanded: rooms,
+        ),
         item: (context, t) => Card(
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Column(
@@ -73,47 +131,10 @@ class RoomsAdminScreen extends ConsumerWidget {
                   '${money(num2(t['basePrice']), 'PHP')} · ${l.guests}: ${t['maxGuests']}${t['active'] == false ? ' · ${l.inactive}' : ''}',
                 ),
                 trailing: const Icon(Icons.edit),
-                onTap: () => context.push('/admin/rooms/type/${t['id']}'),
+                onTap: () => edit(t),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Wrap(
-                  spacing: 6,
-                  children: [
-                    for (final r in jsonList(t['rooms']))
-                      InputChip(
-                        label: Text('${r['number']}'),
-                        selected: r['active'] != false,
-                        onPressed: () async {
-                          final ok = await act(
-                            context,
-                            () => api.patch('/admin/rooms/${r['id']}', {
-                              'roomTypeId': t['id'],
-                              'number': r['number'],
-                              'active': r['active'] == false,
-                            }),
-                          );
-                          if (ok) ref.invalidate(getProvider(path));
-                        },
-                      ),
-                    ActionChip(
-                      avatar: const Icon(Icons.add, size: 16),
-                      label: Text(l.addRoom),
-                      onPressed: () async {
-                        final n = await prompt(context, l.addRoom, label: l.roomLabel);
-                        if (n == null || n.isEmpty || !context.mounted) return;
-                        if (await act(context, () => api.post('/admin/rooms', {'roomTypeId': t['id'], 'number': n})))
-                          ref.invalidate(getProvider(path));
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              TextButton.icon(
-                icon: const Icon(Icons.price_change),
-                label: Text(l.rates),
-                onPressed: () => context.push('/admin/rooms/${t['id']}/rates'),
-              ),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: rooms(context, t)),
+              TextButton.icon(icon: const Icon(Icons.price_change), label: Text(l.rates), onPressed: () => rates(t)),
             ],
           ),
         ),
@@ -866,30 +887,96 @@ class RestaurantAdminScreen extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     const path = '/admin/outlets';
     final api = ref.read(apiProvider);
+    final wide = isWide(context);
+    Future<void> add() async {
+      final n = await prompt(context, l.addOutlet, label: l.name);
+      if (n == null || n.isEmpty || !context.mounted) return;
+      final ok = await act(
+        context,
+        () => api.post(path, {
+          'name': {for (final k in supportedLanguages.keys) k: n},
+          'schedule': {
+            'days': [1, 2, 3, 4, 5, 6, 7],
+            'from': '06:00',
+            'to': '22:00',
+          },
+        }),
+      );
+      if (ok) ref.invalidate(getProvider(path));
+    }
+
+    void menu(J o) => context.push('/admin/restaurant/${o['id']}/menu');
+    String hours(J o) {
+      final h = (o['schedule'] as Map?) ?? const {};
+      return '${h['from'] ?? ''}–${h['to'] ?? ''}';
+    }
+
+    // Table chips (new QR with warning) and "Add table": in the mobile card and the wide expanded row.
+    Widget tables(BuildContext context, J o) => Wrap(
+      spacing: 6,
+      children: [
+        for (final t in jsonList(o['tables']))
+          ActionChip(
+            avatar: const Icon(Icons.qr_code, size: 16),
+            label: Text('${t['label']}'),
+            onPressed: () async {
+              if (!await confirm(context, l.newQr, l.newQrWarning) || !context.mounted) return;
+              try {
+                final r = await api.post('/admin/tables/${t['id']}/qr') as Map;
+                if (!context.mounted) return;
+                await showDialog<void>(
+                  context: context,
+                  builder: (c) => AlertDialog(
+                    title: Text(l.tableLabel('${t['label']}')),
+                    content: SizedBox(
+                      width: 240,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          QrImageView(data: '${r['qrPayload']}', size: 220, backgroundColor: Colors.white),
+                          CopyRow(l.qrCode, '${r['qrPayload']}'),
+                        ],
+                      ),
+                    ),
+                    actions: [TextButton(onPressed: () => Navigator.pop(c), child: Text(l.ok))],
+                  ),
+                );
+              } catch (e) {
+                if (context.mounted) snack(context, failureText(context, e));
+              }
+            },
+          ),
+        ActionChip(
+          avatar: const Icon(Icons.add, size: 16),
+          label: Text(l.addTable),
+          onPressed: () async {
+            final n = await prompt(context, l.addTable, label: l.label);
+            if (n == null || n.isEmpty || !context.mounted) return;
+            if (await act(context, () => api.post('/admin/outlets/${o['id']}/tables', {'label': n})))
+              ref.invalidate(getProvider(path));
+          },
+        ),
+      ],
+    );
+
     return Scaffold(
-      appBar: AppBar(title: Text(l.restaurant)),
-      floatingActionButton: FloatingActionButton(
-        tooltip: l.add,
-        onPressed: () async {
-          final n = await prompt(context, l.addOutlet, label: l.name);
-          if (n == null || n.isEmpty || !context.mounted) return;
-          final ok = await act(
-            context,
-            () => api.post(path, {
-              'name': {for (final k in supportedLanguages.keys) k: n},
-              'schedule': {
-                'days': [1, 2, 3, 4, 5, 6, 7],
-                'from': '06:00',
-                'to': '22:00',
-              },
-            }),
-          );
-          if (ok) ref.invalidate(getProvider(path));
-        },
-        child: const Icon(Icons.add),
-      ),
+      appBar: AppBar(title: Text(l.restaurant), actions: [if (wide) _AddButton(add)]),
+      floatingActionButton: wide
+          ? null
+          : FloatingActionButton(tooltip: l.add, onPressed: add, child: const Icon(Icons.add)),
       body: JsonList(
         path: path,
+        table: JsonTable(
+          columns: [l.name, l.schedule, l.tables],
+          cells: (context, o) => [trOf(context, o['name']), hours(o), '${jsonList(o['tables']).length}'],
+          sortKeys: [
+            (o) => trOf(context, o['name']).toLowerCase(),
+            (o) => '${(o['schedule'] as Map?)?['from'] ?? ''}',
+            (o) => jsonList(o['tables']).length,
+          ],
+          actions: (context, o) => [TextButton(onPressed: () => menu(o), child: Text(l.menu))],
+          expanded: tables,
+        ),
         item: (context, o) => Card(
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Column(
@@ -897,60 +984,9 @@ class RestaurantAdminScreen extends ConsumerWidget {
             children: [
               ListTile(
                 title: Text(trOf(context, o['name'])),
-                trailing: TextButton(
-                  onPressed: () => context.push('/admin/restaurant/${o['id']}/menu'),
-                  child: Text(l.menu),
-                ),
+                trailing: TextButton(onPressed: () => menu(o), child: Text(l.menu)),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                child: Wrap(
-                  spacing: 6,
-                  children: [
-                    for (final t in jsonList(o['tables']))
-                      ActionChip(
-                        avatar: const Icon(Icons.qr_code, size: 16),
-                        label: Text('${t['label']}'),
-                        onPressed: () async {
-                          if (!await confirm(context, l.newQr, l.newQrWarning) || !context.mounted) return;
-                          try {
-                            final r = await api.post('/admin/tables/${t['id']}/qr') as Map;
-                            if (!context.mounted) return;
-                            await showDialog<void>(
-                              context: context,
-                              builder: (c) => AlertDialog(
-                                title: Text(l.tableLabel('${t['label']}')),
-                                content: SizedBox(
-                                  width: 240,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      QrImageView(data: '${r['qrPayload']}', size: 220, backgroundColor: Colors.white),
-                                      CopyRow(l.qrCode, '${r['qrPayload']}'),
-                                    ],
-                                  ),
-                                ),
-                                actions: [TextButton(onPressed: () => Navigator.pop(c), child: Text(l.ok))],
-                              ),
-                            );
-                          } catch (e) {
-                            if (context.mounted) snack(context, failureText(context, e));
-                          }
-                        },
-                      ),
-                    ActionChip(
-                      avatar: const Icon(Icons.add, size: 16),
-                      label: Text(l.addTable),
-                      onPressed: () async {
-                        final n = await prompt(context, l.addTable, label: l.label);
-                        if (n == null || n.isEmpty || !context.mounted) return;
-                        if (await act(context, () => api.post('/admin/outlets/${o['id']}/tables', {'label': n})))
-                          ref.invalidate(getProvider(path));
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              Padding(padding: const EdgeInsets.fromLTRB(12, 0, 12, 12), child: tables(context, o)),
             ],
           ),
         ),

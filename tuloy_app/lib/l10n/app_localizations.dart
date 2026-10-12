@@ -2013,6 +2013,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Note'**
   String get note;
+
+  /// No description provided for @rooms.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms'**
+  String get rooms;
+
+  /// No description provided for @tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Tables'**
+  String get tables;
+
+  /// No description provided for @showDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Show details'**
+  String get showDetails;
+
+  /// No description provided for @hideDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide details'**
+  String get hideDetails;
 }
 
 class _AppLocalizationsDelegate

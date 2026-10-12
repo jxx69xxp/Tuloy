@@ -1027,4 +1027,16 @@ class AppLocalizationsCeb extends AppLocalizations {
 
   @override
   String get note => 'Nota';
+
+  @override
+  String get rooms => 'Mga kwarto';
+
+  @override
+  String get tables => 'Mga lamesa';
+
+  @override
+  String get showDetails => 'Ipakita ang detalye';
+
+  @override
+  String get hideDetails => 'Itago ang detalye';
 }

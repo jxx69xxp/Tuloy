@@ -21,6 +21,7 @@ class JsonTable {
     this.toolbar = const [],
     this.onSearch,
     this.searchHint,
+    this.expanded,
   });
   final List<String> columns;
   final List<String> Function(BuildContext, J row) cells;
@@ -38,6 +39,9 @@ class JsonTable {
   /// When set, the (debounced) search text goes to the server instead of filtering rows here.
   final ValueChanged<String>? onSearch;
   final String? searchHint;
+
+  /// Optional detail area under a row, toggled by a chevron; null for a row hides its chevron.
+  final Widget? Function(BuildContext, J row)? expanded;
 }
 
 /// Wide-screen table: search toolbar, sortable sticky header, hover/selected rows, actions and
@@ -72,6 +76,9 @@ class _WebTableState extends State<WebTable> {
   bool _asc = true;
   int _shown = pageSize;
   Object? _selected;
+
+  /// Ids of expanded rows; kept across sort, search, paging and reloads.
+  final _open = <Object>{};
 
   JsonTable get t => widget.table;
 
@@ -168,8 +175,9 @@ class _WebTableState extends State<WebTable> {
     );
   }
 
-  Widget _line(List<Widget> cells, Widget? actions) => Row(
+  Widget _line(List<Widget> cells, Widget? actions, [Widget? toggle]) => Row(
     children: [
+      if (t.expanded != null) SizedBox(width: 48, child: toggle),
       for (final c in cells)
         Expanded(
           child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: c),
@@ -247,7 +255,9 @@ class _WebTableState extends State<WebTable> {
                     }
                     final r = shown[i];
                     final id = r['id'] ?? r;
-                    return Material(
+                    final open = _open.contains(id);
+                    final detail = t.expanded?.call(context, r);
+                    final row = Material(
                       color: id == _selected ? scheme.secondaryContainer : Colors.transparent,
                       child: InkWell(
                         onTap: t.onTap == null
@@ -266,9 +276,24 @@ class _WebTableState extends State<WebTable> {
                             t.actions == null
                                 ? null
                                 : Row(mainAxisAlignment: MainAxisAlignment.end, children: t.actions!(context, r)),
+                            detail == null
+                                ? null
+                                : IconButton(
+                                    tooltip: open ? l.hideDetails : l.showDetails,
+                                    icon: Icon(open ? Icons.expand_less : Icons.expand_more),
+                                    onPressed: () => setState(() => open ? _open.remove(id) : _open.add(id)),
+                                  ),
                           ),
                         ),
                       ),
+                    );
+                    if (!open || detail == null) return row;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        row,
+                        Padding(padding: const EdgeInsets.fromLTRB(60, 4, 12, 12), child: detail),
+                      ],
                     );
                   },
                 ),

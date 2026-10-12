@@ -1024,4 +1024,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get note => 'Note';
+
+  @override
+  String get rooms => 'Rooms';
+
+  @override
+  String get tables => 'Tables';
+
+  @override
+  String get showDetails => 'Show details';
+
+  @override
+  String get hideDetails => 'Hide details';
 }

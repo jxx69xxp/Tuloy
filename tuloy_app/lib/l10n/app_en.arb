@@ -516,5 +516,9 @@
       }
     }
   },
-  "note": "Note"
+  "note": "Note",
+  "rooms": "Rooms",
+  "tables": "Tables",
+  "showDetails": "Show details",
+  "hideDetails": "Hide details"
 }

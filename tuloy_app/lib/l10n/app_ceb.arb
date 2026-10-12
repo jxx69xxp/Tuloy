@@ -318,5 +318,9 @@
   "sortedDescending": "Gihan-ay paubos",
   "sortBy": "Han-aya sumala sa {column}",
   "rowsShown": "{shown} sa {total}",
-  "note": "Nota"
+  "note": "Nota",
+  "rooms": "Mga kwarto",
+  "tables": "Mga lamesa",
+  "showDetails": "Ipakita ang detalye",
+  "hideDetails": "Itago ang detalye"
 }

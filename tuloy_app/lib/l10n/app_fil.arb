@@ -318,5 +318,9 @@
   "sortedDescending": "Nakaayos pababa",
   "sortBy": "Ayusin ayon sa {column}",
   "rowsShown": "{shown} sa {total}",
-  "note": "Tala"
+  "note": "Tala",
+  "rooms": "Mga kuwarto",
+  "tables": "Mga mesa",
+  "showDetails": "Ipakita ang detalye",
+  "hideDetails": "Itago ang detalye"
 }

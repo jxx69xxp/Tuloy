@@ -1028,4 +1028,16 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get note => 'Tala';
+
+  @override
+  String get rooms => 'Mga kuwarto';
+
+  @override
+  String get tables => 'Mga mesa';
+
+  @override
+  String get showDetails => 'Ipakita ang detalye';
+
+  @override
+  String get hideDetails => 'Itago ang detalye';
 }

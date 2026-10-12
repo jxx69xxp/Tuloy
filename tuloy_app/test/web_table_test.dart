@@ -11,7 +11,7 @@ List<J> _rows(int count) => [
   for (var i = 0; i < count; i++) {'id': '$i', 'name': 'n$i', 'amount': (i * 7) % count},
 ];
 
-Future<void> _pump(WidgetTester t, List<J> rows, {void Function(J)? onTap}) async {
+Future<void> _pump(WidgetTester t, List<J> rows, {void Function(J)? onTap, bool expand = false}) async {
   t.view.devicePixelRatio = 1;
   t.view.physicalSize = const Size(1200, 900);
   addTearDown(t.view.reset);
@@ -28,6 +28,7 @@ Future<void> _pump(WidgetTester t, List<J> rows, {void Function(J)? onTap}) asyn
             cells: (_, r) => ['${r['name']}', '${r['amount']}'],
             sortKeys: [(r) => '${r['name']}', (r) => r['amount'] as num],
             onTap: onTap,
+            expanded: expand ? (_, r) => Text('detail-${r['name']}') : null,
             actions: (_, r) => [
               IconButton(tooltip: 'Delete ${r['name']}', icon: const Icon(Icons.delete), onPressed: () {}),
             ],
@@ -102,5 +103,22 @@ void main() {
     await t.sendKeyEvent(LogicalKeyboardKey.enter);
     await t.pumpAndSettle();
     expect(taps, ['1', '1']);
+  });
+
+  testWidgets('rows expand and collapse; open rows stay open after sorting', (t) async {
+    await _pump(t, _rows(3), expand: true);
+    expect(find.text('detail-n1'), findsNothing);
+    await t.tap(find.byTooltip('Show details').at(1)); // row n1
+    await t.pumpAndSettle();
+    expect(find.text('detail-n1'), findsOneWidget);
+    await t.tap(find.text('Amount'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Amount'));
+    await t.pumpAndSettle();
+    expect(find.text('detail-n1'), findsOneWidget);
+    expect(find.text('detail-n0'), findsNothing);
+    await t.tap(find.byTooltip('Hide details'));
+    await t.pumpAndSettle();
+    expect(find.text('detail-n1'), findsNothing);
   });
 }

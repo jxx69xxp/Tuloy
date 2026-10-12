@@ -10,6 +10,7 @@ import '../../core/format.dart';
 import '../../core/http.dart';
 import '../../core/find_by_id.dart';
 import '../../core/ui.dart';
+import '../../core/web/overlays.dart';
 import '../../l10n/app_localizations.dart';
 
 String _d(DateTime x) => x.toIso8601String().substring(0, 10);
@@ -45,8 +46,10 @@ class RoomsAdminScreen extends ConsumerWidget {
     const path = '/admin/room-types';
     final api = ref.read(apiProvider);
     final wide = isWide(context);
-    void add() => context.push('/admin/rooms/type/new');
-    void edit(J t) => context.push('/admin/rooms/type/${t['id']}');
+    // Wide: go keeps this page and opens the editor as a dialog over it; narrow pushes the page as before.
+    void open(String p) => wide ? context.go(p) : context.push(p);
+    void add() => open('/admin/rooms/type/new');
+    void edit(J t) => open('/admin/rooms/type/${t['id']}');
     void rates(J t) => context.push('/admin/rooms/${t['id']}/rates');
     // Room chips (tap toggles active) and "Add room": in the mobile card and the wide expanded row.
     Widget rooms(BuildContext context, J t) => Wrap(
@@ -183,7 +186,34 @@ class _RoomTypeEditState extends ConsumerState<RoomTypeEditScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final id = widget.type?['id'];
+    final wide = isWide(context);
+    Future<void> save() async {
+      final body = {
+        'name': _name.value,
+        'description': _desc.value,
+        'maxGuests': int.tryParse(_guests.text) ?? 2,
+        'basePrice': double.tryParse(_price.text) ?? 0,
+        'amenities': _amenities.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
+        'photos': _photos,
+        'active': _active,
+      };
+      final api = ref.read(apiProvider);
+      if (await act(
+        context,
+        () => id == null ? api.post('/admin/room-types', body) : api.patch('/admin/room-types/$id', body),
+        done: l.saved,
+      )) {
+        ref.invalidate(getProvider('/admin/room-types'));
+        if (context.mounted) popOr(context, '/admin/rooms');
+      }
+    }
+
     return Scaffold(
+      bottomNavigationBar: wide
+          ? EditorFooter(
+              save: BusyButton(label: l.save, onPressed: save),
+            )
+          : null,
       appBar: AppBar(title: Text(l.roomTypeLabel)),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -223,30 +253,7 @@ class _RoomTypeEditState extends ConsumerState<RoomTypeEditScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          BusyButton(
-            label: l.save,
-            onPressed: () async {
-              final body = {
-                'name': _name.value,
-                'description': _desc.value,
-                'maxGuests': int.tryParse(_guests.text) ?? 2,
-                'basePrice': double.tryParse(_price.text) ?? 0,
-                'amenities': _amenities.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
-                'photos': _photos,
-                'active': _active,
-              };
-              final api = ref.read(apiProvider);
-              if (await act(
-                context,
-                () => id == null ? api.post('/admin/room-types', body) : api.patch('/admin/room-types/$id', body),
-                done: l.saved,
-              )) {
-                ref.invalidate(getProvider('/admin/room-types'));
-                if (context.mounted) popOr(context, '/admin/rooms');
-              }
-            },
-          ),
+          if (!wide) ...[const SizedBox(height: 16), BusyButton(label: l.save, onPressed: save)],
         ],
       ),
     );
@@ -636,8 +643,32 @@ class _ServiceEditState extends ConsumerState<ServiceEditScreen> {
     final departments = jsonList(ref.watch(getProvider('/admin/departments')).valueOrNull ?? const []);
     const dayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     const methods = ['ONLINE', 'ROOM_CHARGE', 'PAY_AT_OUTLET', 'FREE'];
+    final wide = isWide(context);
+    void publish() => act(context, () async {
+      final id = await _save();
+      await ref.read(apiProvider).post('/admin/services/$id/publish');
+      await _save();
+    }, done: l.published);
+    void pause() => act(context, () async {
+      await ref.read(apiProvider).post('/admin/services/${_s!['id']}/pause');
+      await _save();
+    }, done: l.saved);
+    final saveDraft = BusyButton(
+      label: l.saveDraft,
+      onPressed: () => act(context, _save, done: l.saved),
+    );
     return Scaffold(
       appBar: AppBar(title: Text(l.serviceBuilder)),
+      // Wide: the save/publish buttons stay visible in a footer instead of at the end of the long form.
+      bottomNavigationBar: wide
+          ? EditorFooter(
+              more: [
+                if (_s?['status'] == 'PUBLISHED') TextButton(onPressed: pause, child: Text(l.pause)),
+                FilledButton.tonal(onPressed: publish, child: Text(l.publish)),
+              ],
+              save: saveDraft,
+            )
+          : null,
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -849,28 +880,13 @@ class _ServiceEditState extends ConsumerState<ServiceEditScreen> {
             label: Text(l.addField),
             onPressed: () => setState(() => _fields.add(_FieldDraft())),
           ),
-          const SizedBox(height: 16),
-          BusyButton(
-            label: l.saveDraft,
-            onPressed: () => act(context, _save, done: l.saved),
-          ),
-          const SizedBox(height: 8),
-          FilledButton.tonal(
-            onPressed: () => act(context, () async {
-              final id = await _save();
-              await ref.read(apiProvider).post('/admin/services/$id/publish');
-              await _save();
-            }, done: l.published),
-            child: Text(l.publish),
-          ),
-          if (_s?['status'] == 'PUBLISHED')
-            TextButton(
-              onPressed: () => act(context, () async {
-                await ref.read(apiProvider).post('/admin/services/${_s!['id']}/pause');
-                await _save();
-              }, done: l.saved),
-              child: Text(l.pause),
-            ),
+          if (!wide) ...[
+            const SizedBox(height: 16),
+            saveDraft,
+            const SizedBox(height: 8),
+            FilledButton.tonal(onPressed: publish, child: Text(l.publish)),
+            if (_s?['status'] == 'PUBLISHED') TextButton(onPressed: pause, child: Text(l.pause)),
+          ],
         ],
       ),
     );
@@ -1005,11 +1021,9 @@ class MenuAdminScreen extends ConsumerWidget {
     final path = '/admin/outlets/${outlet['id']}/menu';
     final api = ref.read(apiProvider);
     Future<void> edit([J? item]) async {
-      final saved = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(
-          builder: (_) => _MenuItemEdit(outletId: '${outlet['id']}', item: item),
-        ),
-      );
+      final saved = await Navigator.of(
+        context,
+      ).push<bool>(editorRoute(context, _MenuItemEdit(outletId: '${outlet['id']}', item: item)));
       if (saved == true) ref.invalidate(getProvider(path));
     }
 
@@ -1062,7 +1076,33 @@ class _MenuItemEditState extends ConsumerState<_MenuItemEdit> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final id = widget.item?['id'];
+    final wide = isWide(context);
+    Future<void> save() async {
+      final body = {
+        'name': _name.value,
+        'category': _category.value,
+        'price': double.tryParse(_price.text) ?? 0,
+        'allergens': _allergens.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
+        'available': widget.item?['available'] ?? true,
+      };
+      final api = ref.read(apiProvider);
+      if (await act(
+            context,
+            () => id == null
+                ? api.post('/admin/outlets/${widget.outletId}/menu', body)
+                : api.patch('/admin/menu-items/$id', body),
+          ) &&
+          context.mounted) {
+        Navigator.pop(context, true);
+      }
+    }
+
     return Scaffold(
+      bottomNavigationBar: wide
+          ? EditorFooter(
+              save: BusyButton(label: l.save, onPressed: save),
+            )
+          : null,
       appBar: AppBar(title: Text(l.menu)),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -1078,29 +1118,7 @@ class _MenuItemEditState extends ConsumerState<_MenuItemEdit> {
             controller: _allergens,
             decoration: InputDecoration(labelText: l.allergens, helperText: 'gluten, soy, nuts'),
           ),
-          const SizedBox(height: 16),
-          BusyButton(
-            label: l.save,
-            onPressed: () async {
-              final body = {
-                'name': _name.value,
-                'category': _category.value,
-                'price': double.tryParse(_price.text) ?? 0,
-                'allergens': _allergens.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
-                'available': widget.item?['available'] ?? true,
-              };
-              final api = ref.read(apiProvider);
-              if (await act(
-                    context,
-                    () => id == null
-                        ? api.post('/admin/outlets/${widget.outletId}/menu', body)
-                        : api.patch('/admin/menu-items/$id', body),
-                  ) &&
-                  context.mounted) {
-                Navigator.pop(context, true);
-              }
-            },
-          ),
+          if (!wide) ...[const SizedBox(height: 16), BusyButton(label: l.save, onPressed: save)],
         ],
       ),
     );

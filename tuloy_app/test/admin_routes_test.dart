@@ -1,6 +1,9 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -34,18 +37,19 @@ class _SlowAdmin extends _Admin {
 }
 
 void main() {
-  Future<GoRouter> start(WidgetTester t, AuthController Function() auth) async {
+  Future<GoRouter> start(WidgetTester t, AuthController Function() auth, {List<Override> extra = const []}) async {
     t.view.devicePixelRatio = 1;
     t.view.physicalSize = const Size(1200, 900);
     addTearDown(t.view.reset);
     final container = ProviderContainer(
       overrides: [
+        ...extra,
         authProvider.overrideWith(auth),
         languageProvider.overrideWith((_) => 'en'),
         getProvider('/admin/room-types').overrideWith(
           (ref) async => [
-            {'id': 'a', 'name': {'en': 'Alpha'}, 'maxGuests': 2, 'basePrice': 100},
-            {'id': 'b', 'name': {'en': 'Beta'}, 'maxGuests': 3, 'basePrice': 200},
+            {'id': 'a', 'name': {'en': 'Alpha'}, 'maxGuests': 2, 'basePrice': 100, 'rooms': []},
+            {'id': 'b', 'name': {'en': 'Beta'}, 'maxGuests': 3, 'basePrice': 200, 'rooms': []},
           ],
         ),
       ],
@@ -103,5 +107,54 @@ void main() {
   testWidgets('unknown id shows not found', (t) async {
     await open(t, '/admin/rooms/type/zzz');
     expect(find.text('Not found.'), findsOneWidget);
+  });
+
+  group('room type editor is a dialog over the Rooms list on wide screens', () {
+    String path(GoRouter r) => r.routerDelegate.currentConfiguration.uri.path;
+
+    testWidgets('Cancel and Esc close it back to the list', (t) async {
+      final router = await start(t, _Admin.new);
+      await t.pumpAndSettle();
+      router.go('/admin/rooms/type/b');
+      await t.pumpAndSettle();
+      expect(find.byType(RoomsAdminScreen), findsOneWidget); // list stays underneath
+      expect(find.widgetWithText(TextField, 'Beta'), findsOneWidget);
+      await t.tap(find.text('Cancel'));
+      await t.pumpAndSettle();
+      expect(find.byType(RoomTypeEditScreen), findsNothing);
+      expect(path(router), '/admin/rooms');
+
+      router.go('/admin/rooms/type/b');
+      await t.pumpAndSettle();
+      await t.sendKeyEvent(LogicalKeyboardKey.escape);
+      await t.pumpAndSettle();
+      expect(find.byType(RoomTypeEditScreen), findsNothing);
+      expect(path(router), '/admin/rooms');
+    });
+
+    testWidgets('Save in the footer sends the edit and closes', (t) async {
+      final seen = <RequestOptions>[];
+      final dio = Dio(BaseOptions(baseUrl: 'http://api.test'))
+        ..interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (o, h) {
+              seen.add(o);
+              h.resolve(Response(requestOptions: o, data: {'id': 'b'}));
+            },
+          ),
+        );
+      final router = await start(t, _Admin.new, extra: [apiProvider.overrideWithValue(Api(dio))]);
+      await t.pumpAndSettle();
+      router.go('/admin/rooms/type/b');
+      await t.pumpAndSettle();
+      await t.tap(find.widgetWithText(FilledButton, 'Save'));
+      await t.pumpAndSettle();
+      final saves = seen.where((o) => o.method != 'GET').toList(); // the admin home behind also loads
+      expect(saves.single.method, 'PATCH');
+      expect(saves.single.path, '/admin/room-types/b');
+      expect((saves.single.data as Map)['maxGuests'], 3);
+      expect(find.byType(RoomTypeEditScreen), findsNothing);
+      expect(path(router), '/admin/rooms');
+    });
   });
 }

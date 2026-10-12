@@ -6,6 +6,7 @@ import '../../core/config.dart';
 import '../../core/format.dart';
 import '../../core/http.dart';
 import '../../core/ui.dart';
+import '../../core/web/overlays.dart';
 import '../../l10n/app_localizations.dart';
 import '../staff/staff_screens.dart' show leaveStatus;
 import 'admin_catalog_screens.dart' show trOf;
@@ -41,7 +42,7 @@ class _StaffTab extends ConsumerWidget {
   const _StaffTab();
 
   Future<void> _edit(BuildContext context, WidgetRef ref, [J? member]) async {
-    final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => _StaffEdit(member: member)));
+    final saved = await Navigator.of(context).push<bool>(editorRoute(context, _StaffEdit(member: member)));
     if (saved == true) ref.invalidate(getProvider('/admin/staff'));
   }
 
@@ -121,7 +122,34 @@ class _StaffEditState extends ConsumerState<_StaffEdit> {
     final api = ref.read(apiProvider);
     final departments = jsonList(ref.watch(getProvider('/admin/departments')).valueOrNull ?? const []);
     final perms = ((ref.watch(getProvider('/admin/permissions')).valueOrNull as List?) ?? const []).cast<String>();
+    final wide = isWide(context);
+    Future<void> save() async {
+      final body = {
+        'role': _role,
+        if (_department != null) 'departmentId': _department,
+        'permissions': _perms.toList(),
+      };
+      final ok = await act(
+        context,
+        () => m == null
+            ? api.post('/admin/staff', {
+                ...body,
+                'email': _email.text.trim(),
+                'fullName': _name.text.trim(),
+                'password': _password.text,
+              })
+            : api.patch('/admin/staff/${m['userId']}', body),
+        done: l.saved,
+      );
+      if (ok && context.mounted) Navigator.pop(context, true);
+    }
+
     return Scaffold(
+      bottomNavigationBar: wide
+          ? EditorFooter(
+              save: BusyButton(label: l.save, onPressed: save),
+            )
+          : null,
       appBar: AppBar(
         title: Text(m == null ? l.addStaff : '${m['fullName']}'),
         actions: [
@@ -181,30 +209,7 @@ class _StaffEditState extends ConsumerState<_StaffEdit> {
                 onChanged: (v) => setState(() => v == true ? _perms.add(p) : _perms.remove(p)),
               ),
           ],
-          const SizedBox(height: 16),
-          BusyButton(
-            label: l.save,
-            onPressed: () async {
-              final body = {
-                'role': _role,
-                if (_department != null) 'departmentId': _department,
-                'permissions': _perms.toList(),
-              };
-              final ok = await act(
-                context,
-                () => m == null
-                    ? api.post('/admin/staff', {
-                        ...body,
-                        'email': _email.text.trim(),
-                        'fullName': _name.text.trim(),
-                        'password': _password.text,
-                      })
-                    : api.patch('/admin/staff/${m['userId']}', body),
-                done: l.saved,
-              );
-              if (ok && context.mounted) Navigator.pop(context, true);
-            },
-          ),
+          if (!wide) ...[const SizedBox(height: 16), BusyButton(label: l.save, onPressed: save)],
         ],
       ),
     );

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/adaptive.dart';
 import '../core/config.dart';
+import '../core/web/overlays.dart';
 import '../features/auth/domain/auth.dart';
 import '../features/auth/presentation/auth_controller.dart';
 import '../features/auth/presentation/auth_screens.dart';
@@ -40,10 +41,18 @@ List<RouteBase> _deskRoutes(String base) => [
   GoRoute(
     path: 'reservations',
     builder: (_, __) => ReservationsQueueScreen(base: base),
-  ),
-  GoRoute(
-    path: 'reservations/:id',
-    builder: (_, s) => StaffReservationScreen(id: s.pathParameters['id']!),
+    routes: [
+      // Nested so that on wide screens the detail is a side panel over the queue (also on refresh/deep link).
+      GoRoute(
+        path: ':id',
+        pageBuilder: (c, s) => adaptivePage(
+          c,
+          s,
+          StaffReservationScreen(id: s.pathParameters['id']!, panel: isWide(c)),
+          panel: true,
+        ),
+      ),
+    ],
   ),
   GoRoute(path: 'tasks', builder: (_, __) => const TasksScreen()),
   GoRoute(path: 'orders', builder: (_, __) => const OrdersQueueScreen()),
@@ -256,15 +265,25 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const StaffHomeScreen(base: '/admin/desk'),
             routes: _deskRoutes('/admin/desk'),
           ),
-          GoRoute(path: 'rooms', builder: (_, __) => const RoomsAdminScreen()),
-          GoRoute(path: 'rooms/type/new', builder: (_, __) => const RoomTypeEditScreen()),
           GoRoute(
-            path: 'rooms/type/:id',
-            builder: (_, s) => FindById(
-              listPath: '/admin/room-types',
-              id: s.pathParameters['id']!,
-              builder: (_, t) => RoomTypeEditScreen(type: t),
-            ),
+            path: 'rooms',
+            builder: (_, __) => const RoomsAdminScreen(),
+            routes: [
+              // Nested so that on wide screens the editor is a dialog over the Rooms list.
+              GoRoute(path: 'type/new', pageBuilder: (c, s) => adaptivePage(c, s, const RoomTypeEditScreen())),
+              GoRoute(
+                path: 'type/:id',
+                pageBuilder: (c, s) => adaptivePage(
+                  c,
+                  s,
+                  FindById(
+                    listPath: '/admin/room-types',
+                    id: s.pathParameters['id']!,
+                    builder: (_, t) => RoomTypeEditScreen(type: t),
+                  ),
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: 'rooms/:id/rates',
@@ -294,15 +313,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'reports', builder: (_, __) => const ReportsScreen()),
           GoRoute(path: 'staff', builder: (_, __) => const StaffAdminScreen()),
           GoRoute(path: 'loyalty', builder: (_, __) => const LoyaltyAdminScreen()),
-          GoRoute(path: 'content', builder: (_, __) => const ContentScreen()),
-          GoRoute(path: 'content/new', builder: (_, __) => const ContentEditScreen()),
           GoRoute(
-            path: 'content/:id',
-            builder: (_, s) => FindById(
-              listPath: '/admin/content',
-              id: s.pathParameters['id']!,
-              builder: (_, c) => ContentEditScreen(item: c),
-            ),
+            path: 'content',
+            builder: (_, __) => const ContentScreen(),
+            routes: [
+              GoRoute(path: 'new', pageBuilder: (c, s) => adaptivePage(c, s, const ContentEditScreen())),
+              GoRoute(
+                path: ':id',
+                pageBuilder: (c, s) => adaptivePage(
+                  c,
+                  s,
+                  FindById(
+                    listPath: '/admin/content',
+                    id: s.pathParameters['id']!,
+                    builder: (_, c) => ContentEditScreen(item: c),
+                  ),
+                ),
+              ),
+            ],
           ),
           GoRoute(path: 'hotel', builder: (_, __) => const HotelSettingsScreen()),
           GoRoute(path: 'audit', builder: (_, __) => const AuditScreen()),

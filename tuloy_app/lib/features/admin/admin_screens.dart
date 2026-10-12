@@ -9,6 +9,7 @@ import '../../core/format.dart';
 import '../../core/http.dart';
 import '../../core/find_by_id.dart';
 import '../../core/ui.dart';
+import '../../core/web/overlays.dart';
 import '../../l10n/app_localizations.dart';
 
 // ───────────── A1 dashboard + menu ─────────────
@@ -354,11 +355,13 @@ class ContentScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final lang = Localizations.localeOf(context).languageCode;
+    // Wide: go keeps this page and opens the editor as a dialog over it; narrow pushes the page as before.
+    void open(String p) => isWide(context) ? context.go(p) : context.push(p);
     return Scaffold(
       appBar: AppBar(title: Text(l.content)),
       floatingActionButton: FloatingActionButton(
         tooltip: l.add,
-        onPressed: () => context.push('/admin/content/new'),
+        onPressed: () => open('/admin/content/new'),
         child: const Icon(Icons.add),
       ),
       body: JsonList(
@@ -366,7 +369,7 @@ class ContentScreen extends ConsumerWidget {
         item: (context, c) => ListTile(
           title: Text('${(c['title'] as Map)[lang] ?? (c['title'] as Map)['en']}'),
           subtitle: Text('${c['kind']} · ${c['publishedAt'] == null ? l.draft : l.published}'),
-          onTap: () => context.push('/admin/content/${c['id']}'),
+          onTap: () => open('/admin/content/${c['id']}'),
         ),
       ),
     );
@@ -398,7 +401,31 @@ class _ContentEditState extends ConsumerState<ContentEditScreen> {
     final l = AppLocalizations.of(context);
     final api = ref.read(apiProvider);
     final id = widget.item?['id'];
+    final wide = isWide(context);
+    Future<void> save() async {
+      final body = {
+        'kind': _kind,
+        'title': _title.value,
+        'body': _body.value,
+        'publishedAt': _published ? (widget.item?['publishedAt'] ?? DateTime.now().toUtc().toIso8601String()) : null,
+      };
+      final ok = await act(
+        context,
+        () => id == null ? api.post('/admin/content', body) : api.patch('/admin/content/$id', body),
+        done: l.saved,
+      );
+      if (ok) {
+        ref.invalidate(getProvider('/admin/content'));
+        if (context.mounted) popOr(context, '/admin/content');
+      }
+    }
+
     return Scaffold(
+      bottomNavigationBar: wide
+          ? EditorFooter(
+              save: BusyButton(label: l.save, onPressed: save),
+            )
+          : null,
       appBar: AppBar(
         title: Text(l.content),
         actions: [
@@ -431,28 +458,7 @@ class _ContentEditState extends ConsumerState<ContentEditScreen> {
           ..._title.fields(l.title),
           ..._body.fields(l.body, maxLines: 4),
           SwitchListTile(title: Text(l.published), value: _published, onChanged: (v) => setState(() => _published = v)),
-          BusyButton(
-            label: l.save,
-            onPressed: () async {
-              final body = {
-                'kind': _kind,
-                'title': _title.value,
-                'body': _body.value,
-                'publishedAt': _published
-                    ? (widget.item?['publishedAt'] ?? DateTime.now().toUtc().toIso8601String())
-                    : null,
-              };
-              final ok = await act(
-                context,
-                () => id == null ? api.post('/admin/content', body) : api.patch('/admin/content/$id', body),
-                done: l.saved,
-              );
-              if (ok) {
-                ref.invalidate(getProvider('/admin/content'));
-                if (context.mounted) popOr(context, '/admin/content');
-              }
-            },
-          ),
+          if (!wide) ...[BusyButton(label: l.save, onPressed: save)],
         ],
       ),
     );

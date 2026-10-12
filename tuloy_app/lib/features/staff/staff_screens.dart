@@ -207,7 +207,8 @@ class _QueueState extends ConsumerState<ReservationsQueueScreen> {
                   dateRange(context, DateTime.parse('${r['checkIn']}'), DateTime.parse('${r['checkOut']}')),
                   statusLabel(l, parseStatus('${r['status']}')),
                 ],
-                onTap: (r) => context.push('${widget.base}/reservations/${r['id']}'),
+                // Wide only: go (not push) keeps this queue page and opens the detail as a side panel over it.
+                onTap: (r) => context.go('${widget.base}/reservations/${r['id']}'),
                 sortKeys: [
                   (r) => text(r['guestName']),
                   (r) => text(r['code']),
@@ -249,8 +250,11 @@ class _QueueState extends ConsumerState<ReservationsQueueScreen> {
 // ───────────── T3 reservation detail + actions ─────────────
 
 class StaffReservationScreen extends ConsumerWidget {
-  const StaffReservationScreen({super.key, required this.id});
+  const StaffReservationScreen({super.key, required this.id, this.panel = false});
   final String id;
+
+  /// Shown as a side panel over the queue (wide screens): close button, and actions refresh the queue too.
+  final bool panel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -258,11 +262,26 @@ class StaffReservationScreen extends ConsumerWidget {
     final path = '/staff/reservations/$id';
     final api = ref.read(apiProvider);
     Future<void> run(String action, [Object? body]) async {
-      if (await act(context, () => api.post('$path/$action', body))) ref.invalidate(getProvider(path));
+      if (await act(context, () => api.post('$path/$action', body))) {
+        // Panel: the queue underneath shows the new status too (whole family; only watched paths refetch).
+        panel ? ref.invalidate(getProvider) : ref.invalidate(getProvider(path));
+      }
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.reservation)),
+      appBar: panel
+          ? AppBar(
+              automaticallyImplyLeading: false,
+              title: Text(l.reservation),
+              actions: [
+                IconButton(
+                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.maybePop(context),
+                ),
+              ],
+            )
+          : AppBar(title: Text(l.reservation)),
       body: AsyncBody(
         value: ref.watch(getProvider(path)),
         onRetry: () => ref.invalidate(getProvider(path)),

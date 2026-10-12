@@ -299,5 +299,11 @@
   "action": "Aksyon",
   "entity": "Entidad",
   "dateLabel": "Petsa",
-  "actor": "Nagbuhat"
+  "actor": "Nagbuhat",
+  "navOverview": "Kinatibuk-an",
+  "navCatalog": "Katalogo",
+  "navFinance": "Pinansya",
+  "navPeople": "Mga tawo",
+  "navSystem": "Sistema",
+  "details": "Mga detalye"
 }

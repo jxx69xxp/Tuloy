@@ -2,14 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tuloy_app/core/adaptive.dart';
+import 'package:tuloy_app/l10n/app_localizations.dart';
 
 const _items = [
-  RailItem(Icons.home, 'Home', '/admin'),
-  RailItem(Icons.bed, 'Rooms', '/admin/rooms'),
-  RailItem(Icons.list, 'Reports', '/admin/reports'),
+  RailItem(Icons.home, 'Home', '/admin', section: 'Overview'),
+  RailItem(Icons.bed, 'Rooms', '/admin/rooms', section: 'Catalog'),
+  RailItem(Icons.list, 'Reports', '/admin/reports', section: 'Finance'),
 ];
 
-Widget _app(GoRouter router) => MaterialApp.router(routerConfig: router);
+Widget _app(GoRouter router) => MaterialApp.router(
+  routerConfig: router,
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+);
+
+/// The sidebar entry for [label].
+ListTile _tile(WidgetTester t, String label) => t.widget<ListTile>(find.widgetWithText(ListTile, label));
 
 GoRouter _router({String initial = '/admin'}) => GoRouter(
   initialLocation: initial,
@@ -40,19 +48,29 @@ void main() {
     await size(t, 400);
     await t.pumpWidget(_app(_router()));
     await t.pumpAndSettle();
-    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(ListTile), findsNothing);
+    expect(find.text('OVERVIEW'), findsNothing);
     expect(find.text('page-home'), findsOneWidget);
   });
 
-  testWidgets('wide shows rail and navigates on tap', (t) async {
-    await size(t, 1200);
-    await t.pumpWidget(_app(_router()));
+  testWidgets('wide shows sidebar sections, breadcrumbs and navigates on tap', (t) async {
+    t.view.devicePixelRatio = 1;
+    t.view.physicalSize = const Size(1400, 900);
+    addTearDown(t.view.reset);
+    await t.pumpWidget(_app(_router(initial: '/admin/rooms/type')));
     await t.pumpAndSettle();
-    expect(find.byType(NavigationRail), findsOneWidget);
-    for (final l in ['Home', 'Rooms', 'Reports']) {
-      expect(find.text(l), findsOneWidget);
+    for (final s in ['OVERVIEW', 'CATALOG', 'FINANCE']) {
+      expect(find.text(s), findsOneWidget);
     }
-    await t.tap(find.text('Rooms'));
+    // Breadcrumbs: Home > Rooms > Details (unlabelled tail).
+    expect(find.widgetWithText(TextButton, 'Home'), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'Rooms'), findsOneWidget);
+    expect(find.text('Details'), findsOneWidget);
+    expect(find.byTooltip('Settings'), findsWidgets);
+    await t.tap(find.widgetWithText(ListTile, 'Reports'));
+    await t.pumpAndSettle();
+    expect(find.text('page-reports'), findsOneWidget);
+    await t.tap(find.widgetWithText(ListTile, 'Rooms'));
     await t.pumpAndSettle();
     expect(find.text('page-rooms'), findsOneWidget);
   });
@@ -61,7 +79,8 @@ void main() {
     await size(t, 1200);
     await t.pumpWidget(_app(_router(initial: '/admin/rooms/type')));
     await t.pumpAndSettle();
-    expect(t.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex, 1);
+    expect(_tile(t, 'Rooms').selected, isTrue);
+    expect(_tile(t, 'Home').selected, isFalse);
   });
 
   testWidgets('resizing keeps the location', (t) async {
@@ -70,13 +89,12 @@ void main() {
     await t.pumpAndSettle();
     await size(t, 400);
     await t.pumpAndSettle();
-    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(ListTile), findsNothing);
     expect(find.text('page-reports'), findsOneWidget);
     await size(t, 1200);
     await t.pumpAndSettle();
-    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(_tile(t, 'Reports').selected, isTrue);
     expect(find.text('page-reports'), findsOneWidget);
-    expect(t.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex, 2);
   });
 }
 
@@ -98,9 +116,13 @@ void _rails() {
     await t.pumpWidget(_app(router));
     await t.pumpAndSettle();
     expect(t.takeException(), isNull);
-    await t.ensureVisible(find.text('Item 11'));
+    await t.scrollUntilVisible(
+      find.text('Item 11'),
+      100,
+      scrollable: find.descendant(of: find.byType(ListView), matching: find.byType(Scrollable)),
+    );
     await t.pumpAndSettle();
-    await t.tap(find.text('Item 11'));
+    await t.tap(find.widgetWithText(ListTile, 'Item 11'));
     await t.pumpAndSettle();
     expect(find.text('page-11'), findsOneWidget);
   });
@@ -110,7 +132,17 @@ void _tables() {
   Widget host(Widget child) => MaterialApp(home: Scaffold(body: child));
 
   testWidgets('DataTableView shows headers and cells', (t) async {
-    await t.pumpWidget(host(const DataTableView(columns: ['Name', 'Role'], rows: [['Ana', 'Admin'], ['Ben', 'Staff']])));
+    await t.pumpWidget(
+      host(
+        const DataTableView(
+          columns: ['Name', 'Role'],
+          rows: [
+            ['Ana', 'Admin'],
+            ['Ben', 'Staff'],
+          ],
+        ),
+      ),
+    );
     for (final s in ['Name', 'Role', 'Ana', 'Admin', 'Ben', 'Staff']) {
       expect(find.text(s), findsOneWidget);
     }
@@ -119,7 +151,16 @@ void _tables() {
   testWidgets('DataTableView tap reports the row index', (t) async {
     final taps = <int>[];
     await t.pumpWidget(
-      host(DataTableView(columns: const ['Name'], rows: const [['Ana'], ['Ben']], onTap: taps.add)),
+      host(
+        DataTableView(
+          columns: const ['Name'],
+          rows: const [
+            ['Ana'],
+            ['Ben'],
+          ],
+          onTap: taps.add,
+        ),
+      ),
     );
     await t.tap(find.text('Ben'));
     expect(taps, [1]);
@@ -137,7 +178,14 @@ void _tables() {
     t.view.physicalSize = const Size(400, 800);
     addTearDown(t.view.reset);
     await t.pumpWidget(
-      host(DataTableView(columns: const ['A', 'B', 'C'], rows: [for (var i = 0; i < 3; i++) ['x' * 300, 'y' * 300, 'z']])),
+      host(
+        DataTableView(
+          columns: const ['A', 'B', 'C'],
+          rows: [
+            for (var i = 0; i < 3; i++) ['x' * 300, 'y' * 300, 'z'],
+          ],
+        ),
+      ),
     );
     expect(t.takeException(), isNull);
   });

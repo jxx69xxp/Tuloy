@@ -480,5 +480,11 @@
   "action": "Action",
   "entity": "Entity",
   "dateLabel": "Date",
-  "actor": "Actor"
+  "actor": "Actor",
+  "navOverview": "Overview",
+  "navCatalog": "Catalog",
+  "navFinance": "Finance",
+  "navPeople": "People",
+  "navSystem": "System",
+  "details": "Details"
 }

@@ -963,4 +963,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actor => 'Actor';
+
+  @override
+  String get navOverview => 'Overview';
+
+  @override
+  String get navCatalog => 'Catalog';
+
+  @override
+  String get navFinance => 'Finance';
+
+  @override
+  String get navPeople => 'People';
+
+  @override
+  String get navSystem => 'System';
+
+  @override
+  String get details => 'Details';
 }

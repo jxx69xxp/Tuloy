@@ -966,4 +966,22 @@ class AppLocalizationsCeb extends AppLocalizations {
 
   @override
   String get actor => 'Nagbuhat';
+
+  @override
+  String get navOverview => 'Kinatibuk-an';
+
+  @override
+  String get navCatalog => 'Katalogo';
+
+  @override
+  String get navFinance => 'Pinansya';
+
+  @override
+  String get navPeople => 'Mga tawo';
+
+  @override
+  String get navSystem => 'Sistema';
+
+  @override
+  String get details => 'Mga detalye';
 }

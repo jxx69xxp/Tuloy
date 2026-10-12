@@ -967,4 +967,22 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get actor => 'Gumawa';
+
+  @override
+  String get navOverview => 'Pangkalahatan';
+
+  @override
+  String get navCatalog => 'Katalogo';
+
+  @override
+  String get navFinance => 'Pananalapi';
+
+  @override
+  String get navPeople => 'Mga tao';
+
+  @override
+  String get navSystem => 'Sistema';
+
+  @override
+  String get details => 'Mga detalye';
 }

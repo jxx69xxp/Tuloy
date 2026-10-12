@@ -59,28 +59,49 @@ List<RouteBase> _deskRoutes(String base) => [
 ];
 
 List<RailItem> _staffItems(AppLocalizations l) => [
-  RailItem(Icons.support_agent, l.frontDesk, '/staff'),
-  RailItem(Icons.book_online_outlined, l.reservations, '/staff/reservations'),
-  RailItem(Icons.checklist, l.tasks, '/staff/tasks'),
-  RailItem(Icons.restaurant, l.restaurant, '/staff/orders'),
-  RailItem(Icons.chat_bubble_outline, l.chat, '/staff/inbox'),
+  RailItem(Icons.support_agent, l.frontDesk, '/staff', section: l.frontDesk),
+  RailItem(Icons.book_online_outlined, l.reservations, '/staff/reservations', section: l.frontDesk),
+  RailItem(Icons.checklist, l.tasks, '/staff/tasks', section: l.frontDesk),
+  RailItem(Icons.restaurant, l.restaurant, '/staff/orders', section: l.frontDesk),
+  RailItem(Icons.chat_bubble_outline, l.chat, '/staff/inbox', section: l.frontDesk),
   RailItem(Icons.beach_access_outlined, l.leaveRequests, '/staff/leave'),
 ];
 
+/// Breadcrumb labels for the desk screens mounted under /admin/desk.
+Map<String, String> _deskLabels(AppLocalizations l) => {
+  for (final i in _staffItems(l).skip(1)) i.path.replaceFirst('/staff', '/admin/desk'): i.label,
+};
+
 List<RailItem> _adminItems(AppLocalizations l) => [
-  RailItem(Icons.dashboard_outlined, l.adminHome, '/admin'),
-  RailItem(Icons.support_agent, l.frontDesk, '/admin/desk'),
-  RailItem(Icons.bed_outlined, l.roomsAndRates, '/admin/rooms'),
-  RailItem(Icons.room_service_outlined, l.services, '/admin/services'),
-  RailItem(Icons.restaurant, l.restaurant, '/admin/restaurant'),
-  RailItem(Icons.payments_outlined, l.payments, '/admin/payments'),
-  RailItem(Icons.bar_chart, l.reports, '/admin/reports'),
-  RailItem(Icons.badge_outlined, l.staff, '/admin/staff'),
-  RailItem(Icons.loyalty_outlined, l.loyalty, '/admin/loyalty'),
-  RailItem(Icons.article_outlined, l.content, '/admin/content'),
-  RailItem(Icons.hotel_outlined, l.hotelSettings, '/admin/hotel'),
-  RailItem(Icons.history, l.auditLog, '/admin/audit'),
+  RailItem(Icons.dashboard_outlined, l.adminHome, '/admin', section: l.navOverview),
+  RailItem(Icons.support_agent, l.frontDesk, '/admin/desk', section: l.navOverview),
+  RailItem(Icons.bed_outlined, l.roomsAndRates, '/admin/rooms', section: l.navCatalog),
+  RailItem(Icons.room_service_outlined, l.services, '/admin/services', section: l.navCatalog),
+  RailItem(Icons.restaurant, l.restaurant, '/admin/restaurant', section: l.navCatalog),
+  RailItem(Icons.loyalty_outlined, l.loyalty, '/admin/loyalty', section: l.navCatalog),
+  RailItem(Icons.article_outlined, l.content, '/admin/content', section: l.navCatalog),
+  RailItem(Icons.payments_outlined, l.payments, '/admin/payments', section: l.navFinance),
+  RailItem(Icons.bar_chart, l.reports, '/admin/reports', section: l.navFinance),
+  RailItem(Icons.badge_outlined, l.staff, '/admin/staff', section: l.navPeople),
+  RailItem(Icons.hotel_outlined, l.hotelSettings, '/admin/hotel', section: l.navSystem),
+  RailItem(Icons.history, l.auditLog, '/admin/audit', section: l.navSystem),
 ];
+
+/// Area shell with the signed-in user's name and sign out for the wide sidebar.
+Widget _shell(List<RailItem> Function(AppLocalizations) items, GoRouterState s, Widget child, {bool desk = false}) =>
+    Consumer(
+      builder: (c, ref, _) {
+        final l = AppLocalizations.of(c);
+        return AdaptiveShell(
+          items: items(l),
+          labels: desk ? _deskLabels(l) : const {},
+          location: s.uri.path,
+          userName: ref.watch(authProvider).valueOrNull?.fullName,
+          onSignOut: () => ref.read(authProvider.notifier).signOut(),
+          child: child,
+        );
+      },
+    );
 
 /// Where a signed-in user belongs. Each role only sees its own area (plus /settings).
 /// UI guard only — the API enforces roles and permissions on every call.
@@ -218,15 +239,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       ShellRoute(
-        builder: (c, s, child) =>
-            AdaptiveShell(items: _staffItems(AppLocalizations.of(c)), location: s.uri.path, child: child),
+        builder: (_, s, child) => _shell(_staffItems, s, child),
         routes: [
           GoRoute(path: '/staff', builder: (_, __) => const StaffHomeScreen(), routes: _deskRoutes('/staff')),
         ],
       ),
       ShellRoute(
-        builder: (c, s, child) =>
-            AdaptiveShell(items: _adminItems(AppLocalizations.of(c)), location: s.uri.path, child: child),
+        builder: (_, s, child) => _shell(_adminItems, s, child, desk: true),
         routes: [
       GoRoute(
         path: '/admin',

@@ -299,5 +299,11 @@
   "action": "Aksyon",
   "entity": "Entidad",
   "dateLabel": "Petsa",
-  "actor": "Gumawa"
+  "actor": "Gumawa",
+  "navOverview": "Pangkalahatan",
+  "navCatalog": "Katalogo",
+  "navFinance": "Pananalapi",
+  "navPeople": "Mga tao",
+  "navSystem": "Sistema",
+  "details": "Mga detalye"
 }

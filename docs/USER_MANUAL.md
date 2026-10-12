@@ -136,7 +136,7 @@ Open **Profile** for:
 
 ## 3. Staff guide
 
-Staff work in the **Staff area**. On web and tablets there is a side menu; on a phone it is a menu you open from the top.
+Staff work in the **Staff area**. On a phone you move around from the home screen's tile menu. On the web and on wide screens there is a sidebar instead (see [section 5](#5-working-on-the-web-staff-and-admin)).
 
 | Menu item | Use it for |
 |-----------|------------|
@@ -203,6 +203,8 @@ Admins can do everything Staff can (under **Front desk**), plus set up and manag
 ### 4.1 Dashboard
 Shows **Occupancy tonight**, **Collected today**, **Refunded today**, **Net today**, and **Alerts** such as **Failed notifications** and **Failed refunds**. Check alerts every day.
 
+On the web these appear as KPI cards (plus arrivals, departures, in-house and open tasks) and a **Needs attention** card. Click a card or an attention row to open the related screen.
+
 ### 4.2 Hotel settings
 1. Open **Hotel settings**.
 2. Fill in **Hotel name**, address, map location, check-in and check-out times.
@@ -255,7 +257,47 @@ Shows **Date**, **Actor**, **Action** and **Entity** for every important change.
 
 ---
 
-## 5. Troubleshooting
+## 5. Working on the web (Staff and Admin)
+
+The web version is a back-office tool. It looks different from the phone app when the browser window is at least 840 px wide. A narrower window shows the phone layout.
+
+### 5.1 Layout
+- **Sidebar** on the left, grouped into sections. Admin: Overview, Catalog, Finance, People, System. Staff: Front desk and Leave requests. Your name, **Settings** and **Sign out** are at the bottom.
+- **Top bar** with breadcrumbs (for example *Front desk › Reservations › Details*). Click a breadcrumb to go back to that page.
+- **Dashboard** with KPI cards and a **Needs attention** card. Click **Refresh** to update now; it also refreshes by itself.
+
+### 5.2 Tables
+Reservations, Staff, Payments, Audit log, Room blocks, Services, Rooms & rates and Restaurant are tables.
+1. Type in the **search box** to filter as you type.
+2. Click a **column header** to sort; click again to reverse.
+3. Click a row (or Tab to it and press **Enter**) to open it.
+4. Use the buttons in the **actions** column, such as **Refund**, **Rates** or **Menu**.
+5. On **Rooms & rates** and **Restaurant**, click the **chevron ▸** to show a row's rooms or tables, toggle rooms, add rooms or tables, and issue new QR codes.
+6. After 50 rows, click **Show more**.
+7. **Add** buttons are in the top-right of the page instead of the round "+" button.
+
+### 5.3 Reservation side panel
+1. In **Reservations**, click a row. The details open in a panel on the right while the list stays visible.
+2. Approve, decline, check in, check out, mark no-show or re-issue Wi-Fi from the panel. The list updates by itself.
+3. Click **Close** or press **Esc** to close the panel. The page link can be shared or refreshed and reopens the same reservation.
+
+### 5.4 Edit dialogs
+Staff, menu items, room types and guides & promotions open in a dialog with **Cancel** and **Save** at the bottom. **Esc** cancels. Services open as a full page with **Save draft**, **Publish** and **Pause** pinned to the bottom.
+
+### 5.5 Chat inbox
+The guest conversations are on the left and the open conversation is on the right. Search by guest name. Press **Enter** to send and **Shift+Enter** for a new line.
+
+### 5.6 Keyboard shortcuts
+| Key | Action |
+|-----|--------|
+| `/` | Focus the table search |
+| Ctrl+K / Cmd+K | Jump to any page |
+| `?` | Show the shortcuts (or click the keyboard icon in the top bar) |
+| Esc | Close a panel or dialog |
+
+---
+
+## 6. Troubleshooting
 
 | Problem | What to do |
 |---------|------------|
@@ -267,6 +309,8 @@ Shows **Date**, **Actor**, **Action** and **Entity** for every important change.
 | Cannot redeem points | Points only apply to a confirmed or current stay. |
 | Guest signed in on web sees "use the mobile app" | Expected. Guests use the iOS or Android app. |
 
-## 6. Quick reference
+## 7. Quick reference
 
-**Demo accounts (test setup only):** `guest@tuloy.test`, `staff@tuloy.test`, `admin@tuloy.test`. The password is `SEED_PASSWORD` from the API `.env` (default `ChangeMe123!`).
+**Demo hotel:** Lunhaw Suites Davao, a fictional budget hotel in Davao City used for testing.
+
+**Demo accounts (test setup only):** `guest@tuloy.test`, `staff@tuloy.test`, `house@tuloy.test` (housekeeping), `admin@tuloy.test`. The password is `SEED_PASSWORD` from the API `.env` (default `ChangeMe123!`).

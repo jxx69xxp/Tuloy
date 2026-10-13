@@ -240,7 +240,7 @@ class _ServiceRequestState extends ConsumerState<ServiceRequestScreen> {
                 onTap: _pickWhen,
               ),
               DropdownButtonFormField<String>(
-                value: _method,
+                initialValue: _method,
                 decoration: InputDecoration(labelText: l.paymentMethod),
                 items: [for (final m in methods) DropdownMenuItem(value: m, child: Text(paymentMethodLabel(l, m)))],
                 onChanged: (v) => setState(() => _method = v),

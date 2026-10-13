@@ -26,6 +26,7 @@
   "adminHome": "Admin",
   "comingSoon": "More features arrive in the next release.",
   "errorGeneric": "Can't reach the server. Check your connection.",
+  "cannotReachServer": "Can't reach the server. Check your connection, or ask your administrator to allow this website.",
   "hello": "Hello, {name}",
   "@hello": {
     "placeholders": {
@@ -324,6 +325,7 @@
     }
   },
   "nothingHere": "Nothing here yet.",
+  "notFound": "Not found.",
   "occupancyTonight": "Occupancy tonight",
   "ok": "OK",
   "openTasks": "Open tasks",
@@ -472,5 +474,58 @@
   "wifiMode": "Wi-Fi mode (portal or psk)",
   "wifiPortalHint": "Join the network; the login page opens. Enter the username and password above.",
   "wifiQrHint": "Scan with your camera to join.",
-  "wifiSharedPassword": "Shared Wi-Fi password (psk mode)"
+  "wifiSharedPassword": "Shared Wi-Fi password (psk mode)",
+  "webGuestTitle": "Guests, please use the Tuloy mobile app",
+  "webGuestBody": "Booking and stay features are available in the iOS and Android app. Staff and admins can sign in here.",
+  "action": "Action",
+  "entity": "Entity",
+  "dateLabel": "Date",
+  "actor": "Actor",
+  "navOverview": "Overview",
+  "navCatalog": "Catalog",
+  "navFinance": "Finance",
+  "navPeople": "People",
+  "navSystem": "System",
+  "details": "Details",
+  "refresh": "Refresh",
+  "needsAttention": "Needs attention",
+  "allClear": "Nothing needs attention",
+  "unreadChats": "Unread chats",
+  "myTasks": "My tasks",
+  "search": "Search",
+  "showMore": "Show more",
+  "viewLabel": "View",
+  "sortedAscending": "Sorted ascending",
+  "sortedDescending": "Sorted descending",
+  "sortBy": "Sort by {column}",
+  "@sortBy": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "rowsShown": "{shown} of {total}",
+  "@rowsShown": {
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "note": "Note",
+  "rooms": "Rooms",
+  "tables": "Tables",
+  "showDetails": "Show details",
+  "hideDetails": "Hide details",
+  "selectThread": "Select a conversation",
+  "keyboardShortcuts": "Keyboard shortcuts",
+  "goToPage": "Go to a page",
+  "shortcutSearch": "Search this page",
+  "shortcutClose": "Close a panel or dialog",
+  "shortcutHelp": "Show keyboard shortcuts",
+  "shortcutSend": "Send a chat message (Shift+Enter: new line)"
 }

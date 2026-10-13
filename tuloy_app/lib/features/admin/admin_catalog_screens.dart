@@ -4,16 +4,35 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../core/adaptive.dart';
 import '../../core/config.dart';
 import '../../core/format.dart';
 import '../../core/http.dart';
+import '../../core/find_by_id.dart';
 import '../../core/ui.dart';
+import '../../core/web/overlays.dart';
 import '../../l10n/app_localizations.dart';
 
 String _d(DateTime x) => x.toIso8601String().substring(0, 10);
 String trOf(BuildContext context, dynamic v) {
   final m = (v as Map?) ?? const {};
   return '${m[Localizations.localeOf(context).languageCode] ?? m['en'] ?? ''}';
+}
+
+/// Wide screens: "Add" in the app bar instead of a floating button (same callback).
+class _AddButton extends StatelessWidget {
+  const _AddButton(this.onPressed);
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    child: FilledButton.icon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.add),
+      label: Text(AppLocalizations.of(context).add),
+    ),
+  );
 }
 
 // ───────────── A3/A4 rooms ─────────────
@@ -26,6 +45,46 @@ class RoomsAdminScreen extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     const path = '/admin/room-types';
     final api = ref.read(apiProvider);
+    final wide = isWide(context);
+    // Wide: go keeps this page and opens the editor as a dialog over it; narrow pushes the page as before.
+    void open(String p) => wide ? context.go(p) : context.push(p);
+    void add() => open('/admin/rooms/type/new');
+    void edit(J t) => open('/admin/rooms/type/${t['id']}');
+    void rates(J t) => context.push('/admin/rooms/${t['id']}/rates');
+    // Room chips (tap toggles active) and "Add room": in the mobile card and the wide expanded row.
+    Widget rooms(BuildContext context, J t) => Wrap(
+      spacing: 6,
+      children: [
+        for (final r in jsonList(t['rooms']))
+          InputChip(
+            label: Text('${r['number']}'),
+            selected: r['active'] != false,
+            onPressed: () async {
+              final ok = await act(
+                context,
+                () => api.patch('/admin/rooms/${r['id']}', {
+                  'roomTypeId': t['id'],
+                  'number': r['number'],
+                  'active': r['active'] == false,
+                }),
+              );
+              if (ok) ref.invalidate(getProvider(path));
+            },
+          ),
+        ActionChip(
+          avatar: const Icon(Icons.add, size: 16),
+          label: Text(l.addRoom),
+          onPressed: () async {
+            final n = await prompt(context, l.addRoom, label: l.roomLabel);
+            if (n == null || n.isEmpty || !context.mounted) return;
+            if (await act(context, () => api.post('/admin/rooms', {'roomTypeId': t['id'], 'number': n}))) {
+              ref.invalidate(getProvider(path));
+            }
+          },
+        ),
+      ],
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l.roomsAndRates),
@@ -35,15 +94,36 @@ class RoomsAdminScreen extends ConsumerWidget {
             icon: const Icon(Icons.block),
             onPressed: () => context.push('/admin/rooms/blocks'),
           ),
+          if (wide) _AddButton(add),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: l.add,
-        onPressed: () => context.push('/admin/rooms/type'),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: wide
+          ? null
+          : FloatingActionButton(tooltip: l.add, onPressed: add, child: const Icon(Icons.add)),
       body: JsonList(
         path: path,
+        table: JsonTable(
+          columns: [l.name, l.maxGuests, l.basePrice, l.rooms, l.status],
+          cells: (context, t) => [
+            trOf(context, t['name']),
+            '${t['maxGuests']}',
+            money(num2(t['basePrice']), 'PHP'),
+            '${jsonList(t['rooms']).length}',
+            t['active'] == false ? l.inactive : l.active,
+          ],
+          sortKeys: [
+            (t) => trOf(context, t['name']).toLowerCase(),
+            (t) => num2(t['maxGuests']),
+            (t) => num2(t['basePrice']),
+            (t) => jsonList(t['rooms']).length,
+            (t) => t['active'] == false ? 1 : 0,
+          ],
+          onTap: edit,
+          actions: (context, t) => [
+            TextButton.icon(icon: const Icon(Icons.price_change), label: Text(l.rates), onPressed: () => rates(t)),
+          ],
+          expanded: rooms,
+        ),
         item: (context, t) => Card(
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Column(
@@ -55,47 +135,10 @@ class RoomsAdminScreen extends ConsumerWidget {
                   '${money(num2(t['basePrice']), 'PHP')} · ${l.guests}: ${t['maxGuests']}${t['active'] == false ? ' · ${l.inactive}' : ''}',
                 ),
                 trailing: const Icon(Icons.edit),
-                onTap: () => context.push('/admin/rooms/type', extra: t),
+                onTap: () => edit(t),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Wrap(
-                  spacing: 6,
-                  children: [
-                    for (final r in jsonList(t['rooms']))
-                      InputChip(
-                        label: Text('${r['number']}'),
-                        selected: r['active'] != false,
-                        onPressed: () async {
-                          final ok = await act(
-                            context,
-                            () => api.patch('/admin/rooms/${r['id']}', {
-                              'roomTypeId': t['id'],
-                              'number': r['number'],
-                              'active': r['active'] == false,
-                            }),
-                          );
-                          if (ok) ref.invalidate(getProvider(path));
-                        },
-                      ),
-                    ActionChip(
-                      avatar: const Icon(Icons.add, size: 16),
-                      label: Text(l.addRoom),
-                      onPressed: () async {
-                        final n = await prompt(context, l.addRoom, label: l.roomLabel);
-                        if (n == null || n.isEmpty || !context.mounted) return;
-                        if (await act(context, () => api.post('/admin/rooms', {'roomTypeId': t['id'], 'number': n})))
-                          ref.invalidate(getProvider(path));
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              TextButton.icon(
-                icon: const Icon(Icons.price_change),
-                label: Text(l.rates),
-                onPressed: () => context.push('/admin/rooms/rates', extra: t),
-              ),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: rooms(context, t)),
+              TextButton.icon(icon: const Icon(Icons.price_change), label: Text(l.rates), onPressed: () => rates(t)),
             ],
           ),
         ),
@@ -144,7 +187,34 @@ class _RoomTypeEditState extends ConsumerState<RoomTypeEditScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final id = widget.type?['id'];
+    final wide = isWide(context);
+    Future<void> save() async {
+      final body = {
+        'name': _name.value,
+        'description': _desc.value,
+        'maxGuests': int.tryParse(_guests.text) ?? 2,
+        'basePrice': double.tryParse(_price.text) ?? 0,
+        'amenities': _amenities.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
+        'photos': _photos,
+        'active': _active,
+      };
+      final api = ref.read(apiProvider);
+      if (await act(
+        context,
+        () => id == null ? api.post('/admin/room-types', body) : api.patch('/admin/room-types/$id', body),
+        done: l.saved,
+      )) {
+        ref.invalidate(getProvider('/admin/room-types'));
+        if (context.mounted) popOr(context, '/admin/rooms');
+      }
+    }
+
     return Scaffold(
+      bottomNavigationBar: wide
+          ? EditorFooter(
+              save: BusyButton(label: l.save, onPressed: save),
+            )
+          : null,
       appBar: AppBar(title: Text(l.roomTypeLabel)),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -184,30 +254,7 @@ class _RoomTypeEditState extends ConsumerState<RoomTypeEditScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          BusyButton(
-            label: l.save,
-            onPressed: () async {
-              final body = {
-                'name': _name.value,
-                'description': _desc.value,
-                'maxGuests': int.tryParse(_guests.text) ?? 2,
-                'basePrice': double.tryParse(_price.text) ?? 0,
-                'amenities': _amenities.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
-                'photos': _photos,
-                'active': _active,
-              };
-              final api = ref.read(apiProvider);
-              if (await act(
-                context,
-                () => id == null ? api.post('/admin/room-types', body) : api.patch('/admin/room-types/$id', body),
-                done: l.saved,
-              )) {
-                ref.invalidate(getProvider('/admin/room-types'));
-                if (context.mounted) context.pop();
-              }
-            },
-          ),
+          if (!wide) ...[const SizedBox(height: 16), BusyButton(label: l.save, onPressed: save)],
         ],
       ),
     );
@@ -302,6 +349,7 @@ class BlocksScreen extends ConsumerWidget {
     final now = DateTime.now();
     final path = '/admin/blocks?from=${_d(now)}&to=${_d(now.add(const Duration(days: 365)))}';
     final api = ref.read(apiProvider);
+    final wide = isWide(context);
     Future<void> edit({required bool add}) async {
       final types = jsonList(await api.get('/admin/room-types'));
       final rooms = [for (final t in types) ...jsonList(t['rooms'])];
@@ -335,15 +383,21 @@ class BlocksScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(l.blocks),
-        actions: [TextButton(onPressed: () => edit(add: false), child: Text(l.unblock))],
+        actions: [
+          TextButton(onPressed: () => edit(add: false), child: Text(l.unblock)),
+          if (wide) _AddButton(() => edit(add: true)),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: l.add,
-        onPressed: () => edit(add: true),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: wide
+          ? null
+          : FloatingActionButton(tooltip: l.add, onPressed: () => edit(add: true), child: const Icon(Icons.add)),
       body: JsonList(
         path: path,
+        table: JsonTable(
+          columns: [l.roomLabel, l.dateLabel, l.note],
+          cells: (context, b) => ['${b['room']}', date(context, DateTime.parse('${b['date']}')), '${b['note'] ?? ''}'],
+          sortKeys: [(b) => '${b['room']}', (b) => DateTime.parse('${b['date']}'), (b) => '${b['note'] ?? ''}'],
+        ),
         item: (context, b) => ListTile(
           dense: true,
           title: Text('${l.roomNumber('${b['room']}')} · ${date(context, DateTime.parse('${b['date']}'))}'),
@@ -362,19 +416,31 @@ class ServicesAdminScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final wide = isWide(context);
     return Scaffold(
-      appBar: AppBar(title: Text(l.services)),
-      floatingActionButton: FloatingActionButton(
-        tooltip: l.add,
-        onPressed: () => context.push('/admin/services/edit'),
-        child: const Icon(Icons.add),
+      appBar: AppBar(
+        title: Text(l.services),
+        actions: [if (wide) _AddButton(() => context.push('/admin/services/new'))],
       ),
+      floatingActionButton: wide
+          ? null
+          : FloatingActionButton(
+              tooltip: l.add,
+              onPressed: () => context.push('/admin/services/new'),
+              child: const Icon(Icons.add),
+            ),
       body: JsonList(
         path: '/admin/services',
+        table: JsonTable(
+          columns: [l.name, l.category, l.status],
+          cells: (context, s) => [trOf(context, s['name']), '${s['category']}', '${s['status']}'],
+          onTap: (s) => context.push('/admin/services/${s['id']}'),
+          sortKeys: [(s) => trOf(context, s['name']).toLowerCase(), (s) => '${s['category']}', (s) => '${s['status']}'],
+        ),
         item: (context, s) => ListTile(
           title: Text(trOf(context, s['name'])),
           subtitle: Text('${s['category']} · ${s['status']}'),
-          onTap: () => context.push('/admin/services/edit', extra: '${s['id']}'),
+          onTap: () => context.push('/admin/services/${s['id']}'),
         ),
       ),
     );
@@ -569,17 +635,42 @@ class _ServiceEditState extends ConsumerState<ServiceEditScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    if (_loading)
+    if (_loading) {
       return Scaffold(
         appBar: AppBar(),
         body: const Center(child: CircularProgressIndicator()),
       );
+    }
     final missing = ((_s?['missing'] as List?) ?? const []).cast<String>();
     final departments = jsonList(ref.watch(getProvider('/admin/departments')).valueOrNull ?? const []);
     const dayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     const methods = ['ONLINE', 'ROOM_CHARGE', 'PAY_AT_OUTLET', 'FREE'];
+    final wide = isWide(context);
+    void publish() => act(context, () async {
+      final id = await _save();
+      await ref.read(apiProvider).post('/admin/services/$id/publish');
+      await _save();
+    }, done: l.published);
+    void pause() => act(context, () async {
+      await ref.read(apiProvider).post('/admin/services/${_s!['id']}/pause');
+      await _save();
+    }, done: l.saved);
+    final saveDraft = BusyButton(
+      label: l.saveDraft,
+      onPressed: () => act(context, _save, done: l.saved),
+    );
     return Scaffold(
       appBar: AppBar(title: Text(l.serviceBuilder)),
+      // Wide: the save/publish buttons stay visible in a footer instead of at the end of the long form.
+      bottomNavigationBar: wide
+          ? EditorFooter(
+              more: [
+                if (_s?['status'] == 'PUBLISHED') TextButton(onPressed: pause, child: Text(l.pause)),
+                FilledButton.tonal(onPressed: publish, child: Text(l.publish)),
+              ],
+              save: saveDraft,
+            )
+          : null,
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -649,7 +740,7 @@ class _ServiceEditState extends ConsumerState<ServiceEditScreen> {
             ],
           ),
           DropdownButtonFormField<String>(
-            value: _model,
+            initialValue: _model,
             decoration: InputDecoration(labelText: l.priceModel),
             items: [
               for (final m in ['FIXED', 'PER_ITEM', 'PER_PERSON', 'PER_NIGHT', 'QUOTE'])
@@ -682,13 +773,13 @@ class _ServiceEditState extends ConsumerState<ServiceEditScreen> {
             ],
           ),
           DropdownButtonFormField<String>(
-            value: _department,
+            initialValue: _department,
             decoration: InputDecoration(labelText: l.department),
             items: [for (final d in departments) DropdownMenuItem(value: '${d['id']}', child: Text('${d['name']}'))],
             onChanged: (v) => setState(() => _department = v),
           ),
           DropdownButtonFormField<String>(
-            value: _acceptance,
+            initialValue: _acceptance,
             decoration: InputDecoration(labelText: l.acceptance),
             items: [
               DropdownMenuItem(value: 'AUTO', child: Text(l.autoAccept)),
@@ -791,28 +882,13 @@ class _ServiceEditState extends ConsumerState<ServiceEditScreen> {
             label: Text(l.addField),
             onPressed: () => setState(() => _fields.add(_FieldDraft())),
           ),
-          const SizedBox(height: 16),
-          BusyButton(
-            label: l.saveDraft,
-            onPressed: () => act(context, _save, done: l.saved),
-          ),
-          const SizedBox(height: 8),
-          FilledButton.tonal(
-            onPressed: () => act(context, () async {
-              final id = await _save();
-              await ref.read(apiProvider).post('/admin/services/$id/publish');
-              await _save();
-            }, done: l.published),
-            child: Text(l.publish),
-          ),
-          if (_s?['status'] == 'PUBLISHED')
-            TextButton(
-              onPressed: () => act(context, () async {
-                await ref.read(apiProvider).post('/admin/services/${_s!['id']}/pause');
-                await _save();
-              }, done: l.saved),
-              child: Text(l.pause),
-            ),
+          if (!wide) ...[
+            const SizedBox(height: 16),
+            saveDraft,
+            const SizedBox(height: 8),
+            FilledButton.tonal(onPressed: publish, child: Text(l.publish)),
+            if (_s?['status'] == 'PUBLISHED') TextButton(onPressed: pause, child: Text(l.pause)),
+          ],
         ],
       ),
     );
@@ -829,30 +905,97 @@ class RestaurantAdminScreen extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     const path = '/admin/outlets';
     final api = ref.read(apiProvider);
+    final wide = isWide(context);
+    Future<void> add() async {
+      final n = await prompt(context, l.addOutlet, label: l.name);
+      if (n == null || n.isEmpty || !context.mounted) return;
+      final ok = await act(
+        context,
+        () => api.post(path, {
+          'name': {for (final k in supportedLanguages.keys) k: n},
+          'schedule': {
+            'days': [1, 2, 3, 4, 5, 6, 7],
+            'from': '06:00',
+            'to': '22:00',
+          },
+        }),
+      );
+      if (ok) ref.invalidate(getProvider(path));
+    }
+
+    void menu(J o) => context.push('/admin/restaurant/${o['id']}/menu');
+    String hours(J o) {
+      final h = (o['schedule'] as Map?) ?? const {};
+      return '${h['from'] ?? ''}–${h['to'] ?? ''}';
+    }
+
+    // Table chips (new QR with warning) and "Add table": in the mobile card and the wide expanded row.
+    Widget tables(BuildContext context, J o) => Wrap(
+      spacing: 6,
+      children: [
+        for (final t in jsonList(o['tables']))
+          ActionChip(
+            avatar: const Icon(Icons.qr_code, size: 16),
+            label: Text('${t['label']}'),
+            onPressed: () async {
+              if (!await confirm(context, l.newQr, l.newQrWarning) || !context.mounted) return;
+              try {
+                final r = await api.post('/admin/tables/${t['id']}/qr') as Map;
+                if (!context.mounted) return;
+                await showDialog<void>(
+                  context: context,
+                  builder: (c) => AlertDialog(
+                    title: Text(l.tableLabel('${t['label']}')),
+                    content: SizedBox(
+                      width: 240,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          QrImageView(data: '${r['qrPayload']}', size: 220, backgroundColor: Colors.white),
+                          CopyRow(l.qrCode, '${r['qrPayload']}'),
+                        ],
+                      ),
+                    ),
+                    actions: [TextButton(onPressed: () => Navigator.pop(c), child: Text(l.ok))],
+                  ),
+                );
+              } catch (e) {
+                if (context.mounted) snack(context, failureText(context, e));
+              }
+            },
+          ),
+        ActionChip(
+          avatar: const Icon(Icons.add, size: 16),
+          label: Text(l.addTable),
+          onPressed: () async {
+            final n = await prompt(context, l.addTable, label: l.label);
+            if (n == null || n.isEmpty || !context.mounted) return;
+            if (await act(context, () => api.post('/admin/outlets/${o['id']}/tables', {'label': n}))) {
+              ref.invalidate(getProvider(path));
+            }
+          },
+        ),
+      ],
+    );
+
     return Scaffold(
-      appBar: AppBar(title: Text(l.restaurant)),
-      floatingActionButton: FloatingActionButton(
-        tooltip: l.add,
-        onPressed: () async {
-          final n = await prompt(context, l.addOutlet, label: l.name);
-          if (n == null || n.isEmpty || !context.mounted) return;
-          final ok = await act(
-            context,
-            () => api.post(path, {
-              'name': {for (final k in supportedLanguages.keys) k: n},
-              'schedule': {
-                'days': [1, 2, 3, 4, 5, 6, 7],
-                'from': '06:00',
-                'to': '22:00',
-              },
-            }),
-          );
-          if (ok) ref.invalidate(getProvider(path));
-        },
-        child: const Icon(Icons.add),
-      ),
+      appBar: AppBar(title: Text(l.restaurant), actions: [if (wide) _AddButton(add)]),
+      floatingActionButton: wide
+          ? null
+          : FloatingActionButton(tooltip: l.add, onPressed: add, child: const Icon(Icons.add)),
       body: JsonList(
         path: path,
+        table: JsonTable(
+          columns: [l.name, l.schedule, l.tables],
+          cells: (context, o) => [trOf(context, o['name']), hours(o), '${jsonList(o['tables']).length}'],
+          sortKeys: [
+            (o) => trOf(context, o['name']).toLowerCase(),
+            (o) => '${(o['schedule'] as Map?)?['from'] ?? ''}',
+            (o) => jsonList(o['tables']).length,
+          ],
+          actions: (context, o) => [TextButton(onPressed: () => menu(o), child: Text(l.menu))],
+          expanded: tables,
+        ),
         item: (context, o) => Card(
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Column(
@@ -860,60 +1003,9 @@ class RestaurantAdminScreen extends ConsumerWidget {
             children: [
               ListTile(
                 title: Text(trOf(context, o['name'])),
-                trailing: TextButton(
-                  onPressed: () => context.push('/admin/restaurant/menu', extra: o),
-                  child: Text(l.menu),
-                ),
+                trailing: TextButton(onPressed: () => menu(o), child: Text(l.menu)),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                child: Wrap(
-                  spacing: 6,
-                  children: [
-                    for (final t in jsonList(o['tables']))
-                      ActionChip(
-                        avatar: const Icon(Icons.qr_code, size: 16),
-                        label: Text('${t['label']}'),
-                        onPressed: () async {
-                          if (!await confirm(context, l.newQr, l.newQrWarning) || !context.mounted) return;
-                          try {
-                            final r = await api.post('/admin/tables/${t['id']}/qr') as Map;
-                            if (!context.mounted) return;
-                            await showDialog<void>(
-                              context: context,
-                              builder: (c) => AlertDialog(
-                                title: Text(l.tableLabel('${t['label']}')),
-                                content: SizedBox(
-                                  width: 240,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      QrImageView(data: '${r['qrPayload']}', size: 220, backgroundColor: Colors.white),
-                                      CopyRow(l.qrCode, '${r['qrPayload']}'),
-                                    ],
-                                  ),
-                                ),
-                                actions: [TextButton(onPressed: () => Navigator.pop(c), child: Text(l.ok))],
-                              ),
-                            );
-                          } catch (e) {
-                            if (context.mounted) snack(context, failureText(context, e));
-                          }
-                        },
-                      ),
-                    ActionChip(
-                      avatar: const Icon(Icons.add, size: 16),
-                      label: Text(l.addTable),
-                      onPressed: () async {
-                        final n = await prompt(context, l.addTable, label: l.label);
-                        if (n == null || n.isEmpty || !context.mounted) return;
-                        if (await act(context, () => api.post('/admin/outlets/${o['id']}/tables', {'label': n})))
-                          ref.invalidate(getProvider(path));
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              Padding(padding: const EdgeInsets.fromLTRB(12, 0, 12, 12), child: tables(context, o)),
             ],
           ),
         ),
@@ -932,11 +1024,9 @@ class MenuAdminScreen extends ConsumerWidget {
     final path = '/admin/outlets/${outlet['id']}/menu';
     final api = ref.read(apiProvider);
     Future<void> edit([J? item]) async {
-      final saved = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(
-          builder: (_) => _MenuItemEdit(outletId: '${outlet['id']}', item: item),
-        ),
-      );
+      final saved = await Navigator.of(
+        context,
+      ).push<bool>(editorRoute(context, _MenuItemEdit(outletId: '${outlet['id']}', item: item)));
       if (saved == true) ref.invalidate(getProvider(path));
     }
 
@@ -951,8 +1041,9 @@ class MenuAdminScreen extends ConsumerWidget {
           trailing: Switch(
             value: i['available'] == true,
             onChanged: (v) async {
-              if (await act(context, () => api.patch('/admin/menu-items/${i['id']}', {'available': v})))
+              if (await act(context, () => api.patch('/admin/menu-items/${i['id']}', {'available': v}))) {
                 ref.invalidate(getProvider(path));
+              }
             },
           ),
           onTap: () => edit(i),
@@ -989,7 +1080,33 @@ class _MenuItemEditState extends ConsumerState<_MenuItemEdit> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final id = widget.item?['id'];
+    final wide = isWide(context);
+    Future<void> save() async {
+      final body = {
+        'name': _name.value,
+        'category': _category.value,
+        'price': double.tryParse(_price.text) ?? 0,
+        'allergens': _allergens.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
+        'available': widget.item?['available'] ?? true,
+      };
+      final api = ref.read(apiProvider);
+      if (await act(
+            context,
+            () => id == null
+                ? api.post('/admin/outlets/${widget.outletId}/menu', body)
+                : api.patch('/admin/menu-items/$id', body),
+          ) &&
+          context.mounted) {
+        Navigator.pop(context, true);
+      }
+    }
+
     return Scaffold(
+      bottomNavigationBar: wide
+          ? EditorFooter(
+              save: BusyButton(label: l.save, onPressed: save),
+            )
+          : null,
       appBar: AppBar(title: Text(l.menu)),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -1005,29 +1122,7 @@ class _MenuItemEditState extends ConsumerState<_MenuItemEdit> {
             controller: _allergens,
             decoration: InputDecoration(labelText: l.allergens, helperText: 'gluten, soy, nuts'),
           ),
-          const SizedBox(height: 16),
-          BusyButton(
-            label: l.save,
-            onPressed: () async {
-              final body = {
-                'name': _name.value,
-                'category': _category.value,
-                'price': double.tryParse(_price.text) ?? 0,
-                'allergens': _allergens.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
-                'available': widget.item?['available'] ?? true,
-              };
-              final api = ref.read(apiProvider);
-              if (await act(
-                    context,
-                    () => id == null
-                        ? api.post('/admin/outlets/${widget.outletId}/menu', body)
-                        : api.patch('/admin/menu-items/$id', body),
-                  ) &&
-                  context.mounted) {
-                Navigator.pop(context, true);
-              }
-            },
-          ),
+          if (!wide) ...[const SizedBox(height: 16), BusyButton(label: l.save, onPressed: save)],
         ],
       ),
     );

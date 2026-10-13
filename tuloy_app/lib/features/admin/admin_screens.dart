@@ -3,10 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/adaptive.dart';
 import '../../core/config.dart';
 import '../../core/format.dart';
 import '../../core/http.dart';
+import '../../core/find_by_id.dart';
 import '../../core/ui.dart';
+import '../../core/web/overlays.dart';
 import '../../l10n/app_localizations.dart';
 
 // ───────────── A1 dashboard + menu ─────────────
@@ -21,10 +24,17 @@ class AdminHomeScreen extends ConsumerWidget {
     final d = (ref.watch(getProvider(path)).valueOrNull as Map?)?.cast<String, dynamic>() ?? const {};
     final cur = '${d['currency'] ?? 'PHP'}';
     final alerts = (d['alerts'] as Map?) ?? const {};
+    final wide = isWide(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(l.adminHome),
         actions: [
+          if (wide)
+            IconButton(
+              tooltip: l.refresh,
+              icon: const Icon(Icons.refresh),
+              onPressed: () => ref.invalidate(getProvider(path)),
+            ),
           IconButton(
             tooltip: l.settings,
             icon: const Icon(Icons.settings_outlined),
@@ -39,57 +49,89 @@ class AdminHomeScreen extends ConsumerWidget {
           onRefresh: () => ref.refresh(getProvider(path).future),
           child: ListView(
             padding: const EdgeInsets.all(12),
-            children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    children: [
-                      KV(l.occupancyTonight, '${d['occupancy'] ?? 0}% (${d['roomsSold'] ?? 0}/${d['rooms'] ?? 0})'),
-                      KV(l.arrivals, '${d['arrivals'] ?? 0}'),
-                      KV(l.departures, '${d['departures'] ?? 0}'),
-                      KV(l.inHouse, '${d['inHouse'] ?? 0}'),
-                      KV(l.pendingApproval, '${d['pending'] ?? 0}'),
-                      KV(l.openTasks, '${d['openTasks'] ?? 0}'),
-                      KV(l.collectedToday, money(num2(d['collectedToday']), cur)),
-                      KV(l.refundedToday, money(num2(d['refundedToday']), cur)),
-                      KV(l.netToday, money(num2(d['netToday']), cur)),
-                    ],
-                  ),
-                ),
-              ),
-              if ((alerts['failedRefunds'] ?? 0) > 0 || (alerts['failedNotifications'] ?? 0) > 0)
-                Card(
-                  color: Theme.of(context).colorScheme.errorContainer,
-                  child: ListTile(
-                    leading: const Icon(Icons.warning_amber),
-                    title: Text(l.alerts),
-                    subtitle: Text(
-                      '${l.failedRefunds}: ${alerts['failedRefunds']} · ${l.failedNotifications}: ${alerts['failedNotifications']}',
+            children: wide
+                ? _wide(context, l, d, cur, alerts)
+                : [
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          children: [
+                            KV(
+                              l.occupancyTonight,
+                              '${d['occupancy'] ?? 0}% (${d['roomsSold'] ?? 0}/${d['rooms'] ?? 0})',
+                            ),
+                            KV(l.arrivals, '${d['arrivals'] ?? 0}'),
+                            KV(l.departures, '${d['departures'] ?? 0}'),
+                            KV(l.inHouse, '${d['inHouse'] ?? 0}'),
+                            KV(l.pendingApproval, '${d['pending'] ?? 0}'),
+                            KV(l.openTasks, '${d['openTasks'] ?? 0}'),
+                            KV(l.collectedToday, money(num2(d['collectedToday']), cur)),
+                            KV(l.refundedToday, money(num2(d['refundedToday']), cur)),
+                            KV(l.netToday, money(num2(d['netToday']), cur)),
+                          ],
+                        ),
+                      ),
                     ),
-                    onTap: () => context.push('/admin/payments'),
-                  ),
-                ),
-              NavTile(Icons.room_service, l.frontDesk, () => context.push('/admin/desk')),
-              NavTile(Icons.bed, l.roomsAndRates, () => context.push('/admin/rooms')),
-              NavTile(Icons.local_laundry_service, l.services, () => context.push('/admin/services')),
-              NavTile(Icons.restaurant_menu, l.restaurant, () => context.push('/admin/restaurant')),
-              NavTile(Icons.payments, l.payments, () => context.push('/admin/payments')),
-              NavTile(Icons.bar_chart, l.reports, () => context.push('/admin/reports')),
-              NavTile(Icons.badge, l.staffAndLeave, () => context.push('/admin/staff')),
-              NavTile(Icons.loyalty, l.loyalty, () => context.push('/admin/loyalty')),
-              NavTile(Icons.article, l.content, () => context.push('/admin/content')),
-              NavTile(Icons.tune, l.hotelSettings, () => context.push('/admin/hotel')),
-              NavTile(Icons.history, l.auditLog, () => context.push('/admin/audit')),
-            ],
+                    if ((alerts['failedRefunds'] ?? 0) > 0 || (alerts['failedNotifications'] ?? 0) > 0)
+                      Card(
+                        color: Theme.of(context).colorScheme.errorContainer,
+                        child: ListTile(
+                          leading: const Icon(Icons.warning_amber),
+                          title: Text(l.alerts),
+                          subtitle: Text(
+                            '${l.failedRefunds}: ${alerts['failedRefunds']} · ${l.failedNotifications}: ${alerts['failedNotifications']}',
+                          ),
+                          onTap: () => context.push('/admin/payments'),
+                        ),
+                      ),
+                    NavTile(Icons.room_service, l.frontDesk, () => context.push('/admin/desk')),
+                    NavTile(Icons.bed, l.roomsAndRates, () => context.push('/admin/rooms')),
+                    NavTile(Icons.local_laundry_service, l.services, () => context.push('/admin/services')),
+                    NavTile(Icons.restaurant_menu, l.restaurant, () => context.push('/admin/restaurant')),
+                    NavTile(Icons.payments, l.payments, () => context.push('/admin/payments')),
+                    NavTile(Icons.bar_chart, l.reports, () => context.push('/admin/reports')),
+                    NavTile(Icons.badge, l.staffAndLeave, () => context.push('/admin/staff')),
+                    NavTile(Icons.loyalty, l.loyalty, () => context.push('/admin/loyalty')),
+                    NavTile(Icons.article, l.content, () => context.push('/admin/content')),
+                    NavTile(Icons.tune, l.hotelSettings, () => context.push('/admin/hotel')),
+                    NavTile(Icons.history, l.auditLog, () => context.push('/admin/audit')),
+                  ],
           ),
         ),
       ),
     );
   }
+
+  /// Wide layout: KPI grid and an attention card; the sidebar replaces the menu tiles.
+  List<Widget> _wide(BuildContext context, AppLocalizations l, Map<String, dynamic> d, String cur, Map alerts) {
+    void go(String p) => context.go(p);
+    int n(Object? v) => (v as num?)?.toInt() ?? 0;
+    return [
+      KpiGrid([
+        Kpi(l.occupancyTonight, '${d['occupancy'] ?? 0}%', sub: '${d['roomsSold'] ?? 0}/${d['rooms'] ?? 0}'),
+        Kpi(l.collectedToday, money(num2(d['collectedToday']), cur), onTap: () => go('/admin/payments')),
+        Kpi(l.refundedToday, money(num2(d['refundedToday']), cur), onTap: () => go('/admin/payments')),
+        Kpi(l.netToday, money(num2(d['netToday']), cur), onTap: () => go('/admin/payments')),
+        Kpi(l.arrivals, '${d['arrivals'] ?? 0}', onTap: () => go('/admin/desk/reservations')),
+        Kpi(l.departures, '${d['departures'] ?? 0}', onTap: () => go('/admin/desk/reservations')),
+        Kpi(l.inHouse, '${d['inHouse'] ?? 0}', onTap: () => go('/admin/desk/reservations')),
+        Kpi(l.openTasks, '${d['openTasks'] ?? 0}', onTap: () => go('/admin/desk/tasks')),
+      ]),
+      const SizedBox(height: 16),
+      AttentionCard([
+        (Icons.pending_actions, l.pendingApproval, n(d['pending']), () => go('/admin/desk/reservations')),
+        (Icons.money_off, l.failedRefunds, n(alerts['failedRefunds']), () => go('/admin/payments')),
+        // ponytail: no notifications screen yet, so this row is not tappable.
+        (Icons.notifications_off_outlined, l.failedNotifications, n(alerts['failedNotifications']), null),
+      ]),
+    ];
+  }
 }
 
 // ───────────── A9 payments & refunds ─────────────
+
+int _failedRefunds(J p) => jsonList(p['refunds']).where((r) => r['status'] == 'failed').length;
 
 class PaymentsScreen extends ConsumerWidget {
   const PaymentsScreen({super.key});
@@ -98,14 +140,59 @@ class PaymentsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     const path = '/admin/payments';
+    num leftOf(J p) => num2(p['amount']) - num2(p['refundedAmount']);
+    bool canRefund(J p) =>
+        leftOf(p) > 0 && p['status'] != 'PENDING' && p['status'] != 'FAILED' && p['reservationId'] != null;
+    Future<void> refund(BuildContext context, J p) async {
+      final left = leftOf(p);
+      final v = await prompt(
+        context,
+        l.refund,
+        label: '${l.amount} (≤ ${left.toStringAsFixed(2)})',
+        number: true,
+        initial: left.toStringAsFixed(2),
+      );
+      final amount = double.tryParse(v ?? '');
+      if (amount == null || !context.mounted) return;
+      final reason = await prompt(context, l.refund, label: l.reason);
+      if (reason == null || reason.length < 3 || !context.mounted) return;
+      final ok = await act(
+        context,
+        () => ref.read(apiProvider).post('/admin/payments/${p['id']}/refunds', {'amount': amount, 'reason': reason}),
+        done: l.refunded,
+      );
+      if (ok) ref.invalidate(getProvider(path));
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(l.payments)),
       body: JsonList(
         path: path,
+        table: JsonTable(
+          columns: [l.amount, l.kind, l.status, l.dateLabel, l.refunded],
+          cells: (context, p) => [
+            money(num2(p['amount']), '${p['currency']}'),
+            '${p['kind']}',
+            '${p['status']}',
+            date(context, DateTime.parse('${p['createdAt']}').toLocal()),
+            [
+              if (num2(p['refundedAmount']) > 0) '${p['refundedAmount']}',
+              if (_failedRefunds(p) > 0) '${l.failedRefunds}: ${_failedRefunds(p)}',
+            ].join(' · '),
+          ],
+          sortKeys: [
+            (p) => num2(p['amount']),
+            (p) => '${p['kind']}',
+            (p) => '${p['status']}',
+            (p) => DateTime.parse('${p['createdAt']}'),
+            (p) => num2(p['refundedAmount']),
+          ],
+          actions: (context, p) => [
+            if (canRefund(p)) TextButton(onPressed: () => refund(context, p), child: Text(l.refund)),
+          ],
+        ),
         item: (context, p) {
-          final refunds = jsonList(p['refunds']);
-          final failed = refunds.where((r) => r['status'] == 'failed').length;
-          final left = num2(p['amount']) - num2(p['refundedAmount']);
+          final failed = _failedRefunds(p);
           return ListTile(
             title: Text('${money(num2(p['amount']), '${p['currency']}')} · ${p['kind']} · ${p['status']}'),
             subtitle: Text(
@@ -113,33 +200,7 @@ class PaymentsScreen extends ConsumerWidget {
               '${num2(p['refundedAmount']) > 0 ? ' · ${l.refunded}: ${p['refundedAmount']}' : ''}'
               '${failed > 0 ? ' · ${l.failedRefunds}: $failed' : ''}',
             ),
-            trailing: left > 0 && p['status'] != 'PENDING' && p['status'] != 'FAILED' && p['reservationId'] != null
-                ? TextButton(
-                    onPressed: () async {
-                      final v = await prompt(
-                        context,
-                        l.refund,
-                        label: '${l.amount} (≤ ${left.toStringAsFixed(2)})',
-                        number: true,
-                        initial: left.toStringAsFixed(2),
-                      );
-                      final amount = double.tryParse(v ?? '');
-                      if (amount == null || !context.mounted) return;
-                      final reason = await prompt(context, l.refund, label: l.reason);
-                      if (reason == null || reason.length < 3 || !context.mounted) return;
-                      final ok = await act(
-                        context,
-                        () => ref.read(apiProvider).post('/admin/payments/${p['id']}/refunds', {
-                          'amount': amount,
-                          'reason': reason,
-                        }),
-                        done: l.refunded,
-                      );
-                      if (ok) ref.invalidate(getProvider(path));
-                    },
-                    child: Text(l.refund),
-                  )
-                : null,
+            trailing: canRefund(p) ? TextButton(onPressed: () => refund(context, p), child: Text(l.refund)) : null,
           );
         },
       ),
@@ -157,6 +218,26 @@ class AuditScreen extends StatelessWidget {
     appBar: AppBar(title: Text(AppLocalizations.of(context).auditLog)),
     body: JsonList(
       path: '/admin/audit',
+      table: JsonTable(
+        columns: [
+          AppLocalizations.of(context).action,
+          AppLocalizations.of(context).entity,
+          AppLocalizations.of(context).dateLabel,
+          AppLocalizations.of(context).actor,
+        ],
+        cells: (context, a) => [
+          '${a['action']}',
+          '${a['entityType']}',
+          date(context, DateTime.parse('${a['at']}').toLocal()),
+          '${a['actorId'] ?? ''}',
+        ],
+        sortKeys: [
+          (a) => '${a['action']}',
+          (a) => '${a['entityType']}',
+          (a) => DateTime.parse('${a['at']}'),
+          (a) => '${a['actorId'] ?? ''}',
+        ],
+      ),
       item: (context, a) => ListTile(
         dense: true,
         title: Text('${a['action']} · ${a['entityType']}'),
@@ -274,11 +355,13 @@ class ContentScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final lang = Localizations.localeOf(context).languageCode;
+    // Wide: go keeps this page and opens the editor as a dialog over it; narrow pushes the page as before.
+    void open(String p) => isWide(context) ? context.go(p) : context.push(p);
     return Scaffold(
       appBar: AppBar(title: Text(l.content)),
       floatingActionButton: FloatingActionButton(
         tooltip: l.add,
-        onPressed: () => context.push('/admin/content/edit'),
+        onPressed: () => open('/admin/content/new'),
         child: const Icon(Icons.add),
       ),
       body: JsonList(
@@ -286,7 +369,7 @@ class ContentScreen extends ConsumerWidget {
         item: (context, c) => ListTile(
           title: Text('${(c['title'] as Map)[lang] ?? (c['title'] as Map)['en']}'),
           subtitle: Text('${c['kind']} · ${c['publishedAt'] == null ? l.draft : l.published}'),
-          onTap: () => context.push('/admin/content/edit', extra: c),
+          onTap: () => open('/admin/content/${c['id']}'),
         ),
       ),
     );
@@ -318,7 +401,31 @@ class _ContentEditState extends ConsumerState<ContentEditScreen> {
     final l = AppLocalizations.of(context);
     final api = ref.read(apiProvider);
     final id = widget.item?['id'];
+    final wide = isWide(context);
+    Future<void> save() async {
+      final body = {
+        'kind': _kind,
+        'title': _title.value,
+        'body': _body.value,
+        'publishedAt': _published ? (widget.item?['publishedAt'] ?? DateTime.now().toUtc().toIso8601String()) : null,
+      };
+      final ok = await act(
+        context,
+        () => id == null ? api.post('/admin/content', body) : api.patch('/admin/content/$id', body),
+        done: l.saved,
+      );
+      if (ok) {
+        ref.invalidate(getProvider('/admin/content'));
+        if (context.mounted) popOr(context, '/admin/content');
+      }
+    }
+
     return Scaffold(
+      bottomNavigationBar: wide
+          ? EditorFooter(
+              save: BusyButton(label: l.save, onPressed: save),
+            )
+          : null,
       appBar: AppBar(
         title: Text(l.content),
         actions: [
@@ -330,7 +437,7 @@ class _ContentEditState extends ConsumerState<ContentEditScreen> {
                 if (!await confirm(context, l.delete) || !context.mounted) return;
                 if (await act(context, () => api.delete('/admin/content/$id'))) {
                   ref.invalidate(getProvider('/admin/content'));
-                  if (context.mounted) context.pop();
+                  if (context.mounted) popOr(context, '/admin/content');
                 }
               },
             ),
@@ -340,7 +447,7 @@ class _ContentEditState extends ConsumerState<ContentEditScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           DropdownButtonFormField<String>(
-            value: _kind,
+            initialValue: _kind,
             decoration: InputDecoration(labelText: l.kind),
             items: [
               for (final k in ['guide', 'promotion', 'banner']) DropdownMenuItem(value: k, child: Text(k)),
@@ -351,28 +458,7 @@ class _ContentEditState extends ConsumerState<ContentEditScreen> {
           ..._title.fields(l.title),
           ..._body.fields(l.body, maxLines: 4),
           SwitchListTile(title: Text(l.published), value: _published, onChanged: (v) => setState(() => _published = v)),
-          BusyButton(
-            label: l.save,
-            onPressed: () async {
-              final body = {
-                'kind': _kind,
-                'title': _title.value,
-                'body': _body.value,
-                'publishedAt': _published
-                    ? (widget.item?['publishedAt'] ?? DateTime.now().toUtc().toIso8601String())
-                    : null,
-              };
-              final ok = await act(
-                context,
-                () => id == null ? api.post('/admin/content', body) : api.patch('/admin/content/$id', body),
-                done: l.saved,
-              );
-              if (ok) {
-                ref.invalidate(getProvider('/admin/content'));
-                if (context.mounted) context.pop();
-              }
-            },
-          ),
+          if (!wide) ...[BusyButton(label: l.save, onPressed: save)],
         ],
       ),
     );
@@ -450,11 +536,12 @@ class _HotelSettingsState extends ConsumerState<HotelSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    if (_h == null)
+    if (_h == null) {
       return Scaffold(
         appBar: AppBar(title: Text(l.hotelSettings)),
         body: const Center(child: CircularProgressIndicator()),
       );
+    }
     double n(String k) => double.tryParse(c(k).text) ?? 0;
     final p = ((_h!['policies'] as Map?) ?? {}).cast<String, dynamic>();
     return Scaffold(

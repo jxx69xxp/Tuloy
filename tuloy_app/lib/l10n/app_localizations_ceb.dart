@@ -87,6 +87,10 @@ class AppLocalizationsCeb extends AppLocalizations {
   String get errorGeneric => 'Dili maabot ang server. Susiha ang koneksyon.';
 
   @override
+  String get cannotReachServer =>
+      'Dili maabot ang server. Susiha ang koneksyon, o pangayoa ang administrator nga tugotan kini nga website.';
+
+  @override
   String hello(String name) {
     return 'Kumusta, $name';
   }
@@ -653,6 +657,9 @@ class AppLocalizationsCeb extends AppLocalizations {
   String get nothingHere => 'Wala pay sulod.';
 
   @override
+  String get notFound => 'Wala makit-i.';
+
+  @override
   String get occupancyTonight => 'Okupado karong gabii';
 
   @override
@@ -940,4 +947,117 @@ class AppLocalizationsCeb extends AppLocalizations {
 
   @override
   String get wifiSharedPassword => 'Shared nga Wi-Fi password (psk mode)';
+
+  @override
+  String get webGuestTitle => 'Mga bisita, palihog gamita ang Tuloy mobile app';
+
+  @override
+  String get webGuestBody =>
+      'Ang pag-book ug mga feature sa pagpuyo anaa sa iOS ug Android app. Dinhi makasulod ang mga staff ug admin.';
+
+  @override
+  String get action => 'Aksyon';
+
+  @override
+  String get entity => 'Entidad';
+
+  @override
+  String get dateLabel => 'Petsa';
+
+  @override
+  String get actor => 'Nagbuhat';
+
+  @override
+  String get navOverview => 'Kinatibuk-an';
+
+  @override
+  String get navCatalog => 'Katalogo';
+
+  @override
+  String get navFinance => 'Pinansya';
+
+  @override
+  String get navPeople => 'Mga tawo';
+
+  @override
+  String get navSystem => 'Sistema';
+
+  @override
+  String get details => 'Mga detalye';
+
+  @override
+  String get refresh => 'I-refresh';
+
+  @override
+  String get needsAttention => 'Kinahanglang atimanon';
+
+  @override
+  String get allClear => 'Walay kinahanglang atimanon';
+
+  @override
+  String get unreadChats => 'Wala pa mabasang chat';
+
+  @override
+  String get myTasks => 'Akong mga buluhaton';
+
+  @override
+  String get search => 'Pangita';
+
+  @override
+  String get showMore => 'Ipakita pa';
+
+  @override
+  String get viewLabel => 'Tan-awa';
+
+  @override
+  String get sortedAscending => 'Gihan-ay pataas';
+
+  @override
+  String get sortedDescending => 'Gihan-ay paubos';
+
+  @override
+  String sortBy(String column) {
+    return 'Han-aya sumala sa $column';
+  }
+
+  @override
+  String rowsShown(int shown, int total) {
+    return '$shown sa $total';
+  }
+
+  @override
+  String get note => 'Nota';
+
+  @override
+  String get rooms => 'Mga kwarto';
+
+  @override
+  String get tables => 'Mga lamesa';
+
+  @override
+  String get showDetails => 'Ipakita ang detalye';
+
+  @override
+  String get hideDetails => 'Itago ang detalye';
+
+  @override
+  String get selectThread => 'Pagpili og panag-istorya';
+
+  @override
+  String get keyboardShortcuts => 'Mga keyboard shortcut';
+
+  @override
+  String get goToPage => 'Adto sa panid';
+
+  @override
+  String get shortcutSearch => 'Pangita niining panid';
+
+  @override
+  String get shortcutClose => 'Sirad-i ang panel o dialog';
+
+  @override
+  String get shortcutHelp => 'Ipakita ang mga keyboard shortcut';
+
+  @override
+  String get shortcutSend => 'Ipadala ang mensahe (Shift+Enter: bag-ong linya)';
 }

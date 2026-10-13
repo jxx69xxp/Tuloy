@@ -46,13 +46,17 @@ cp .env.example .env        # set JWT_SECRET and DATA_KEY; keep PAYMENT_PROVIDER
 docker compose up -d        # Postgres + MinIO
 npm install
 npx prisma migrate dev      # applies all migrations
-npm run db:seed             # demo hotel, rooms, services, menu, guide, 3 users
+npm run db:seed             # demo hotel, rooms, services, menu, guide, promos, 4 users
 npm run dev                 # http://localhost:3000/v1
 npm test                    # needs the database running
 ```
 
+If the MinIO images fail to pull, start only the database with `docker compose up -d db`. Everything works except photo uploads.
+
+The demo hotel is "Lunhaw Suites Davao", a fictional budget hotel in Davao City with PHP prices. The seed can be re-run; it updates the demo rows in place.
+
 Demo users (password = `SEED_PASSWORD`, default `ChangeMe123!`):
-`admin@tuloy.test`, `staff@tuloy.test`, `guest@tuloy.test`.
+`admin@tuloy.test`, `staff@tuloy.test`, `house@tuloy.test` (housekeeping staff), `guest@tuloy.test`.
 
 **2. App**
 
@@ -87,6 +91,25 @@ If `pod install` fails with `Encoding::CompatibilityError`, add `export LANG=en_
 
 Notifications: set `EMAIL_PROVIDER=resend`, `SMS_PROVIDER=semaphore` or `PUSH_PROVIDER=fcm`, plus each provider's keys (see `.env.example`). SMS goes only to verified numbers, except reset codes.
 
+## Run on web
+
+Staff and admins can use the app in a browser. Guests see a placeholder that points them to the mobile app.
+
+```bash
+cd tuloy_app
+flutter run -d chrome
+flutter run -d chrome --dart-define=API_URL=https://api.example.com/v1
+flutter build web          # output in tuloy_app/build/web
+```
+
+- **HTTPS required.** Serve the web build over HTTPS (or from `localhost` while developing). Token storage on web uses the browser's Web Crypto API (`crypto.subtle`), which browsers only provide in secure contexts. Over plain HTTP on any other host the app cannot store a session, so sign-in will not work.
+- **CORS.** Set `CORS_ORIGINS` in the API environment to the web app's origins, comma-separated, exact and without a trailing slash (for example `https://staff.example.com`). `localhost` origins are allowed automatically, but only outside production.
+- **Photo upload.** In production, add a CORS rule to the object storage bucket (S3 or R2) that allows `PUT` from the web origin. Uploads go straight to the bucket.
+- **Token storage.** On web, tokens live in browser storage, which is weaker than the secure storage used on mobile. Short 15-minute access tokens and rotating refresh tokens limit the damage.
+- **Layout.** At widths of 840 px and up, staff and admin get a back-office layout: a grouped sidebar, a top bar with breadcrumbs, KPI dashboards, sortable and searchable tables, a side panel for reservations, edit dialogs and a two-pane chat inbox. Below 840 px the app uses the mobile layout and the home screen's tile menu.
+- **Keyboard.** `/` focuses the table search, Ctrl/Cmd+K jumps to any page, `?` lists the shortcuts, Esc closes panels and dialogs. In chat, Enter sends and Shift+Enter adds a line.
+- **Not on web.** QR scanning (use the mobile app). Chat and queues refresh by polling.
+
 ## Design
 
 - Theme and shared visuals: `tuloy_app/lib/app/theme.dart` (teal `#0F6E6E`, amber `#F4B860`, arch-shaped cards, bordered fields with the label inside).
@@ -101,6 +124,7 @@ Notifications: set `EMAIL_PROVIDER=resend`, `SMS_PROVIDER=semaphore` or `PUSH_PR
 
 - Room and service photos: the app shows gradient placeholders (`RoomArt`). Admin photo upload and serving photo URLs are still to do.
 - Live updates: there is no WebSocket yet, so chat and queues refresh by polling.
+- Web: guest screens (guests see a placeholder) and QR scanning are not available. Chat and queues poll, as on mobile.
 - In-app push registration: needs a Firebase project (`google-services.json` / `GoogleService-Info.plist`). The API side is ready (`POST /v1/me/push-tokens`).
 - Saved cards: checkout is hosted by PayMongo, so the app shows payment history but not card brand or last digits.
 - Airport directions use the destination "airport", so the maps app picks the nearest one. Store the airport per hotel if that guesses wrong.

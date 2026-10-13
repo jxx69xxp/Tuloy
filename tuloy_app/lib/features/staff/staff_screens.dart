@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/adaptive.dart';
 import '../../core/format.dart';
 import '../../core/http.dart';
 import '../../core/ui.dart';
@@ -10,6 +11,7 @@ import '../auth/domain/auth.dart';
 import '../auth/presentation/auth_controller.dart';
 import '../booking/domain/booking.dart';
 import '../booking/presentation/booking_providers.dart';
+import '../chat/chat_screen.dart';
 import '../services/services_screens.dart' show paymentMethodLabel, stepLabel;
 
 /// Staff routes live under /staff; admins reach the same screens under /admin/desk.
@@ -27,10 +29,17 @@ class StaffHomeScreen extends ConsumerWidget {
     const path = '/staff/dashboard';
     final d = (ref.watch(getProvider(path)).valueOrNull as Map?)?.cast<String, dynamic>() ?? const {};
     int n(String k) => (d[k] as num?)?.toInt() ?? 0;
+    final wide = isWide(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(l.staffHome),
         actions: [
+          if (wide)
+            IconButton(
+              tooltip: l.refresh,
+              icon: const Icon(Icons.refresh),
+              onPressed: () => ref.invalidate(getProvider(path)),
+            ),
           if (base == '/staff')
             IconButton(
               tooltip: l.settings,
@@ -46,24 +55,56 @@ class StaffHomeScreen extends ConsumerWidget {
           onRefresh: () => ref.refresh(getProvider(path).future),
           child: ListView(
             padding: const EdgeInsets.all(12),
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _Stat(l.arrivals, n('arrivals')),
-                  _Stat(l.departures, n('departures')),
-                  _Stat(l.inHouse, n('inHouse')),
-                  _Stat(l.pendingApproval, n('pending')),
-                ],
-              ),
-              const SizedBox(height: 8),
-              NavTile(Icons.event_note, l.reservations, () => context.push('$base/reservations'), badge: n('pending')),
-              NavTile(Icons.task_alt, l.tasks, () => context.push('$base/tasks'), badge: n('myTasks')),
-              NavTile(Icons.restaurant, l.restaurantOrders, () => context.push('$base/orders'), badge: n('openOrders')),
-              NavTile(Icons.chat_bubble_outline, l.chat, () => context.push('$base/inbox'), badge: n('unreadChats')),
-              NavTile(Icons.beach_access, l.myLeave, () => context.push('$base/leave')),
-            ],
+            children: wide
+                ? [
+                    // Wide: KPI grid and attention list; the sidebar replaces the menu tiles.
+                    KpiGrid([
+                      Kpi(l.arrivals, '${n('arrivals')}', onTap: () => context.go('$base/reservations')),
+                      Kpi(l.departures, '${n('departures')}', onTap: () => context.go('$base/reservations')),
+                      Kpi(l.inHouse, '${n('inHouse')}', onTap: () => context.go('$base/reservations')),
+                      Kpi(l.openTasks, '${n('openTasks')}', onTap: () => context.go('$base/tasks')),
+                    ]),
+                    const SizedBox(height: 16),
+                    AttentionCard([
+                      (Icons.pending_actions, l.pendingApproval, n('pending'), () => context.go('$base/reservations')),
+                      (Icons.task_alt, l.myTasks, n('myTasks'), () => context.go('$base/tasks')),
+                      (Icons.restaurant, l.restaurantOrders, n('openOrders'), () => context.go('$base/orders')),
+                      (Icons.chat_bubble_outline, l.unreadChats, n('unreadChats'), () => context.go('$base/inbox')),
+                    ]),
+                  ]
+                : [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _Stat(l.arrivals, n('arrivals')),
+                        _Stat(l.departures, n('departures')),
+                        _Stat(l.inHouse, n('inHouse')),
+                        _Stat(l.pendingApproval, n('pending')),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    NavTile(
+                      Icons.event_note,
+                      l.reservations,
+                      () => context.push('$base/reservations'),
+                      badge: n('pending'),
+                    ),
+                    NavTile(Icons.task_alt, l.tasks, () => context.push('$base/tasks'), badge: n('myTasks')),
+                    NavTile(
+                      Icons.restaurant,
+                      l.restaurantOrders,
+                      () => context.push('$base/orders'),
+                      badge: n('openOrders'),
+                    ),
+                    NavTile(
+                      Icons.chat_bubble_outline,
+                      l.chat,
+                      () => context.push('$base/inbox'),
+                      badge: n('unreadChats'),
+                    ),
+                    NavTile(Icons.beach_access, l.myLeave, () => context.push('$base/leave')),
+                  ],
           ),
         ),
       ),
@@ -119,38 +160,76 @@ class _QueueState extends ConsumerState<ReservationsQueueScreen> {
       'all': l.all,
     };
     final path = '/staff/reservations?view=$_view${_q.isEmpty ? '' : '&q=${Uri.encodeQueryComponent(_q)}'}';
+    final wide = isWide(context);
+    DateTime day(Object? v) => DateTime.parse('$v');
+    String text(Object? v) => '${v ?? ''}'.toLowerCase();
     return Scaffold(
       appBar: AppBar(title: Text(l.reservations)),
       body: Column(
         children: [
-          SizedBox(
-            height: 48,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              children: [
-                for (final e in views.entries)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: ChoiceChip(
-                      label: Text(e.value),
-                      selected: _view == e.key,
-                      onSelected: (_) => setState(() => _view = e.key),
+          // Wide: the view dropdown and search live in the table toolbar.
+          if (!wide)
+            SizedBox(
+              height: 48,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                children: [
+                  for (final e in views.entries)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: ChoiceChip(
+                        label: Text(e.value),
+                        selected: _view == e.key,
+                        onSelected: (_) => setState(() => _view = e.key),
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: TextField(
-              decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: l.searchGuest),
-              onSubmitted: (v) => setState(() => _q = v.trim()),
+          if (!wide)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: TextField(
+                decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: l.searchGuest),
+                onSubmitted: (v) => setState(() => _q = v.trim()),
+              ),
             ),
-          ),
           Expanded(
             child: JsonList(
               path: path,
+              table: JsonTable(
+                columns: [l.name, l.codeLabel, l.roomTypeLabel, l.roomLabel, l.dates, l.status],
+                cells: (context, r) => [
+                  '${r['guestName']}',
+                  '${r['code']}',
+                  '${r['roomType']}',
+                  '${r['room'] ?? ''}',
+                  dateRange(context, DateTime.parse('${r['checkIn']}'), DateTime.parse('${r['checkOut']}')),
+                  statusLabel(l, parseStatus('${r['status']}')),
+                ],
+                // Wide only: go (not push) keeps this queue page and opens the detail as a side panel over it.
+                onTap: (r) => context.go('${widget.base}/reservations/${r['id']}'),
+                sortKeys: [
+                  (r) => text(r['guestName']),
+                  (r) => text(r['code']),
+                  (r) => text(r['roomType']),
+                  (r) => text(r['room']),
+                  (r) => day(r['checkIn']),
+                  (r) => text(r['status']),
+                ],
+                onSearch: (q) => setState(() => _q = q),
+                searchHint: l.searchGuest,
+                toolbar: [
+                  DropdownButton<String>(
+                    value: _view,
+                    hint: Text(l.viewLabel),
+                    underline: const SizedBox(),
+                    items: [for (final e in views.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
+                    onChanged: (v) => setState(() => _view = v ?? _view),
+                  ),
+                ],
+              ),
               item: (context, r) => ListTile(
                 title: Text('${r['guestName']} · ${r['code']}'),
                 subtitle: Text(
@@ -172,8 +251,11 @@ class _QueueState extends ConsumerState<ReservationsQueueScreen> {
 // ───────────── T3 reservation detail + actions ─────────────
 
 class StaffReservationScreen extends ConsumerWidget {
-  const StaffReservationScreen({super.key, required this.id});
+  const StaffReservationScreen({super.key, required this.id, this.panel = false});
   final String id;
+
+  /// Shown as a side panel over the queue (wide screens): close button, and actions refresh the queue too.
+  final bool panel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -181,11 +263,26 @@ class StaffReservationScreen extends ConsumerWidget {
     final path = '/staff/reservations/$id';
     final api = ref.read(apiProvider);
     Future<void> run(String action, [Object? body]) async {
-      if (await act(context, () => api.post('$path/$action', body))) ref.invalidate(getProvider(path));
+      if (await act(context, () => api.post('$path/$action', body))) {
+        // Panel: the queue underneath shows the new status too (whole family; only watched paths refetch).
+        panel ? ref.invalidate(getProvider) : ref.invalidate(getProvider(path));
+      }
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.reservation)),
+      appBar: panel
+          ? AppBar(
+              automaticallyImplyLeading: false,
+              title: Text(l.reservation),
+              actions: [
+                IconButton(
+                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.maybePop(context),
+                ),
+              ],
+            )
+          : AppBar(title: Text(l.reservation)),
       body: AsyncBody(
         value: ref.watch(getProvider(path)),
         onRetry: () => ref.invalidate(getProvider(path)),
@@ -252,8 +349,9 @@ class StaffReservationScreen extends ConsumerWidget {
                 onTap: () async {
                   final v = await prompt(context, l.internalNotes, initial: '${r['internalNotes'] ?? ''}');
                   if (v == null || !context.mounted) return;
-                  if (await act(context, () => api.patch('$path/notes', {'internalNotes': v})))
+                  if (await act(context, () => api.patch('$path/notes', {'internalNotes': v}))) {
                     ref.invalidate(getProvider(path));
+                  }
                 },
               ),
               Text(l.history, style: Theme.of(context).textTheme.titleSmall),
@@ -397,8 +495,9 @@ class OrdersQueueScreen extends ConsumerWidget {
     final lang = ref.watch(languageProvider) ?? 'en';
     final api = ref.read(apiProvider);
     Future<void> setStatus(String id, String to, [String? reason]) async {
-      if (await act(context, () => api.post('$path/$id/status', {'to': to, if (reason != null) 'reason': reason})))
+      if (await act(context, () => api.post('$path/$id/status', {'to': to, if (reason != null) 'reason': reason}))) {
         ref.invalidate(getProvider(path));
+      }
     }
 
     return Scaffold(
@@ -459,13 +558,18 @@ class OrdersQueueScreen extends ConsumerWidget {
 // ───────────── T8 chat inbox ─────────────
 
 class InboxScreen extends ConsumerWidget {
-  const InboxScreen({super.key, required this.base});
+  const InboxScreen({super.key, required this.base, this.openId, this.openTitle});
   final String base;
+
+  /// Wide two-pane mode: the thread shown on the right (from `inbox/chat/:id`).
+  final String? openId;
+  final String? openTitle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     const path = '/staff/conversations';
+    if (isWide(context)) return _InboxPanes(base: base, openId: openId, openTitle: openTitle);
     return Scaffold(
       appBar: AppBar(title: Text(l.chat)),
       body: Poller(
@@ -483,6 +587,95 @@ class InboxScreen extends ConsumerWidget {
             subtitle: Text(date(context, DateTime.parse('${c['lastMessageAt']}').toLocal())),
             onTap: () => context.push('$base/chat/${c['id']}', extra: '${c['guestName']}'),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Wide inbox: searchable thread list on the left, the open thread on the right.
+class _InboxPanes extends ConsumerStatefulWidget {
+  const _InboxPanes({required this.base, this.openId, this.openTitle});
+  final String base;
+  final String? openId;
+  final String? openTitle;
+  @override
+  ConsumerState<_InboxPanes> createState() => _InboxPanesState();
+}
+
+class _InboxPanesState extends ConsumerState<_InboxPanes> {
+  static const path = '/staff/conversations';
+  String _q = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final value = ref.watch(getProvider(path));
+    final rows = jsonList(value.valueOrNull ?? const []);
+    final open = widget.openId;
+    final title = rows.where((c) => c['id'] == open).map((c) => '${c['guestName']}').firstOrNull ?? widget.openTitle;
+    return Scaffold(
+      appBar: AppBar(title: Text(l.chat)),
+      body: Poller(
+        every: const Duration(seconds: 10),
+        onTick: () => ref.invalidate(getProvider(path)),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 320,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                    child: TextField(
+                      onChanged: (v) => setState(() => _q = v.trim().toLowerCase()),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        prefixIcon: const Icon(Icons.search),
+                        hintText: l.search,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: AsyncBody(
+                      value: value,
+                      onRetry: () => ref.invalidate(getProvider(path)),
+                      builder: (_) {
+                        final shown = [
+                          for (final c in rows)
+                            if ('${c['guestName']}'.toLowerCase().contains(_q)) c,
+                        ];
+                        if (shown.isEmpty) return Center(child: Text(l.nothingHere));
+                        return ListView(
+                          children: [
+                            for (final c in shown)
+                              ListTile(
+                                selected: c['id'] == open,
+                                leading: Badge(
+                                  isLabelVisible: (c['unread'] as num) > 0,
+                                  label: Text('${c['unread']}'),
+                                  child: const Icon(Icons.person),
+                                ),
+                                title: Text('${c['guestName']}', overflow: TextOverflow.ellipsis),
+                                subtitle: Text(date(context, DateTime.parse('${c['lastMessageAt']}').toLocal())),
+                                onTap: () => context.go('${widget.base}/inbox/chat/${c['id']}'),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const VerticalDivider(width: 1),
+            Expanded(
+              child: open == null
+                  ? Center(child: Text(l.selectThread))
+                  // Keyed by thread: switching disposes the old ChatScreen and stops its poll timer.
+                  : ChatScreen(key: ValueKey(open), id: open, title: title, embedded: true),
+            ),
+          ],
         ),
       ),
     );

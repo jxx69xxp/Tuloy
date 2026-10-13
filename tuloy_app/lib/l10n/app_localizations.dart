@@ -256,6 +256,12 @@ abstract class AppLocalizations {
   /// **'Can\'t reach the server. Check your connection.'**
   String get errorGeneric;
 
+  /// No description provided for @cannotReachServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t reach the server. Check your connection, or ask your administrator to allow this website.'**
+  String get cannotReachServer;
+
   /// No description provided for @hello.
   ///
   /// In en, this message translates to:
@@ -1312,6 +1318,12 @@ abstract class AppLocalizations {
   /// **'Nothing here yet.'**
   String get nothingHere;
 
+  /// No description provided for @notFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Not found.'**
+  String get notFound;
+
   /// No description provided for @occupancyTonight.
   ///
   /// In en, this message translates to:
@@ -1851,6 +1863,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shared Wi-Fi password (psk mode)'**
   String get wifiSharedPassword;
+
+  /// No description provided for @webGuestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guests, please use the Tuloy mobile app'**
+  String get webGuestTitle;
+
+  /// No description provided for @webGuestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking and stay features are available in the iOS and Android app. Staff and admins can sign in here.'**
+  String get webGuestBody;
+
+  /// No description provided for @action.
+  ///
+  /// In en, this message translates to:
+  /// **'Action'**
+  String get action;
+
+  /// No description provided for @entity.
+  ///
+  /// In en, this message translates to:
+  /// **'Entity'**
+  String get entity;
+
+  /// No description provided for @dateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get dateLabel;
+
+  /// No description provided for @actor.
+  ///
+  /// In en, this message translates to:
+  /// **'Actor'**
+  String get actor;
+
+  /// No description provided for @navOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get navOverview;
+
+  /// No description provided for @navCatalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog'**
+  String get navCatalog;
+
+  /// No description provided for @navFinance.
+  ///
+  /// In en, this message translates to:
+  /// **'Finance'**
+  String get navFinance;
+
+  /// No description provided for @navPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get navPeople;
+
+  /// No description provided for @navSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get navSystem;
+
+  /// No description provided for @details.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get details;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @needsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get needsAttention;
+
+  /// No description provided for @allClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing needs attention'**
+  String get allClear;
+
+  /// No description provided for @unreadChats.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread chats'**
+  String get unreadChats;
+
+  /// No description provided for @myTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'My tasks'**
+  String get myTasks;
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
+
+  /// No description provided for @showMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more'**
+  String get showMore;
+
+  /// No description provided for @viewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get viewLabel;
+
+  /// No description provided for @sortedAscending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sorted ascending'**
+  String get sortedAscending;
+
+  /// No description provided for @sortedDescending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sorted descending'**
+  String get sortedDescending;
+
+  /// No description provided for @sortBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by {column}'**
+  String sortBy(String column);
+
+  /// No description provided for @rowsShown.
+  ///
+  /// In en, this message translates to:
+  /// **'{shown} of {total}'**
+  String rowsShown(int shown, int total);
+
+  /// No description provided for @note.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get note;
+
+  /// No description provided for @rooms.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms'**
+  String get rooms;
+
+  /// No description provided for @tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Tables'**
+  String get tables;
+
+  /// No description provided for @showDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Show details'**
+  String get showDetails;
+
+  /// No description provided for @hideDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide details'**
+  String get hideDetails;
+
+  /// No description provided for @selectThread.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a conversation'**
+  String get selectThread;
+
+  /// No description provided for @keyboardShortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts'**
+  String get keyboardShortcuts;
+
+  /// No description provided for @goToPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to a page'**
+  String get goToPage;
+
+  /// No description provided for @shortcutSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search this page'**
+  String get shortcutSearch;
+
+  /// No description provided for @shortcutClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close a panel or dialog'**
+  String get shortcutClose;
+
+  /// No description provided for @shortcutHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Show keyboard shortcuts'**
+  String get shortcutHelp;
+
+  /// No description provided for @shortcutSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a chat message (Shift+Enter: new line)'**
+  String get shortcutSend;
 }
 
 class _AppLocalizationsDelegate

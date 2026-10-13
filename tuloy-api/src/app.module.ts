@@ -68,11 +68,29 @@ import { WifiService } from './wifi/wifi.service';
 })
 export class AppModule {}
 
+const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
+/** Read per request so env changes (tests) take effect. No Origin header = not a browser CORS request. */
+function isAllowedOrigin(origin: string | undefined): boolean {
+  if (!origin) return false;
+  const listed = (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  if (listed.length) return listed.includes(origin);
+  return process.env.NODE_ENV !== 'production' && LOCAL_ORIGIN.test(origin);
+}
+
 /** Shared by main.ts and tests so both run the same pipeline. */
 export function setupApp(app: INestApplication) {
   app.setGlobalPrefix('v1');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
   app.useGlobalFilters(new AppExceptionFilter());
+  app.enableCors({
+    origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
+    allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key', 'Accept-Language', 'X-Hotel-Id'],
+    credentials: false,
+  });
   app.enableShutdownHooks();
   return app;
 }

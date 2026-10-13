@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/adaptive.dart';
 import '../../core/config.dart';
 import '../../core/format.dart';
 import '../../core/http.dart';
 import '../../core/ui.dart';
+import '../../core/web/overlays.dart';
 import '../../l10n/app_localizations.dart';
 import '../staff/staff_screens.dart' show leaveStatus;
 import 'admin_catalog_screens.dart' show trOf;
@@ -40,21 +42,44 @@ class _StaffTab extends ConsumerWidget {
   const _StaffTab();
 
   Future<void> _edit(BuildContext context, WidgetRef ref, [J? member]) async {
-    final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => _StaffEdit(member: member)));
+    final saved = await Navigator.of(context).push<bool>(editorRoute(context, _StaffEdit(member: member)));
     if (saved == true) ref.invalidate(getProvider('/admin/staff'));
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
+    final wide = isWide(context);
+    List<String> cells(J s) => [
+      '${s['fullName']}',
+      '${s['email']}',
+      '${s['role']}',
+      '${s['department']?['name'] ?? ''}',
+    ];
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        tooltip: l.add,
-        onPressed: () => _edit(context, ref),
-        child: const Icon(Icons.person_add),
-      ),
+      // Wide: the tab has no app bar of its own, so Add sits in the table toolbar.
+      floatingActionButton: wide
+          ? null
+          : FloatingActionButton(
+              tooltip: l.add,
+              onPressed: () => _edit(context, ref),
+              child: const Icon(Icons.person_add),
+            ),
       body: JsonList(
         path: '/admin/staff',
+        table: JsonTable(
+          columns: [l.fullName, l.email, l.role, l.department],
+          cells: (context, s) => cells(s),
+          onTap: (s) => _edit(context, ref, s),
+          sortKeys: [for (var i = 0; i < 4; i++) (s) => cells(s)[i].toLowerCase()],
+          toolbar: [
+            FilledButton.icon(
+              onPressed: () => _edit(context, ref),
+              icon: const Icon(Icons.person_add),
+              label: Text(l.add),
+            ),
+          ],
+        ),
         item: (context, s) => ListTile(
           title: Text('${s['fullName']}'),
           subtitle: Text(
@@ -97,7 +122,34 @@ class _StaffEditState extends ConsumerState<_StaffEdit> {
     final api = ref.read(apiProvider);
     final departments = jsonList(ref.watch(getProvider('/admin/departments')).valueOrNull ?? const []);
     final perms = ((ref.watch(getProvider('/admin/permissions')).valueOrNull as List?) ?? const []).cast<String>();
+    final wide = isWide(context);
+    Future<void> save() async {
+      final body = {
+        'role': _role,
+        if (_department != null) 'departmentId': _department,
+        'permissions': _perms.toList(),
+      };
+      final ok = await act(
+        context,
+        () => m == null
+            ? api.post('/admin/staff', {
+                ...body,
+                'email': _email.text.trim(),
+                'fullName': _name.text.trim(),
+                'password': _password.text,
+              })
+            : api.patch('/admin/staff/${m['userId']}', body),
+        done: l.saved,
+      );
+      if (ok && context.mounted) Navigator.pop(context, true);
+    }
+
     return Scaffold(
+      bottomNavigationBar: wide
+          ? EditorFooter(
+              save: BusyButton(label: l.save, onPressed: save),
+            )
+          : null,
       appBar: AppBar(
         title: Text(m == null ? l.addStaff : '${m['fullName']}'),
         actions: [
@@ -107,8 +159,9 @@ class _StaffEditState extends ConsumerState<_StaffEdit> {
               icon: const Icon(Icons.person_remove),
               onPressed: () async {
                 if (!await confirm(context, l.removeAccess, '${m['fullName']}') || !context.mounted) return;
-                if (await act(context, () => api.delete('/admin/staff/${m['userId']}')) && context.mounted)
+                if (await act(context, () => api.delete('/admin/staff/${m['userId']}')) && context.mounted) {
                   Navigator.pop(context, true);
+                }
               },
             ),
         ],
@@ -132,7 +185,7 @@ class _StaffEditState extends ConsumerState<_StaffEdit> {
             ),
           ],
           DropdownButtonFormField<String>(
-            value: _role,
+            initialValue: _role,
             decoration: InputDecoration(labelText: l.role),
             items: [
               DropdownMenuItem(value: 'STAFF', child: Text(l.staffHome)),
@@ -141,7 +194,7 @@ class _StaffEditState extends ConsumerState<_StaffEdit> {
             onChanged: (v) => setState(() => _role = v!),
           ),
           DropdownButtonFormField<String>(
-            value: _department,
+            initialValue: _department,
             decoration: InputDecoration(labelText: l.department),
             items: [for (final d in departments) DropdownMenuItem(value: '${d['id']}', child: Text('${d['name']}'))],
             onChanged: (v) => setState(() => _department = v),
@@ -157,30 +210,7 @@ class _StaffEditState extends ConsumerState<_StaffEdit> {
                 onChanged: (v) => setState(() => v == true ? _perms.add(p) : _perms.remove(p)),
               ),
           ],
-          const SizedBox(height: 16),
-          BusyButton(
-            label: l.save,
-            onPressed: () async {
-              final body = {
-                'role': _role,
-                if (_department != null) 'departmentId': _department,
-                'permissions': _perms.toList(),
-              };
-              final ok = await act(
-                context,
-                () => m == null
-                    ? api.post('/admin/staff', {
-                        ...body,
-                        'email': _email.text.trim(),
-                        'fullName': _name.text.trim(),
-                        'password': _password.text,
-                      })
-                    : api.patch('/admin/staff/${m['userId']}', body),
-                done: l.saved,
-              );
-              if (ok && context.mounted) Navigator.pop(context, true);
-            },
-          ),
+          if (!wide) ...[const SizedBox(height: 16), BusyButton(label: l.save, onPressed: save)],
         ],
       ),
     );
@@ -195,8 +225,9 @@ class _LeaveTab extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     const path = '/admin/leave';
     Future<void> decide(String id, bool approve) async {
-      if (await act(context, () => ref.read(apiProvider).post('$path/$id/decide', {'approve': approve})))
+      if (await act(context, () => ref.read(apiProvider).post('$path/$id/decide', {'approve': approve}))) {
         ref.invalidate(getProvider(path));
+      }
     }
 
     return JsonList(
@@ -241,8 +272,9 @@ class _DepartmentsTab extends ConsumerWidget {
         onPressed: () async {
           final n = await prompt(context, l.departments, label: l.name);
           if (n == null || n.isEmpty || !context.mounted) return;
-          if (await act(context, () => ref.read(apiProvider).post(path, {'name': n})))
+          if (await act(context, () => ref.read(apiProvider).post(path, {'name': n}))) {
             ref.invalidate(getProvider(path));
+          }
         },
         child: const Icon(Icons.add),
       ),

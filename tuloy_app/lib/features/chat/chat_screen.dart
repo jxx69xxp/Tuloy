@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/adaptive.dart';
 import '../../core/http.dart';
 import '../../core/ui.dart';
 import '../../l10n/app_localizations.dart';
@@ -11,9 +13,12 @@ import '../auth/presentation/auth_controller.dart';
 /// Guest ↔ staff thread (G24/T8). Same screen for both sides.
 /// Polls new messages every 3 s; messages are shown exactly as written.
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key, required this.id, this.title});
+  const ChatScreen({super.key, required this.id, this.title, this.embedded = false});
   final String id;
   final String? title;
+
+  /// Right pane of the wide inbox: a small name header instead of an app bar.
+  final bool embedded;
   @override
   ConsumerState<ChatScreen> createState() => _ChatState();
 }
@@ -74,10 +79,37 @@ class _ChatState extends ConsumerState<ChatScreen> {
     final l = AppLocalizations.of(context);
     final me = ref.watch(authProvider).valueOrNull?.id;
     final scheme = Theme.of(context).colorScheme;
+    final input = TextField(
+      controller: _input,
+      minLines: 1,
+      maxLines: 4,
+      textInputAction: TextInputAction.send,
+      onSubmitted: (_) => _send(),
+      decoration: InputDecoration(hintText: l.typeMessage),
+    );
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title ?? l.chat)),
+      appBar: widget.embedded ? null : AppBar(title: Text(widget.title ?? l.chat)),
       body: Column(
         children: [
+          if (widget.embedded) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              child: Row(
+                children: [
+                  const Icon(Icons.person_outline, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.title ?? l.chat,
+                      style: Theme.of(context).textTheme.titleMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+          ],
           Expanded(
             child: _messages.isEmpty
                 ? Center(child: Text(l.chatEmpty))
@@ -110,14 +142,22 @@ class _ChatState extends ConsumerState<ChatScreen> {
               child: Row(
                 children: [
                   Expanded(
-                    child: TextField(
-                      controller: _input,
-                      minLines: 1,
-                      maxLines: 4,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _send(),
-                      decoration: InputDecoration(hintText: l.typeMessage),
-                    ),
+                    child: isWide(context)
+                        // Desktop keyboards: Enter sends, Shift+Enter falls through and adds a new line.
+                        ? Focus(
+                            canRequestFocus: false,
+                            skipTraversal: true,
+                            onKeyEvent: (_, e) {
+                              if (e is! KeyDownEvent || e.logicalKey != LogicalKeyboardKey.enter) {
+                                return KeyEventResult.ignored;
+                              }
+                              if (HardwareKeyboard.instance.isShiftPressed) return KeyEventResult.ignored;
+                              _send();
+                              return KeyEventResult.handled;
+                            },
+                            child: input,
+                          )
+                        : input,
                   ),
                   IconButton(tooltip: l.send, onPressed: _sending ? null : _send, icon: const Icon(Icons.send)),
                 ],

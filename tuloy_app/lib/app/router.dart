@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/adaptive.dart';
 import '../core/config.dart';
+import '../core/web/overlays.dart';
 import '../features/auth/domain/auth.dart';
 import '../features/auth/presentation/auth_controller.dart';
 import '../features/auth/presentation/auth_screens.dart';
@@ -11,7 +14,7 @@ import '../features/booking/domain/booking.dart';
 import '../features/booking/presentation/booking_screens.dart';
 import '../features/booking/presentation/my_bookings_screens.dart';
 import '../features/booking/presentation/stay_screens.dart';
-import '../core/http.dart' show J;
+import '../core/find_by_id.dart';
 import '../features/admin/admin_catalog_screens.dart';
 import '../features/admin/admin_people_screens.dart';
 import '../features/admin/admin_screens.dart';
@@ -22,6 +25,8 @@ import '../features/services/services_screens.dart';
 import '../features/staff/staff_screens.dart';
 import '../features/settings/presentation/profile_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
+import '../features/settings/presentation/web_guest_screen.dart';
+import '../l10n/app_localizations.dart';
 
 const _public = {'/language', '/signin', '/signup', '/reset'};
 
@@ -36,16 +41,36 @@ List<RouteBase> _deskRoutes(String base) => [
   GoRoute(
     path: 'reservations',
     builder: (_, __) => ReservationsQueueScreen(base: base),
-  ),
-  GoRoute(
-    path: 'reservations/:id',
-    builder: (_, s) => StaffReservationScreen(id: s.pathParameters['id']!),
+    routes: [
+      // Nested so that on wide screens the detail is a side panel over the queue (also on refresh/deep link).
+      GoRoute(
+        path: ':id',
+        pageBuilder: (c, s) => adaptivePage(
+          c,
+          s,
+          StaffReservationScreen(id: s.pathParameters['id']!, panel: isWide(c)),
+          panel: true,
+        ),
+      ),
+    ],
   ),
   GoRoute(path: 'tasks', builder: (_, __) => const TasksScreen()),
   GoRoute(path: 'orders', builder: (_, __) => const OrdersQueueScreen()),
+  // Wide: inbox and inbox/chat/:id share one page key, so the list keeps its state while threads switch.
   GoRoute(
     path: 'inbox',
-    builder: (_, __) => InboxScreen(base: base),
+    pageBuilder: (c, s) => _inboxPage(c, s, base, InboxScreen(base: base)),
+  ),
+  GoRoute(
+    path: 'inbox/chat/:id',
+    pageBuilder: (c, s) => _inboxPage(
+      c,
+      s,
+      base,
+      isWide(c)
+          ? InboxScreen(base: base, openId: s.pathParameters['id'], openTitle: s.extra as String?)
+          : ChatScreen(id: s.pathParameters['id']!, title: s.extra as String?),
+    ),
   ),
   GoRoute(path: 'leave', builder: (_, __) => const LeaveScreen()),
   GoRoute(
@@ -53,6 +78,55 @@ List<RouteBase> _deskRoutes(String base) => [
     builder: (_, s) => ChatScreen(id: s.pathParameters['id']!, title: s.extra as String?),
   ),
 ];
+
+Page<void> _inboxPage(BuildContext c, GoRouterState s, String base, Widget child) => isWide(c)
+    ? NoTransitionPage(key: ValueKey('$base/inbox'), child: child)
+    : MaterialPage(key: s.pageKey, restorationId: s.pageKey.value, child: child);
+
+List<RailItem> _staffItems(AppLocalizations l) => [
+  RailItem(Icons.support_agent, l.frontDesk, '/staff', section: l.frontDesk),
+  RailItem(Icons.book_online_outlined, l.reservations, '/staff/reservations', section: l.frontDesk),
+  RailItem(Icons.checklist, l.tasks, '/staff/tasks', section: l.frontDesk),
+  RailItem(Icons.restaurant, l.restaurant, '/staff/orders', section: l.frontDesk),
+  RailItem(Icons.chat_bubble_outline, l.chat, '/staff/inbox', section: l.frontDesk),
+  RailItem(Icons.beach_access_outlined, l.leaveRequests, '/staff/leave'),
+];
+
+/// Breadcrumb labels for the desk screens mounted under /admin/desk.
+Map<String, String> _deskLabels(AppLocalizations l) => {
+  for (final i in _staffItems(l).skip(1)) i.path.replaceFirst('/staff', '/admin/desk'): i.label,
+};
+
+List<RailItem> _adminItems(AppLocalizations l) => [
+  RailItem(Icons.dashboard_outlined, l.adminHome, '/admin', section: l.navOverview),
+  RailItem(Icons.support_agent, l.frontDesk, '/admin/desk', section: l.navOverview),
+  RailItem(Icons.bed_outlined, l.roomsAndRates, '/admin/rooms', section: l.navCatalog),
+  RailItem(Icons.room_service_outlined, l.services, '/admin/services', section: l.navCatalog),
+  RailItem(Icons.restaurant, l.restaurant, '/admin/restaurant', section: l.navCatalog),
+  RailItem(Icons.loyalty_outlined, l.loyalty, '/admin/loyalty', section: l.navCatalog),
+  RailItem(Icons.article_outlined, l.content, '/admin/content', section: l.navCatalog),
+  RailItem(Icons.payments_outlined, l.payments, '/admin/payments', section: l.navFinance),
+  RailItem(Icons.bar_chart, l.reports, '/admin/reports', section: l.navFinance),
+  RailItem(Icons.badge_outlined, l.staff, '/admin/staff', section: l.navPeople),
+  RailItem(Icons.hotel_outlined, l.hotelSettings, '/admin/hotel', section: l.navSystem),
+  RailItem(Icons.history, l.auditLog, '/admin/audit', section: l.navSystem),
+];
+
+/// Area shell with the signed-in user's name and sign out for the wide sidebar.
+Widget _shell(List<RailItem> Function(AppLocalizations) items, GoRouterState s, Widget child, {bool desk = false}) =>
+    Consumer(
+      builder: (c, ref, _) {
+        final l = AppLocalizations.of(c);
+        return AdaptiveShell(
+          items: items(l),
+          labels: desk ? _deskLabels(l) : const {},
+          location: s.uri.path,
+          userName: ref.watch(authProvider).valueOrNull?.fullName,
+          onSignOut: () => ref.read(authProvider.notifier).signOut(),
+          child: child,
+        );
+      },
+    );
 
 /// Where a signed-in user belongs. Each role only sees its own area (plus /settings).
 /// UI guard only — the API enforces roles and permissions on every call.
@@ -63,15 +137,44 @@ String homeFor(Role role) => switch (role) {
 };
 
 /// Pure so it can be unit-tested: decides the redirect for a location.
-String? redirectFor({required String location, required bool languageChosen, required AsyncValue<User?> auth}) {
+///
+/// [uri] is the full requested URI. When given, a deep link (e.g. a browser refresh while the
+/// session is still restoring, or an expired session) rides through /splash and /signin as
+/// `?from=` and is reopened afterwards if it is internal and the user's role may open it.
+String? redirectFor({
+  required String location,
+  required bool languageChosen,
+  required AsyncValue<User?> auth,
+  Uri? uri,
+  bool isWeb = kIsWeb,
+}) {
   if (!languageChosen) return location == '/language' ? null : '/language';
-  if (auth.isLoading && !auth.hasValue) return location == '/splash' ? null : '/splash';
+  final detour = location == '/splash' || _public.contains(location);
+  // Where the user was heading: carried along while detouring, else the requested URI itself.
+  final target = detour ? uri?.queryParameters['from'] : uri?.toString();
+  String withFrom(String path) => target == null ? path : '$path?from=${Uri.encodeComponent(target)}';
+
+  if (auth.isLoading && !auth.hasValue) return location == '/splash' ? null : withFrom('/splash');
   final user = auth.valueOrNull;
-  if (user == null) return _public.contains(location) ? null : '/signin';
-  final home = homeFor(user.roleAt(hotelId));
+  if (user == null) return _public.contains(location) ? null : withFrom('/signin');
+  final role = user.roleAt(hotelId);
+  final home = homeFor(role);
+  // Web is Staff/Admin only: guests get a placeholder pointing at the mobile app.
+  if (isWeb && role == Role.guest) return location == '/web-guest' || location == '/settings' ? null : '/web-guest';
+  if (detour && target != null && _isInternal(target) && _allowed(Uri.parse(target).path, home)) return target;
   if (location == '/settings' || location.startsWith(home)) return null;
   return home;
 }
+
+/// An in-app path: no scheme or host, and not protocol-relative (`//x`, `/\x`).
+bool _isInternal(String s) {
+  if (!s.startsWith('/') || s.startsWith('//') || s.contains(r'\')) return false;
+  final u = Uri.tryParse(s);
+  return u != null && !u.hasScheme && !u.hasAuthority;
+}
+
+bool _allowed(String path, String home) =>
+    path == '/settings' || path.startsWith('/settings/') || path == home || path.startsWith('$home/');
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
@@ -84,6 +187,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: refresh,
     redirect: (_, state) => redirectFor(
       location: state.matchedLocation,
+      uri: state.uri,
       languageChosen: ref.read(languageProvider) != null,
       auth: ref.read(authProvider),
     ),
@@ -94,6 +198,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/signup', builder: (_, __) => const SignUpScreen()),
       GoRoute(path: '/reset', builder: (_, __) => const ResetScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+      GoRoute(path: '/web-guest', builder: (_, __) => const WebGuestScreen()),
       GoRoute(
         path: '/guest',
         builder: (_, __) => const GuestHomeScreen(),
@@ -158,7 +263,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           _chat,
         ],
       ),
-      GoRoute(path: '/staff', builder: (_, __) => const StaffHomeScreen(), routes: _deskRoutes('/staff')),
+      ShellRoute(
+        builder: (_, s, child) => _shell(_staffItems, s, child),
+        routes: [
+          GoRoute(path: '/staff', builder: (_, __) => const StaffHomeScreen(), routes: _deskRoutes('/staff')),
+        ],
+      ),
+      ShellRoute(
+        builder: (_, s, child) => _shell(_adminItems, s, child, desk: true),
+        routes: [
       GoRoute(
         path: '/admin',
         builder: (_, __) => const AdminHomeScreen(),
@@ -168,39 +281,77 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const StaffHomeScreen(base: '/admin/desk'),
             routes: _deskRoutes('/admin/desk'),
           ),
-          GoRoute(path: 'rooms', builder: (_, __) => const RoomsAdminScreen()),
           GoRoute(
-            path: 'rooms/type',
-            builder: (_, s) => RoomTypeEditScreen(type: s.extra as J?),
+            path: 'rooms',
+            builder: (_, __) => const RoomsAdminScreen(),
+            routes: [
+              // Nested so that on wide screens the editor is a dialog over the Rooms list.
+              GoRoute(path: 'type/new', pageBuilder: (c, s) => adaptivePage(c, s, const RoomTypeEditScreen())),
+              GoRoute(
+                path: 'type/:id',
+                pageBuilder: (c, s) => adaptivePage(
+                  c,
+                  s,
+                  FindById(
+                    listPath: '/admin/room-types',
+                    id: s.pathParameters['id']!,
+                    builder: (_, t) => RoomTypeEditScreen(type: t),
+                  ),
+                ),
+              ),
+            ],
           ),
           GoRoute(
-            path: 'rooms/rates',
-            redirect: (_, s) => s.extra is Map ? null : '/admin/rooms',
-            builder: (_, s) => RatesScreen(type: s.extra! as J),
+            path: 'rooms/:id/rates',
+            builder: (_, s) => FindById(
+              listPath: '/admin/room-types',
+              id: s.pathParameters['id']!,
+              builder: (_, t) => RatesScreen(type: t),
+            ),
           ),
           GoRoute(path: 'rooms/blocks', builder: (_, __) => const BlocksScreen()),
           GoRoute(path: 'services', builder: (_, __) => const ServicesAdminScreen()),
+          GoRoute(path: 'services/new', builder: (_, __) => const ServiceEditScreen()),
           GoRoute(
-            path: 'services/edit',
-            builder: (_, s) => ServiceEditScreen(id: s.extra as String?),
+            path: 'services/:id',
+            builder: (_, s) => ServiceEditScreen(id: s.pathParameters['id']),
           ),
           GoRoute(path: 'restaurant', builder: (_, __) => const RestaurantAdminScreen()),
           GoRoute(
-            path: 'restaurant/menu',
-            redirect: (_, s) => s.extra is Map ? null : '/admin/restaurant',
-            builder: (_, s) => MenuAdminScreen(outlet: s.extra! as J),
+            path: 'restaurant/:id/menu',
+            builder: (_, s) => FindById(
+              listPath: '/admin/outlets',
+              id: s.pathParameters['id']!,
+              builder: (_, o) => MenuAdminScreen(outlet: o),
+            ),
           ),
           GoRoute(path: 'payments', builder: (_, __) => const PaymentsScreen()),
           GoRoute(path: 'reports', builder: (_, __) => const ReportsScreen()),
           GoRoute(path: 'staff', builder: (_, __) => const StaffAdminScreen()),
           GoRoute(path: 'loyalty', builder: (_, __) => const LoyaltyAdminScreen()),
-          GoRoute(path: 'content', builder: (_, __) => const ContentScreen()),
           GoRoute(
-            path: 'content/edit',
-            builder: (_, s) => ContentEditScreen(item: s.extra as J?),
+            path: 'content',
+            builder: (_, __) => const ContentScreen(),
+            routes: [
+              GoRoute(path: 'new', pageBuilder: (c, s) => adaptivePage(c, s, const ContentEditScreen())),
+              GoRoute(
+                path: ':id',
+                pageBuilder: (c, s) => adaptivePage(
+                  c,
+                  s,
+                  FindById(
+                    listPath: '/admin/content',
+                    id: s.pathParameters['id']!,
+                    builder: (_, c) => ContentEditScreen(item: c),
+                  ),
+                ),
+              ),
+            ],
           ),
           GoRoute(path: 'hotel', builder: (_, __) => const HotelSettingsScreen()),
           GoRoute(path: 'audit', builder: (_, __) => const AuditScreen()),
+        ],
+      ),
         ],
       ),
     ],

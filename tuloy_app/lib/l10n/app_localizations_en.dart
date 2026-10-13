@@ -87,6 +87,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorGeneric => 'Can\'t reach the server. Check your connection.';
 
   @override
+  String get cannotReachServer =>
+      'Can\'t reach the server. Check your connection, or ask your administrator to allow this website.';
+
+  @override
   String hello(String name) {
     return 'Hello, $name';
   }
@@ -651,6 +655,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nothingHere => 'Nothing here yet.';
 
   @override
+  String get notFound => 'Not found.';
+
+  @override
   String get occupancyTonight => 'Occupancy tonight';
 
   @override
@@ -937,4 +944,117 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wifiSharedPassword => 'Shared Wi-Fi password (psk mode)';
+
+  @override
+  String get webGuestTitle => 'Guests, please use the Tuloy mobile app';
+
+  @override
+  String get webGuestBody =>
+      'Booking and stay features are available in the iOS and Android app. Staff and admins can sign in here.';
+
+  @override
+  String get action => 'Action';
+
+  @override
+  String get entity => 'Entity';
+
+  @override
+  String get dateLabel => 'Date';
+
+  @override
+  String get actor => 'Actor';
+
+  @override
+  String get navOverview => 'Overview';
+
+  @override
+  String get navCatalog => 'Catalog';
+
+  @override
+  String get navFinance => 'Finance';
+
+  @override
+  String get navPeople => 'People';
+
+  @override
+  String get navSystem => 'System';
+
+  @override
+  String get details => 'Details';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get needsAttention => 'Needs attention';
+
+  @override
+  String get allClear => 'Nothing needs attention';
+
+  @override
+  String get unreadChats => 'Unread chats';
+
+  @override
+  String get myTasks => 'My tasks';
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get showMore => 'Show more';
+
+  @override
+  String get viewLabel => 'View';
+
+  @override
+  String get sortedAscending => 'Sorted ascending';
+
+  @override
+  String get sortedDescending => 'Sorted descending';
+
+  @override
+  String sortBy(String column) {
+    return 'Sort by $column';
+  }
+
+  @override
+  String rowsShown(int shown, int total) {
+    return '$shown of $total';
+  }
+
+  @override
+  String get note => 'Note';
+
+  @override
+  String get rooms => 'Rooms';
+
+  @override
+  String get tables => 'Tables';
+
+  @override
+  String get showDetails => 'Show details';
+
+  @override
+  String get hideDetails => 'Hide details';
+
+  @override
+  String get selectThread => 'Select a conversation';
+
+  @override
+  String get keyboardShortcuts => 'Keyboard shortcuts';
+
+  @override
+  String get goToPage => 'Go to a page';
+
+  @override
+  String get shortcutSearch => 'Search this page';
+
+  @override
+  String get shortcutClose => 'Close a panel or dialog';
+
+  @override
+  String get shortcutHelp => 'Show keyboard shortcuts';
+
+  @override
+  String get shortcutSend => 'Send a chat message (Shift+Enter: new line)';
 }

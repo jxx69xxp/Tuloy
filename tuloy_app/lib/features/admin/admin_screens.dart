@@ -447,7 +447,7 @@ class _ContentEditState extends ConsumerState<ContentEditScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           DropdownButtonFormField<String>(
-            value: _kind,
+            initialValue: _kind,
             decoration: InputDecoration(labelText: l.kind),
             items: [
               for (final k in ['guide', 'promotion', 'banner']) DropdownMenuItem(value: k, child: Text(k)),
@@ -536,11 +536,12 @@ class _HotelSettingsState extends ConsumerState<HotelSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    if (_h == null)
+    if (_h == null) {
       return Scaffold(
         appBar: AppBar(title: Text(l.hotelSettings)),
         body: const Center(child: CircularProgressIndicator()),
       );
+    }
     double n(String k) => double.tryParse(c(k).text) ?? 0;
     final p = ((_h!['policies'] as Map?) ?? {}).cast<String, dynamic>();
     return Scaffold(

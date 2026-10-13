@@ -53,7 +53,7 @@ class LoyaltyScreen extends ConsumerWidget {
                               context,
                               () => ref.read(apiProvider).post('/me/loyalty/redeem', {
                                 'rewardId': r['id'],
-                                'reservationId': stay!.id,
+                                'reservationId': stay.id,
                               }),
                               done: l.redeemed,
                             );

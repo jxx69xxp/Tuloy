@@ -159,8 +159,9 @@ class _StaffEditState extends ConsumerState<_StaffEdit> {
               icon: const Icon(Icons.person_remove),
               onPressed: () async {
                 if (!await confirm(context, l.removeAccess, '${m['fullName']}') || !context.mounted) return;
-                if (await act(context, () => api.delete('/admin/staff/${m['userId']}')) && context.mounted)
+                if (await act(context, () => api.delete('/admin/staff/${m['userId']}')) && context.mounted) {
                   Navigator.pop(context, true);
+                }
               },
             ),
         ],
@@ -184,7 +185,7 @@ class _StaffEditState extends ConsumerState<_StaffEdit> {
             ),
           ],
           DropdownButtonFormField<String>(
-            value: _role,
+            initialValue: _role,
             decoration: InputDecoration(labelText: l.role),
             items: [
               DropdownMenuItem(value: 'STAFF', child: Text(l.staffHome)),
@@ -193,7 +194,7 @@ class _StaffEditState extends ConsumerState<_StaffEdit> {
             onChanged: (v) => setState(() => _role = v!),
           ),
           DropdownButtonFormField<String>(
-            value: _department,
+            initialValue: _department,
             decoration: InputDecoration(labelText: l.department),
             items: [for (final d in departments) DropdownMenuItem(value: '${d['id']}', child: Text('${d['name']}'))],
             onChanged: (v) => setState(() => _department = v),
@@ -224,8 +225,9 @@ class _LeaveTab extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     const path = '/admin/leave';
     Future<void> decide(String id, bool approve) async {
-      if (await act(context, () => ref.read(apiProvider).post('$path/$id/decide', {'approve': approve})))
+      if (await act(context, () => ref.read(apiProvider).post('$path/$id/decide', {'approve': approve}))) {
         ref.invalidate(getProvider(path));
+      }
     }
 
     return JsonList(
@@ -270,8 +272,9 @@ class _DepartmentsTab extends ConsumerWidget {
         onPressed: () async {
           final n = await prompt(context, l.departments, label: l.name);
           if (n == null || n.isEmpty || !context.mounted) return;
-          if (await act(context, () => ref.read(apiProvider).post(path, {'name': n})))
+          if (await act(context, () => ref.read(apiProvider).post(path, {'name': n}))) {
             ref.invalidate(getProvider(path));
+          }
         },
         child: const Icon(Icons.add),
       ),

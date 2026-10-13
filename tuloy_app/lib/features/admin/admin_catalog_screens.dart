@@ -77,8 +77,9 @@ class RoomsAdminScreen extends ConsumerWidget {
           onPressed: () async {
             final n = await prompt(context, l.addRoom, label: l.roomLabel);
             if (n == null || n.isEmpty || !context.mounted) return;
-            if (await act(context, () => api.post('/admin/rooms', {'roomTypeId': t['id'], 'number': n})))
+            if (await act(context, () => api.post('/admin/rooms', {'roomTypeId': t['id'], 'number': n}))) {
               ref.invalidate(getProvider(path));
+            }
           },
         ),
       ],
@@ -634,11 +635,12 @@ class _ServiceEditState extends ConsumerState<ServiceEditScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    if (_loading)
+    if (_loading) {
       return Scaffold(
         appBar: AppBar(),
         body: const Center(child: CircularProgressIndicator()),
       );
+    }
     final missing = ((_s?['missing'] as List?) ?? const []).cast<String>();
     final departments = jsonList(ref.watch(getProvider('/admin/departments')).valueOrNull ?? const []);
     const dayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -738,7 +740,7 @@ class _ServiceEditState extends ConsumerState<ServiceEditScreen> {
             ],
           ),
           DropdownButtonFormField<String>(
-            value: _model,
+            initialValue: _model,
             decoration: InputDecoration(labelText: l.priceModel),
             items: [
               for (final m in ['FIXED', 'PER_ITEM', 'PER_PERSON', 'PER_NIGHT', 'QUOTE'])
@@ -771,13 +773,13 @@ class _ServiceEditState extends ConsumerState<ServiceEditScreen> {
             ],
           ),
           DropdownButtonFormField<String>(
-            value: _department,
+            initialValue: _department,
             decoration: InputDecoration(labelText: l.department),
             items: [for (final d in departments) DropdownMenuItem(value: '${d['id']}', child: Text('${d['name']}'))],
             onChanged: (v) => setState(() => _department = v),
           ),
           DropdownButtonFormField<String>(
-            value: _acceptance,
+            initialValue: _acceptance,
             decoration: InputDecoration(labelText: l.acceptance),
             items: [
               DropdownMenuItem(value: 'AUTO', child: Text(l.autoAccept)),
@@ -968,8 +970,9 @@ class RestaurantAdminScreen extends ConsumerWidget {
           onPressed: () async {
             final n = await prompt(context, l.addTable, label: l.label);
             if (n == null || n.isEmpty || !context.mounted) return;
-            if (await act(context, () => api.post('/admin/outlets/${o['id']}/tables', {'label': n})))
+            if (await act(context, () => api.post('/admin/outlets/${o['id']}/tables', {'label': n}))) {
               ref.invalidate(getProvider(path));
+            }
           },
         ),
       ],
@@ -1038,8 +1041,9 @@ class MenuAdminScreen extends ConsumerWidget {
           trailing: Switch(
             value: i['available'] == true,
             onChanged: (v) async {
-              if (await act(context, () => api.patch('/admin/menu-items/${i['id']}', {'available': v})))
+              if (await act(context, () => api.patch('/admin/menu-items/${i['id']}', {'available': v}))) {
                 ref.invalidate(getProvider(path));
+              }
             },
           ),
           onTap: () => edit(i),

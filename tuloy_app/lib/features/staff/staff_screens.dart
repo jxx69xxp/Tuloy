@@ -349,8 +349,9 @@ class StaffReservationScreen extends ConsumerWidget {
                 onTap: () async {
                   final v = await prompt(context, l.internalNotes, initial: '${r['internalNotes'] ?? ''}');
                   if (v == null || !context.mounted) return;
-                  if (await act(context, () => api.patch('$path/notes', {'internalNotes': v})))
+                  if (await act(context, () => api.patch('$path/notes', {'internalNotes': v}))) {
                     ref.invalidate(getProvider(path));
+                  }
                 },
               ),
               Text(l.history, style: Theme.of(context).textTheme.titleSmall),
@@ -494,8 +495,9 @@ class OrdersQueueScreen extends ConsumerWidget {
     final lang = ref.watch(languageProvider) ?? 'en';
     final api = ref.read(apiProvider);
     Future<void> setStatus(String id, String to, [String? reason]) async {
-      if (await act(context, () => api.post('$path/$id/status', {'to': to, if (reason != null) 'reason': reason})))
+      if (await act(context, () => api.post('$path/$id/status', {'to': to, if (reason != null) 'reason': reason}))) {
         ref.invalidate(getProvider(path));
+      }
     }
 
     return Scaffold(

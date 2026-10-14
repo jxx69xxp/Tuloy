@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "dnf install -y unzip xz which >/dev/null 2>&1 || true; [ -d .flutter ] || git clone https://github.com/flutter/flutter.git --depth 1 -b stable .flutter",
+  "buildCommand": ".flutter/bin/flutter config --no-analytics --no-cli-animations && .flutter/bin/flutter pub get && .flutter/bin/flutter build web --release --dart-define=API_URL=$API_URL",
+  "outputDirectory": "build/web",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}

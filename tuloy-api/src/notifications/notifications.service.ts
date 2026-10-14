@@ -23,7 +23,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly prisma: PrismaService) {}
 
   onModuleInit() {
-    if (process.env.JOBS !== 'off') this.timer = setInterval(() => void this.tick(), TICK_MS);
+    if (process.env.JOBS !== 'off' && process.env.JOBS !== 'inline') this.timer = setInterval(() => void this.tick(), TICK_MS);
   }
 
   onModuleDestroy() {
@@ -65,6 +65,8 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
       }
     }
     if (rows.length) await this.prisma.notificationDelivery.createMany({ data: rows });
+    // Serverless has no timer: send now; failures stay queued for retry by the cron endpoint.
+    if (rows.length && process.env.JOBS === 'inline') await this.tick();
   }
 
   /** Exposed for tests: process one batch now. */

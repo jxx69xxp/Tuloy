@@ -7,6 +7,7 @@ import { AuthService } from './auth/auth.service';
 import { BookingController } from './booking/booking.controller';
 import { BookingService } from './booking/booking.service';
 import { ChatController } from './chat/chat.controller';
+import { CronController } from './cron.controller';
 import { AuthGuard } from './common/auth';
 import { AppExceptionFilter } from './common/errors';
 import { PrismaService } from './common/prisma.service';
@@ -38,6 +39,7 @@ import { WifiService } from './wifi/wifi.service';
     }),
   ],
   controllers: [
+    CronController,
     AuthController,
     MeController,
     HotelsController,

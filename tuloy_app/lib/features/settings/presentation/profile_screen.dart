@@ -8,7 +8,7 @@ import '../../../core/config.dart';
 import '../../../core/format.dart';
 import '../../../core/http.dart';
 import '../../../core/map.dart';
-import '../../../core/ui.dart' show Section, SectionHeader;
+import '../../../core/ui.dart' show AppearanceSelector, Section, SectionHeader;
 import '../../../l10n/app_localizations.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../../booking/presentation/booking_providers.dart';
@@ -193,6 +193,8 @@ class ProfileScreen extends ConsumerWidget {
                   onTap: () => ref.read(authProvider.notifier).setLanguage(e.key),
                 ),
             ]),
+            SectionHeader(l.appearance),
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: AppearanceSelector()),
             const SizedBox(height: 12),
             Section([
               ListTile(

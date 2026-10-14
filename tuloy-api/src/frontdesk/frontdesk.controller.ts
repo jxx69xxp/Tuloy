@@ -9,6 +9,9 @@ class ListQuery {
   @IsOptional() @IsIn(['arrivals', 'departures', 'inhouse', 'pending', 'upcoming', 'all']) view?: ReservationView;
   @IsOptional() @IsString() @MaxLength(100) q?: string;
 }
+class SearchQuery {
+  @IsOptional() @IsString() @MaxLength(100) q?: string;
+}
 class NoteDto {
   @IsOptional() @IsString() @MaxLength(300) reason?: string;
 }
@@ -25,6 +28,26 @@ export class FrontDeskController {
   @Get('dashboard')
   dashboard(@CurrentMembership() m: Membership, @CurrentUser() u: AuthUser) {
     return this.desk.staffDashboard(m, u.sub);
+  }
+
+  @Get('board')
+  board(@CurrentMembership() m: Membership, @Headers('accept-language') lang?: string) {
+    return this.desk.board(m, pickLocale(lang));
+  }
+
+  @Get('guests')
+  guests(@CurrentMembership() m: Membership, @Query() q: SearchQuery) {
+    return this.desk.guests(m, q.q);
+  }
+
+  @Get('team')
+  team(@CurrentMembership() m: Membership) {
+    return this.desk.team(m);
+  }
+
+  @Get('notifications')
+  notifications(@CurrentMembership() m: Membership, @Headers('accept-language') lang?: string) {
+    return this.desk.notifications(m, pickLocale(lang));
   }
 
   @Get('reservations')

@@ -3,11 +3,23 @@ import { Membership, Prisma } from '@prisma/client';
 import { BookingService, PAID_STATUSES, discountCents, paidCents, snap } from '../booking/booking.service';
 import { DAY_MS, canTransition, fromCents, isoDate, toCents, todayIn, zonedToUtc } from '../booking/domain';
 import { sameHotel } from '../common/auth';
+import { assetUrl } from '../common/storage';
 import { AppError } from '../common/errors';
 import { Locale, t } from '../common/i18n';
 import { PrismaService } from '../common/prisma.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { WifiService } from '../wifi/wifi.service';
+
+export type RoomStatus = 'blocked' | 'occupied' | 'departing' | 'arriving' | 'reserved' | 'free';
+
+/** A room's state today from tonight's night (kind, booking status) and whether a guest checks out of it today. */
+export function roomStatus(kind?: string, status?: string, arrivesToday?: boolean, departsToday = false): RoomStatus {
+  if (kind === 'BLOCKED') return 'blocked';
+  if (status === 'CHECKED_IN') return 'occupied';
+  if (departsToday) return 'departing'; // free tonight once they leave, even if someone arrives later
+  if (status === 'CONFIRMED' && arrivesToday) return 'arriving';
+  return kind ? 'reserved' : 'free';
+}
 
 export type ReservationView = 'arrivals' | 'departures' | 'inhouse' | 'pending' | 'upcoming' | 'all';
 
@@ -137,6 +149,169 @@ export class FrontDeskService {
     await this.wifi.revoke(id);
     const night = await this.prisma.roomNight.findFirst({ where: { reservationId: id }, include: { room: true } });
     await this.wifi.issue(r, night?.room.number ?? null);
+  }
+
+  // ───────────── room board, guests, team, notifications ─────────────
+
+  /** Every active room's state today, plus free rooms per type tonight. */
+  async board(m: Membership, locale: Locale) {
+    const { hotel, today, todayDate } = await this.hotelDay(m.hotelId);
+    const yesterday = new Date(todayDate.getTime() - DAY_MS);
+    const [rooms, nights] = await Promise.all([
+      this.prisma.room.findMany({ where: { hotelId: m.hotelId, active: true }, include: { roomType: true }, orderBy: { number: 'asc' } }),
+      this.prisma.roomNight.findMany({
+        where: { hotelId: m.hotelId, date: { in: [yesterday, todayDate] } },
+        include: { reservation: { include: { guest: true } } },
+      }),
+    ]);
+    const tonight = new Map(nights.filter((n) => +n.date === +todayDate).map((n) => [n.roomId, n]));
+    const leaving = new Map(
+      nights
+        .filter((n) => +n.date === +yesterday && n.reservation?.status === 'CHECKED_IN' && isoDate(n.reservation.checkOut) === today)
+        .map((n) => [n.roomId, n]),
+    );
+    const out = rooms.map((room) => {
+      const n = tonight.get(room.id);
+      const r = n?.reservation;
+      const status = roomStatus(n?.kind, r?.status, !!r && isoDate(r.checkIn) === today, leaving.has(room.id));
+      const who = r ?? leaving.get(room.id)?.reservation;
+      return {
+        id: room.id,
+        number: room.number,
+        floor: room.floor,
+        roomTypeId: room.roomTypeId,
+        roomType: t(room.roomType.name, locale, hotel.defaultLocale),
+        status,
+        guestName: who?.guest.fullName ?? null,
+        reservationId: who?.id ?? null,
+      };
+    });
+    const photo = new Map(rooms.map((r) => [r.roomTypeId, r.roomType.photos[0]]));
+    const types = new Map<string, { roomTypeId: string; roomType: string; photoUrl: string | null; total: number; free: number }>();
+    for (const r of out) {
+      const key = photo.get(r.roomTypeId);
+      const x = types.get(r.roomTypeId) ?? { roomTypeId: r.roomTypeId, roomType: r.roomType, photoUrl: key ? assetUrl(key) : null, total: 0, free: 0 };
+      x.total++;
+      if (r.status === 'free' || r.status === 'departing') x.free++;
+      types.set(r.roomTypeId, x);
+    }
+    return { date: today, rooms: out, types: [...types.values()] };
+  }
+
+  /** Guests who booked at this hotel, newest stay first. ponytail: capped at 200; page it when guest lists outgrow that. */
+  async guests(m: Membership, q?: string) {
+    const mine: Prisma.ReservationWhereInput = { hotelId: m.hotelId, status: { notIn: ['HOLD', 'EXPIRED'] } };
+    const users = await this.prisma.user.findMany({
+      where: {
+        reservations: { some: mine },
+        ...(q && {
+          OR: [
+            { fullName: { contains: q, mode: 'insensitive' } },
+            { email: { contains: q, mode: 'insensitive' } },
+            { phone: { contains: q } },
+          ],
+        }),
+      },
+      include: {
+        reservations: { where: mine, orderBy: { checkIn: 'desc' }, select: { id: true, code: true, status: true, checkIn: true, checkOut: true } },
+      },
+      take: 200,
+    });
+    return users
+      .map((u) => {
+        const last = u.reservations[0];
+        return {
+          id: u.id,
+          fullName: u.fullName,
+          email: u.email,
+          phone: u.phone,
+          bookings: u.reservations.length,
+          stays: u.reservations.filter((r) => r.status === 'CHECKED_OUT' || r.status === 'CHECKED_IN').length,
+          last: last && { id: last.id, code: last.code, status: last.status, checkIn: isoDate(last.checkIn), checkOut: isoDate(last.checkOut) },
+        };
+      })
+      .sort((a, b) => (b.last?.checkIn ?? '').localeCompare(a.last?.checkIn ?? ''));
+  }
+
+  /** Staff directory (read-only); admins edit it under /admin/staff. */
+  async team(m: Membership) {
+    const rows = await this.prisma.membership.findMany({
+      where: { hotelId: m.hotelId, role: { in: ['STAFF', 'ADMIN'] }, user: { disabledAt: null } },
+      include: { user: true, department: true },
+    });
+    return rows
+      .map((r) => ({ id: r.userId, fullName: r.user.fullName, email: r.user.email, phone: r.user.phone, role: r.role, department: r.department?.name ?? null }))
+      .sort((a, b) => a.fullName.localeCompare(b.fullName));
+  }
+
+  /**
+   * Front-desk feed from what is already recorded: new and cancelled bookings and new requests/orders
+   * (status history), plus guest chat messages. Read state is kept by the app (last seen time).
+   */
+  async notifications(m: Membership, locale: Locale) {
+    const h = m.hotelId;
+    const since = new Date(Date.now() - 7 * DAY_MS);
+    const take = 30;
+    const [events, messages, hotel] = await Promise.all([
+      this.prisma.statusEvent.findMany({
+        where: {
+          hotelId: h,
+          at: { gte: since },
+          OR: [
+            { entityType: 'reservation', fromStatus: 'HOLD', toStatus: { in: ['CONFIRMED', 'PENDING'] } },
+            { entityType: 'reservation', toStatus: 'CANCELLED', fromStatus: { not: 'HOLD' } },
+            { entityType: { in: ['service_request', 'restaurant_order'] }, fromStatus: null },
+          ],
+        },
+        orderBy: { at: 'desc' },
+        take,
+      }),
+      this.prisma.$queryRaw<{ id: string; at: Date; body: string; conversationId: string; guestName: string }[]>`
+        SELECT m.id, m."createdAt" AS at, m.body, m."conversationId", u."fullName" AS "guestName"
+        FROM "Message" m JOIN "Conversation" c ON c.id = m."conversationId" JOIN "User" u ON u.id = c."guestId"
+        WHERE c."hotelId" = ${h} AND m."senderId" = c."guestId" AND m."createdAt" >= ${since}
+        ORDER BY m."createdAt" DESC LIMIT ${take}`,
+      this.prisma.hotel.findUniqueOrThrow({ where: { id: h } }),
+    ]);
+    const ids = (type: string) => events.filter((e) => e.entityType === type).map((e) => e.entityId);
+    const [reservations, requests] = await Promise.all([
+      this.prisma.reservation.findMany({ where: { id: { in: ids('reservation') } }, include: { guest: true } }),
+      this.prisma.serviceRequest.findMany({ where: { id: { in: ids('service_request') } } }),
+    ]);
+    const requestGuests = await this.prisma.user.findMany({ where: { id: { in: requests.map((r) => r.guestId) } } });
+    const res = new Map(reservations.map((r) => [r.id, r]));
+    const req = new Map(requests.map((r) => [r.id, r]));
+    const guest = new Map(requestGuests.map((u) => [u.id, u.fullName]));
+
+    const items = [
+      ...events.map((e) => {
+        if (e.entityType === 'reservation') {
+          const r = res.get(e.entityId);
+          return {
+            id: e.id,
+            kind: e.toStatus === 'CANCELLED' ? 'cancelled' : e.toStatus === 'PENDING' ? 'pending' : 'booking',
+            at: e.at,
+            title: r?.guest.fullName ?? '',
+            detail: r?.code ?? '',
+            refId: e.entityId,
+          };
+        }
+        if (e.entityType === 'service_request') {
+          const r = req.get(e.entityId);
+          return {
+            id: e.id,
+            kind: 'request',
+            at: e.at,
+            title: (r && guest.get(r.guestId)) ?? '',
+            detail: r ? t((r.snapshot as { name?: unknown }).name, locale, hotel.defaultLocale) : '',
+            refId: e.entityId,
+          };
+        }
+        return { id: e.id, kind: 'order', at: e.at, title: '', detail: e.entityId.slice(0, 6).toUpperCase(), refId: e.entityId };
+      }),
+      ...messages.map((x) => ({ id: x.id, kind: 'message', at: x.at, title: x.guestName, detail: x.body.slice(0, 120), refId: x.conversationId })),
+    ];
+    return items.sort((a, b) => +b.at - +a.at).slice(0, 40);
   }
 
   // ───────────── dashboards ─────────────

@@ -61,6 +61,9 @@ Future<GoRouter> _start(WidgetTester t, double width, String location) async {
       languageProvider.overrideWith((_) => 'en'),
       getProvider('/staff/dashboard').overrideWith((ref) async => const <String, dynamic>{}),
       getProvider('/staff/reservations?view=upcoming').overrideWith((ref) async => [_row]),
+      getProvider('/staff/reservations?view=departures').overrideWith((ref) async => const []),
+      getProvider('/staff/board').overrideWith((ref) async => const {'rooms': [], 'types': []}),
+      getProvider('/staff/notifications').overrideWith((ref) async => const []),
       getProvider('/staff/reservations/r1').overrideWith((ref) async => _detail),
     ],
   );

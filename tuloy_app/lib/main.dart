@@ -9,9 +9,12 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final store = TokenStore();
   final language = await store.readLanguage();
+  final theme = ThemeMode.values.asNameMap()[await store.readThemeMode()] ?? ThemeMode.system;
   runApp(
     ProviderScope(
-      overrides: [tokenStoreProvider.overrideWithValue(store), languageProvider.overrideWith((_) => language)],
+      overrides: [tokenStoreProvider.overrideWithValue(store), languageProvider.overrideWith((_) => language),
+        themeModeProvider.overrideWith((_) => theme),
+      ],
       child: const TuloyApp(),
     ),
   );

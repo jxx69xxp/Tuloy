@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/auth/presentation/auth_controller.dart' show setThemeMode, themeModeProvider;
 import '../features/auth/presentation/widgets.dart';
 import '../features/booking/presentation/booking_providers.dart';
 import '../l10n/app_localizations.dart';
@@ -269,6 +270,56 @@ class EmptyState extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Device / Light / Dark choice for settings screens.
+class AppearanceSelector extends ConsumerWidget {
+  const AppearanceSelector({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    return SegmentedButton<ThemeMode>(
+      showSelectedIcon: false,
+      segments: [
+        ButtonSegment(
+          value: ThemeMode.system,
+          icon: const Icon(Icons.brightness_auto_outlined),
+          label: Text(l.themeSystem),
+        ),
+        ButtonSegment(value: ThemeMode.light, icon: const Icon(Icons.light_mode_outlined), label: Text(l.themeLight)),
+        ButtonSegment(value: ThemeMode.dark, icon: const Icon(Icons.dark_mode_outlined), label: Text(l.themeDark)),
+      ],
+      selected: {ref.watch(themeModeProvider)},
+      onSelectionChanged: (s) => setThemeMode(ref, s.first),
+    );
+  }
+}
+
+/// Top-bar appearance switch for the wide staff/admin shell.
+class ThemeMenuButton extends ConsumerWidget {
+  const ThemeMenuButton({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final mode = ref.watch(themeModeProvider);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return PopupMenuButton<ThemeMode>(
+      tooltip: l.appearance,
+      icon: Icon(dark ? Icons.dark_mode_outlined : Icons.light_mode_outlined),
+      initialValue: mode,
+      onSelected: (m) => setThemeMode(ref, m),
+      itemBuilder: (_) => [
+        for (final (m, label) in [
+          (ThemeMode.system, l.themeSystem),
+          (ThemeMode.light, l.themeLight),
+          (ThemeMode.dark, l.themeDark),
+        ])
+          CheckedPopupMenuItem(value: m, checked: m == mode, child: Text(label)),
+      ],
     );
   }
 }

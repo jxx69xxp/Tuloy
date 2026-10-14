@@ -202,13 +202,20 @@ class DuskBackdrop extends StatelessWidget {
   }
 }
 
-/// Stand-in for room/service photos (the API has none yet): a gradient picked from the room name.
-// ponytail: swap for Image.network once room photos are served by the API.
+/// Room/service photo when one is uploaded ([imageUrl]); otherwise a gradient picked from the name.
 class RoomArt extends StatelessWidget {
-  const RoomArt({super.key, required this.name, this.height = 140, this.icon = Icons.king_bed_outlined, this.child});
+  const RoomArt({
+    super.key,
+    required this.name,
+    this.height = 140,
+    this.icon = Icons.king_bed_outlined,
+    this.imageUrl,
+    this.child,
+  });
   final String name;
   final IconData icon;
   final double height;
+  final String? imageUrl;
   final Widget? child;
 
   static const _palettes = [
@@ -231,8 +238,13 @@ class RoomArt extends StatelessWidget {
         child: CustomPaint(
           painter: const ArchPattern(color: Color(0x40FFFFFF)),
           child: Stack(
+            fit: StackFit.expand,
             children: [
-              Center(child: Icon(icon, color: Colors.white70, size: 40)),
+              Center(
+                child: Icon(icon, color: Colors.white70, size: height < 100 ? 24 : 40),
+              ),
+              if (imageUrl != null)
+                Image.network(imageUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox()),
               if (child != null) child!,
             ],
           ),

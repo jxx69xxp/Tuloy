@@ -42,6 +42,14 @@ class TokenStore {
   /// Read before runApp: a failure here must not leave a blank page, so it yields null (language picker).
   Future<String?> readLanguage() => _tryRead('language');
   Future<void> writeLanguage(String code) => _s.write(key: 'language', value: code);
+
+  /// Light, dark or system appearance (ThemeMode name).
+  Future<String?> readThemeMode() => _tryRead('themeMode');
+  Future<void> writeThemeMode(String mode) => _s.write(key: 'themeMode', value: mode);
+
+  /// When the front-desk notifications were last opened (ISO time); newer items count as unread.
+  Future<String?> readNotificationsSeen() => _tryRead('notificationsSeen');
+  Future<void> writeNotificationsSeen(String iso) => _s.write(key: 'notificationsSeen', value: iso);
 }
 
 /// Dio with: bearer token, Accept-Language, and one transparent refresh on 401.

@@ -1054,4 +1054,92 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shortcutSend => 'Send a chat message (Shift+Enter: new line)';
+
+  @override
+  String get roomBoard => 'Rooms today';
+
+  @override
+  String get roomOccupied => 'Occupied';
+
+  @override
+  String get roomDeparting => 'Checking out';
+
+  @override
+  String get roomArriving => 'Arriving';
+
+  @override
+  String get roomReserved => 'Reserved';
+
+  @override
+  String get roomBlocked => 'Blocked';
+
+  @override
+  String freeOf(String free, String total) {
+    return '$free of $total available';
+  }
+
+  @override
+  String get todaysArrivals => 'Today\'s arrivals';
+
+  @override
+  String get todaysDepartures => 'Today\'s departures';
+
+  @override
+  String get guestList => 'Guest list';
+
+  @override
+  String get team => 'Team';
+
+  @override
+  String get lastStay => 'Last stay';
+
+  @override
+  String get roleAdmin => 'Admin';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get notifBooking => 'New booking';
+
+  @override
+  String get notifPending => 'Booking needs approval';
+
+  @override
+  String get notifCancelled => 'Booking cancelled';
+
+  @override
+  String get notifRequest => 'New service request';
+
+  @override
+  String get notifOrder => 'New food order';
+
+  @override
+  String get notifMessage => 'New message';
+
+  @override
+  String staffCancelConfirm(String refund) {
+    return 'Cancel this booking? The guest gets $refund back, following the cancellation policy.';
+  }
+
+  @override
+  String get phone => 'Phone';
+
+  @override
+  String get appearance => 'Appearance';
+
+  @override
+  String get themeSystem => 'Match device';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get roomAvailable => 'Available';
+
+  @override
+  String get availableOnly => 'Available only';
 }

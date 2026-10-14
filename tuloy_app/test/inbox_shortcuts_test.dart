@@ -75,6 +75,9 @@ Future<GoRouter> _start(WidgetTester t, double width, String location) async {
       getProvider('/staff/dashboard').overrideWith((ref) async => const <String, dynamic>{}),
       getProvider('/staff/conversations').overrideWith((ref) async => _threads),
       getProvider('/staff/reservations?view=upcoming').overrideWith((ref) async => const []),
+      getProvider('/staff/reservations?view=departures').overrideWith((ref) async => const []),
+      getProvider('/staff/board').overrideWith((ref) async => const {'rooms': [], 'types': []}),
+      getProvider('/staff/notifications').overrideWith((ref) async => const []),
     ],
   );
   addTearDown(container.dispose);

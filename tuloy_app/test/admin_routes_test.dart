@@ -46,6 +46,9 @@ void main() {
         ...extra,
         authProvider.overrideWith(auth),
         languageProvider.overrideWith((_) => 'en'),
+        // The shell's notifications bell and chat button.
+        getProvider('/staff/notifications').overrideWith((ref) async => const []),
+        getProvider('/staff/dashboard').overrideWith((ref) async => const <String, dynamic>{}),
         getProvider('/admin/room-types').overrideWith(
           (ref) async => [
             {'id': 'a', 'name': {'en': 'Alpha'}, 'maxGuests': 2, 'basePrice': 100, 'rooms': []},

@@ -2073,6 +2073,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send a chat message (Shift+Enter: new line)'**
   String get shortcutSend;
+
+  /// No description provided for @roomBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms today'**
+  String get roomBoard;
+
+  /// No description provided for @roomOccupied.
+  ///
+  /// In en, this message translates to:
+  /// **'Occupied'**
+  String get roomOccupied;
+
+  /// No description provided for @roomDeparting.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking out'**
+  String get roomDeparting;
+
+  /// No description provided for @roomArriving.
+  ///
+  /// In en, this message translates to:
+  /// **'Arriving'**
+  String get roomArriving;
+
+  /// No description provided for @roomReserved.
+  ///
+  /// In en, this message translates to:
+  /// **'Reserved'**
+  String get roomReserved;
+
+  /// No description provided for @roomBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get roomBlocked;
+
+  /// No description provided for @freeOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{free} of {total} available'**
+  String freeOf(String free, String total);
+
+  /// No description provided for @todaysArrivals.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s arrivals'**
+  String get todaysArrivals;
+
+  /// No description provided for @todaysDepartures.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s departures'**
+  String get todaysDepartures;
+
+  /// No description provided for @guestList.
+  ///
+  /// In en, this message translates to:
+  /// **'Guest list'**
+  String get guestList;
+
+  /// No description provided for @team.
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get team;
+
+  /// No description provided for @lastStay.
+  ///
+  /// In en, this message translates to:
+  /// **'Last stay'**
+  String get lastStay;
+
+  /// No description provided for @roleAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get roleAdmin;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @notifBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'New booking'**
+  String get notifBooking;
+
+  /// No description provided for @notifPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking needs approval'**
+  String get notifPending;
+
+  /// No description provided for @notifCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking cancelled'**
+  String get notifCancelled;
+
+  /// No description provided for @notifRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'New service request'**
+  String get notifRequest;
+
+  /// No description provided for @notifOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'New food order'**
+  String get notifOrder;
+
+  /// No description provided for @notifMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'New message'**
+  String get notifMessage;
+
+  /// No description provided for @staffCancelConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this booking? The guest gets {refund} back, following the cancellation policy.'**
+  String staffCancelConfirm(String refund);
+
+  /// No description provided for @phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get phone;
+
+  /// No description provided for @appearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearance;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Match device'**
+  String get themeSystem;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// No description provided for @roomAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get roomAvailable;
+
+  /// No description provided for @availableOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Available only'**
+  String get availableOnly;
 }
 
 class _AppLocalizationsDelegate

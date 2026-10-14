@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/adaptive.dart';
+import '../core/ui.dart' show ThemeMenuButton;
 import '../core/config.dart';
 import '../core/web/overlays.dart';
 import '../features/auth/domain/auth.dart';
@@ -22,6 +23,7 @@ import '../features/chat/chat_screen.dart';
 import '../features/loyalty/loyalty_wifi_screens.dart';
 import '../features/restaurant/restaurant_screens.dart';
 import '../features/services/services_screens.dart';
+import '../features/staff/desk_screens.dart';
 import '../features/staff/staff_screens.dart';
 import '../features/settings/presentation/profile_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
@@ -40,17 +42,14 @@ final _chat = GoRoute(
 List<RouteBase> _deskRoutes(String base) => [
   GoRoute(
     path: 'reservations',
-    builder: (_, __) => ReservationsQueueScreen(base: base),
+    // ?q= arrives from the guest list: open with that search applied.
+    builder: (_, s) => ReservationsQueueScreen(base: base, q: s.uri.queryParameters['q']),
     routes: [
       // Nested so that on wide screens the detail is a side panel over the queue (also on refresh/deep link).
       GoRoute(
         path: ':id',
-        pageBuilder: (c, s) => adaptivePage(
-          c,
-          s,
-          StaffReservationScreen(id: s.pathParameters['id']!, panel: isWide(c)),
-          panel: true,
-        ),
+        pageBuilder: (c, s) =>
+            adaptivePage(c, s, StaffReservationScreen(id: s.pathParameters['id']!, panel: isWide(c)), panel: true),
       ),
     ],
   ),
@@ -74,6 +73,11 @@ List<RouteBase> _deskRoutes(String base) => [
   ),
   GoRoute(path: 'leave', builder: (_, __) => const LeaveScreen()),
   GoRoute(
+    path: 'guests',
+    builder: (_, __) => GuestListScreen(base: base),
+  ),
+  GoRoute(path: 'team', builder: (_, __) => const TeamScreen()),
+  GoRoute(
     path: 'chat/:id',
     builder: (_, s) => ChatScreen(id: s.pathParameters['id']!, title: s.extra as String?),
   ),
@@ -89,7 +93,9 @@ List<RailItem> _staffItems(AppLocalizations l) => [
   RailItem(Icons.checklist, l.tasks, '/staff/tasks', section: l.frontDesk),
   RailItem(Icons.restaurant, l.restaurant, '/staff/orders', section: l.frontDesk),
   RailItem(Icons.chat_bubble_outline, l.chat, '/staff/inbox', section: l.frontDesk),
-  RailItem(Icons.beach_access_outlined, l.leaveRequests, '/staff/leave'),
+  RailItem(Icons.people_outline, l.guestList, '/staff/guests', section: l.navPeople),
+  RailItem(Icons.groups_outlined, l.team, '/staff/team', section: l.navPeople),
+  RailItem(Icons.beach_access_outlined, l.leaveRequests, '/staff/leave', section: l.navPeople),
 ];
 
 /// Breadcrumb labels for the desk screens mounted under /admin/desk.
@@ -107,6 +113,7 @@ List<RailItem> _adminItems(AppLocalizations l) => [
   RailItem(Icons.article_outlined, l.content, '/admin/content', section: l.navCatalog),
   RailItem(Icons.payments_outlined, l.payments, '/admin/payments', section: l.navFinance),
   RailItem(Icons.bar_chart, l.reports, '/admin/reports', section: l.navFinance),
+  RailItem(Icons.people_outline, l.guestList, '/admin/desk/guests', section: l.navPeople),
   RailItem(Icons.badge_outlined, l.staff, '/admin/staff', section: l.navPeople),
   RailItem(Icons.hotel_outlined, l.hotelSettings, '/admin/hotel', section: l.navSystem),
   RailItem(Icons.history, l.auditLog, '/admin/audit', section: l.navSystem),
@@ -117,12 +124,15 @@ Widget _shell(List<RailItem> Function(AppLocalizations) items, GoRouterState s, 
     Consumer(
       builder: (c, ref, _) {
         final l = AppLocalizations.of(c);
+        final base = desk ? '/admin/desk' : '/staff';
         return AdaptiveShell(
           items: items(l),
           labels: desk ? _deskLabels(l) : const {},
           location: s.uri.path,
           userName: ref.watch(authProvider).valueOrNull?.fullName,
           onSignOut: () => ref.read(authProvider.notifier).signOut(),
+          topActions: [const ThemeMenuButton(), DeskNotifications(base: base)],
+          fab: s.uri.path.contains('/inbox') ? null : DeskChatButton(base: base),
           child: child,
         );
       },
@@ -141,12 +151,7 @@ String homeFor(Role role) => switch (role) {
 /// [uri] is the full requested URI. When given, a deep link (e.g. a browser refresh while the
 /// session is still restoring, or an expired session) rides through /splash and /signin as
 /// `?from=` and is reopened afterwards if it is internal and the user's role may open it.
-String? redirectFor({
-  required String location,
-  required AsyncValue<User?> auth,
-  Uri? uri,
-  bool isWeb = kIsWeb,
-}) {
+String? redirectFor({required String location, required AsyncValue<User?> auth, Uri? uri, bool isWeb = kIsWeb}) {
   final detour = location == '/splash' || _public.contains(location);
   // Where the user was heading: carried along while detouring, else the requested URI itself.
   final target = detour ? uri?.queryParameters['from'] : uri?.toString();
@@ -182,11 +187,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/splash',
     refreshListenable: refresh,
-    redirect: (_, state) => redirectFor(
-      location: state.matchedLocation,
-      uri: state.uri,
-      auth: ref.read(authProvider),
-    ),
+    redirect: (_, state) => redirectFor(location: state.matchedLocation, uri: state.uri, auth: ref.read(authProvider)),
     routes: [
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/signin', builder: (_, __) => const SignInScreen()),
@@ -260,93 +261,91 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       ShellRoute(
         builder: (_, s, child) => _shell(_staffItems, s, child),
-        routes: [
-          GoRoute(path: '/staff', builder: (_, __) => const StaffHomeScreen(), routes: _deskRoutes('/staff')),
-        ],
+        routes: [GoRoute(path: '/staff', builder: (_, __) => const StaffHomeScreen(), routes: _deskRoutes('/staff'))],
       ),
       ShellRoute(
         builder: (_, s, child) => _shell(_adminItems, s, child, desk: true),
         routes: [
-      GoRoute(
-        path: '/admin',
-        builder: (_, __) => const AdminHomeScreen(),
-        routes: [
           GoRoute(
-            path: 'desk',
-            builder: (_, __) => const StaffHomeScreen(base: '/admin/desk'),
-            routes: _deskRoutes('/admin/desk'),
-          ),
-          GoRoute(
-            path: 'rooms',
-            builder: (_, __) => const RoomsAdminScreen(),
+            path: '/admin',
+            builder: (_, __) => const AdminHomeScreen(),
             routes: [
-              // Nested so that on wide screens the editor is a dialog over the Rooms list.
-              GoRoute(path: 'type/new', pageBuilder: (c, s) => adaptivePage(c, s, const RoomTypeEditScreen())),
               GoRoute(
-                path: 'type/:id',
-                pageBuilder: (c, s) => adaptivePage(
-                  c,
-                  s,
-                  FindById(
-                    listPath: '/admin/room-types',
-                    id: s.pathParameters['id']!,
-                    builder: (_, t) => RoomTypeEditScreen(type: t),
+                path: 'desk',
+                builder: (_, __) => const StaffHomeScreen(base: '/admin/desk'),
+                routes: _deskRoutes('/admin/desk'),
+              ),
+              GoRoute(
+                path: 'rooms',
+                builder: (_, __) => const RoomsAdminScreen(),
+                routes: [
+                  // Nested so that on wide screens the editor is a dialog over the Rooms list.
+                  GoRoute(path: 'type/new', pageBuilder: (c, s) => adaptivePage(c, s, const RoomTypeEditScreen())),
+                  GoRoute(
+                    path: 'type/:id',
+                    pageBuilder: (c, s) => adaptivePage(
+                      c,
+                      s,
+                      FindById(
+                        listPath: '/admin/room-types',
+                        id: s.pathParameters['id']!,
+                        builder: (_, t) => RoomTypeEditScreen(type: t),
+                      ),
+                    ),
                   ),
+                ],
+              ),
+              GoRoute(
+                path: 'rooms/:id/rates',
+                builder: (_, s) => FindById(
+                  listPath: '/admin/room-types',
+                  id: s.pathParameters['id']!,
+                  builder: (_, t) => RatesScreen(type: t),
                 ),
               ),
-            ],
-          ),
-          GoRoute(
-            path: 'rooms/:id/rates',
-            builder: (_, s) => FindById(
-              listPath: '/admin/room-types',
-              id: s.pathParameters['id']!,
-              builder: (_, t) => RatesScreen(type: t),
-            ),
-          ),
-          GoRoute(path: 'rooms/blocks', builder: (_, __) => const BlocksScreen()),
-          GoRoute(path: 'services', builder: (_, __) => const ServicesAdminScreen()),
-          GoRoute(path: 'services/new', builder: (_, __) => const ServiceEditScreen()),
-          GoRoute(
-            path: 'services/:id',
-            builder: (_, s) => ServiceEditScreen(id: s.pathParameters['id']),
-          ),
-          GoRoute(path: 'restaurant', builder: (_, __) => const RestaurantAdminScreen()),
-          GoRoute(
-            path: 'restaurant/:id/menu',
-            builder: (_, s) => FindById(
-              listPath: '/admin/outlets',
-              id: s.pathParameters['id']!,
-              builder: (_, o) => MenuAdminScreen(outlet: o),
-            ),
-          ),
-          GoRoute(path: 'payments', builder: (_, __) => const PaymentsScreen()),
-          GoRoute(path: 'reports', builder: (_, __) => const ReportsScreen()),
-          GoRoute(path: 'staff', builder: (_, __) => const StaffAdminScreen()),
-          GoRoute(path: 'loyalty', builder: (_, __) => const LoyaltyAdminScreen()),
-          GoRoute(
-            path: 'content',
-            builder: (_, __) => const ContentScreen(),
-            routes: [
-              GoRoute(path: 'new', pageBuilder: (c, s) => adaptivePage(c, s, const ContentEditScreen())),
+              GoRoute(path: 'rooms/blocks', builder: (_, __) => const BlocksScreen()),
+              GoRoute(path: 'services', builder: (_, __) => const ServicesAdminScreen()),
+              GoRoute(path: 'services/new', builder: (_, __) => const ServiceEditScreen()),
               GoRoute(
-                path: ':id',
-                pageBuilder: (c, s) => adaptivePage(
-                  c,
-                  s,
-                  FindById(
-                    listPath: '/admin/content',
-                    id: s.pathParameters['id']!,
-                    builder: (_, c) => ContentEditScreen(item: c),
-                  ),
+                path: 'services/:id',
+                builder: (_, s) => ServiceEditScreen(id: s.pathParameters['id']),
+              ),
+              GoRoute(path: 'restaurant', builder: (_, __) => const RestaurantAdminScreen()),
+              GoRoute(
+                path: 'restaurant/:id/menu',
+                builder: (_, s) => FindById(
+                  listPath: '/admin/outlets',
+                  id: s.pathParameters['id']!,
+                  builder: (_, o) => MenuAdminScreen(outlet: o),
                 ),
               ),
+              GoRoute(path: 'payments', builder: (_, __) => const PaymentsScreen()),
+              GoRoute(path: 'reports', builder: (_, __) => const ReportsScreen()),
+              GoRoute(path: 'staff', builder: (_, __) => const StaffAdminScreen()),
+              GoRoute(path: 'loyalty', builder: (_, __) => const LoyaltyAdminScreen()),
+              GoRoute(
+                path: 'content',
+                builder: (_, __) => const ContentScreen(),
+                routes: [
+                  GoRoute(path: 'new', pageBuilder: (c, s) => adaptivePage(c, s, const ContentEditScreen())),
+                  GoRoute(
+                    path: ':id',
+                    pageBuilder: (c, s) => adaptivePage(
+                      c,
+                      s,
+                      FindById(
+                        listPath: '/admin/content',
+                        id: s.pathParameters['id']!,
+                        builder: (_, c) => ContentEditScreen(item: c),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              GoRoute(path: 'hotel', builder: (_, __) => const HotelSettingsScreen()),
+              GoRoute(path: 'audit', builder: (_, __) => const AuditScreen()),
             ],
           ),
-          GoRoute(path: 'hotel', builder: (_, __) => const HotelSettingsScreen()),
-          GoRoute(path: 'audit', builder: (_, __) => const AuditScreen()),
-        ],
-      ),
         ],
       ),
     ],

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,8 +9,16 @@ import '../domain/auth.dart';
 /// Overridden in main() with a store already holding the saved language.
 final tokenStoreProvider = Provider<TokenStore>((_) => TokenStore());
 
-/// Chosen UI language; null until the user picks one on first run.
+/// Chosen UI language; null follows the device until the user picks one in Settings.
 final languageProvider = StateProvider<String?>((_) => null);
+
+/// Light, dark or follow the device; remembered on this device.
+final themeModeProvider = StateProvider<ThemeMode>((_) => ThemeMode.system);
+
+Future<void> setThemeMode(WidgetRef ref, ThemeMode mode) async {
+  ref.read(themeModeProvider.notifier).state = mode;
+  await ref.read(tokenStoreProvider).writeThemeMode(mode.name);
+}
 
 final dioProvider = Provider<Dio>(
   (ref) => buildDio(

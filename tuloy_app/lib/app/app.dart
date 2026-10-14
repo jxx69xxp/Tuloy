@@ -26,6 +26,7 @@ class TuloyApp extends ConsumerWidget {
       ],
       theme: tuloyTheme(Brightness.light),
       darkTheme: tuloyTheme(Brightness.dark),
+      themeMode: ref.watch(themeModeProvider),
     );
   }
 }

@@ -13,6 +13,7 @@ import '../booking/domain/booking.dart';
 import '../booking/presentation/booking_providers.dart';
 import '../chat/chat_screen.dart';
 import '../services/services_screens.dart' show paymentMethodLabel, stepLabel;
+import 'desk_screens.dart';
 
 /// Staff routes live under /staff; admins reach the same screens under /admin/desk.
 String deskBase(Role role) => role == Role.admin ? '/admin/desk' : '/staff';
@@ -32,7 +33,7 @@ class StaffHomeScreen extends ConsumerWidget {
     final wide = isWide(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(l.staffHome),
+        title: Text(l.frontDesk),
         actions: [
           if (wide)
             IconButton(
@@ -40,7 +41,7 @@ class StaffHomeScreen extends ConsumerWidget {
               icon: const Icon(Icons.refresh),
               onPressed: () => ref.invalidate(getProvider(path)),
             ),
-          if (base == '/staff')
+          if (base == '/staff' && !wide)
             IconButton(
               tooltip: l.settings,
               icon: const Icon(Icons.settings_outlined),
@@ -57,7 +58,7 @@ class StaffHomeScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(12),
             children: wide
                 ? [
-                    // Wide: KPI grid and attention list; the sidebar replaces the menu tiles.
+                    // Wide: one overview — today's numbers, the room board, who arrives and leaves, what needs action.
                     KpiGrid([
                       Kpi(l.arrivals, '${n('arrivals')}', onTap: () => context.go('$base/reservations')),
                       Kpi(l.departures, '${n('departures')}', onTap: () => context.go('$base/reservations')),
@@ -65,12 +66,47 @@ class StaffHomeScreen extends ConsumerWidget {
                       Kpi(l.openTasks, '${n('openTasks')}', onTap: () => context.go('$base/tasks')),
                     ]),
                     const SizedBox(height: 16),
-                    AttentionCard([
-                      (Icons.pending_actions, l.pendingApproval, n('pending'), () => context.go('$base/reservations')),
-                      (Icons.task_alt, l.myTasks, n('myTasks'), () => context.go('$base/tasks')),
-                      (Icons.restaurant, l.restaurantOrders, n('openOrders'), () => context.go('$base/orders')),
-                      (Icons.chat_bubble_outline, l.unreadChats, n('unreadChats'), () => context.go('$base/inbox')),
-                    ]),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(flex: 3, child: RoomBoard(base: base)),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              AttentionCard([
+                                (
+                                  Icons.pending_actions,
+                                  l.pendingApproval,
+                                  n('pending'),
+                                  () => context.go('$base/reservations'),
+                                ),
+                                (Icons.task_alt, l.myTasks, n('myTasks'), () => context.go('$base/tasks')),
+                                (
+                                  Icons.restaurant,
+                                  l.restaurantOrders,
+                                  n('openOrders'),
+                                  () => context.go('$base/orders'),
+                                ),
+                                (
+                                  Icons.chat_bubble_outline,
+                                  l.unreadChats,
+                                  n('unreadChats'),
+                                  () => context.go('$base/inbox'),
+                                ),
+                              ]),
+                              const SizedBox(height: 16),
+                              StayListCard(base: base, departures: false),
+                              const SizedBox(height: 16),
+                              StayListCard(base: base, departures: true),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 88), // clears the chat button
                   ]
                 : [
                     Wrap(
@@ -83,6 +119,10 @@ class StaffHomeScreen extends ConsumerWidget {
                         _Stat(l.pendingApproval, n('pending')),
                       ],
                     ),
+                    const SizedBox(height: 8),
+                    StayListCard(base: base, departures: false),
+                    const SizedBox(height: 8),
+                    RoomBoard(base: base),
                     const SizedBox(height: 8),
                     NavTile(
                       Icons.event_note,
@@ -103,6 +143,8 @@ class StaffHomeScreen extends ConsumerWidget {
                       () => context.push('$base/inbox'),
                       badge: n('unreadChats'),
                     ),
+                    NavTile(Icons.people_outline, l.guestList, () => context.push('$base/guests')),
+                    NavTile(Icons.groups_outlined, l.team, () => context.push('$base/team')),
                     NavTile(Icons.beach_access, l.myLeave, () => context.push('$base/leave')),
                   ],
           ),
@@ -138,15 +180,17 @@ class _Stat extends StatelessWidget {
 // ───────────── T2 reservations queue ─────────────
 
 class ReservationsQueueScreen extends ConsumerStatefulWidget {
-  const ReservationsQueueScreen({super.key, required this.base});
+  const ReservationsQueueScreen({super.key, required this.base, this.q});
   final String base;
+  final String? q;
   @override
   ConsumerState<ReservationsQueueScreen> createState() => _QueueState();
 }
 
 class _QueueState extends ConsumerState<ReservationsQueueScreen> {
-  String _view = 'upcoming';
-  String _q = '';
+  late String _q = widget.q ?? '';
+  // A guest lookup should show their past stays too.
+  late String _view = _q.isEmpty ? 'upcoming' : 'all';
 
   @override
   Widget build(BuildContext context) {
@@ -257,6 +301,22 @@ class StaffReservationScreen extends ConsumerWidget {
   /// Shown as a side panel over the queue (wide screens): close button, and actions refresh the queue too.
   final bool panel;
 
+  /// Staff cancel: the refund follows the cancellation policy (shown first); the API logs it in the audit log.
+  Future<void> _cancel(BuildContext context, WidgetRef ref) async {
+    final l = AppLocalizations.of(context);
+    final api = ref.read(apiProvider);
+    Map? q;
+    final quoted = await act(context, () async => q = await api.get('/reservations/$id/cancel-quote') as Map);
+    if (!quoted || !context.mounted) return;
+    final refund = money(num2(q!['refund']), '${q!['currency']}');
+    if (!await confirm(context, l.cancelBooking, l.staffCancelConfirm(refund)) || !context.mounted) return;
+    final reason = await prompt(context, l.cancelBooking, label: l.reason);
+    if (reason == null || !context.mounted) return;
+    if (await act(context, () => api.post('/reservations/$id/cancel', {'reason': reason}))) {
+      ref.invalidate(getProvider);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
@@ -334,6 +394,12 @@ class StaffReservationScreen extends ConsumerWidget {
                       child: Text(l.markNoShow),
                     ),
                   ],
+                  if (status == BookingStatus.pending || status == BookingStatus.confirmed)
+                    TextButton(
+                      style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+                      onPressed: () => _cancel(context, ref),
+                      child: Text(l.cancelBooking),
+                    ),
                   if (status == BookingStatus.checkedIn) ...[
                     FilledButton(onPressed: () => run('check-out'), child: Text(l.checkOutAction)),
                     OutlinedButton(onPressed: () => run('wifi'), child: Text(l.reissueWifi)),

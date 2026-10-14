@@ -30,6 +30,8 @@ class AdaptiveShell extends StatelessWidget {
     this.labels = const {},
     this.userName,
     this.onSignOut,
+    this.topActions = const [],
+    this.fab,
   });
 
   final List<RailItem> items;
@@ -40,6 +42,10 @@ class AdaptiveShell extends StatelessWidget {
   final Map<String, String> labels;
   final String? userName;
   final VoidCallback? onSignOut;
+
+  /// Extra top-bar buttons (e.g. notifications) and a floating action button, wide screens only.
+  final List<Widget> topActions;
+  final Widget? fab;
 
   /// Index of the item whose path is the longest prefix of [location].
   int? get _selected {
@@ -114,6 +120,7 @@ class AdaptiveShell extends StatelessWidget {
       child: ShellShortcuts(
         items: items,
         child: Scaffold(
+          floatingActionButton: fab,
           body: Row(
             children: [
               SizedBox(
@@ -124,7 +131,8 @@ class AdaptiveShell extends StatelessWidget {
               Expanded(
                 child: Column(
                   children: [
-                    _TopBar(crumbs: _crumbs(l.details), actions: [help, ...actions]),
+                    // Settings and sign out live once, in the sidebar footer.
+                    _TopBar(crumbs: _crumbs(l.details), actions: [...topActions, help]),
                     const Divider(height: 1),
                     Expanded(
                       child: Align(

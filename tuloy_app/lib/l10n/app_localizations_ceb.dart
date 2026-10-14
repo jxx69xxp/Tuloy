@@ -1057,4 +1057,92 @@ class AppLocalizationsCeb extends AppLocalizations {
 
   @override
   String get shortcutSend => 'Ipadala ang mensahe (Shift+Enter: bag-ong linya)';
+
+  @override
+  String get roomBoard => 'Mga kwarto karon';
+
+  @override
+  String get roomOccupied => 'Naay nagpuyo';
+
+  @override
+  String get roomDeparting => 'Mo-check out';
+
+  @override
+  String get roomArriving => 'Moabot';
+
+  @override
+  String get roomReserved => 'Naka-reserve';
+
+  @override
+  String get roomBlocked => 'Naka-block';
+
+  @override
+  String freeOf(String free, String total) {
+    return '$free sa $total bakante';
+  }
+
+  @override
+  String get todaysArrivals => 'Moabot karon';
+
+  @override
+  String get todaysDepartures => 'Mobiya karon';
+
+  @override
+  String get guestList => 'Lista sa bisita';
+
+  @override
+  String get team => 'Mga kauban';
+
+  @override
+  String get lastStay => 'Katapusang pagpuyo';
+
+  @override
+  String get roleAdmin => 'Admin';
+
+  @override
+  String get notifications => 'Mga pahibalo';
+
+  @override
+  String get notifBooking => 'Bag-ong booking';
+
+  @override
+  String get notifPending => 'Booking nga kinahanglan aprobahan';
+
+  @override
+  String get notifCancelled => 'Gikansela nga booking';
+
+  @override
+  String get notifRequest => 'Bag-ong service request';
+
+  @override
+  String get notifOrder => 'Bag-ong order sa pagkaon';
+
+  @override
+  String get notifMessage => 'Bag-ong mensahe';
+
+  @override
+  String staffCancelConfirm(String refund) {
+    return 'Kanselahon kini nga booking? Ibalik sa bisita ang $refund, sumala sa palisiya sa pagkansela.';
+  }
+
+  @override
+  String get phone => 'Telepono';
+
+  @override
+  String get appearance => 'Hitsura';
+
+  @override
+  String get themeSystem => 'Sunda ang device';
+
+  @override
+  String get themeLight => 'Hayag';
+
+  @override
+  String get themeDark => 'Ngitngit';
+
+  @override
+  String get roomAvailable => 'Bakante';
+
+  @override
+  String get availableOnly => 'Bakante ra';
 }

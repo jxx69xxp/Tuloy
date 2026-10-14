@@ -1058,4 +1058,92 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get shortcutSend => 'Ipadala ang mensahe (Shift+Enter: bagong linya)';
+
+  @override
+  String get roomBoard => 'Mga kuwarto ngayon';
+
+  @override
+  String get roomOccupied => 'May nakatira';
+
+  @override
+  String get roomDeparting => 'Magche-check out';
+
+  @override
+  String get roomArriving => 'Darating';
+
+  @override
+  String get roomReserved => 'Naka-reserve';
+
+  @override
+  String get roomBlocked => 'Naka-block';
+
+  @override
+  String freeOf(String free, String total) {
+    return '$free sa $total bakante';
+  }
+
+  @override
+  String get todaysArrivals => 'Darating ngayon';
+
+  @override
+  String get todaysDepartures => 'Aalis ngayon';
+
+  @override
+  String get guestList => 'Listahan ng bisita';
+
+  @override
+  String get team => 'Mga kasamahan';
+
+  @override
+  String get lastStay => 'Huling pananatili';
+
+  @override
+  String get roleAdmin => 'Admin';
+
+  @override
+  String get notifications => 'Mga abiso';
+
+  @override
+  String get notifBooking => 'Bagong booking';
+
+  @override
+  String get notifPending => 'Booking na kailangang aprubahan';
+
+  @override
+  String get notifCancelled => 'Kinanselang booking';
+
+  @override
+  String get notifRequest => 'Bagong service request';
+
+  @override
+  String get notifOrder => 'Bagong order ng pagkain';
+
+  @override
+  String get notifMessage => 'Bagong mensahe';
+
+  @override
+  String staffCancelConfirm(String refund) {
+    return 'Kanselahin ang booking na ito? Ibabalik sa bisita ang $refund, ayon sa patakaran sa pagkansela.';
+  }
+
+  @override
+  String get phone => 'Telepono';
+
+  @override
+  String get appearance => 'Itsura';
+
+  @override
+  String get themeSystem => 'Sundan ang device';
+
+  @override
+  String get themeLight => 'Maliwanag';
+
+  @override
+  String get themeDark => 'Madilim';
+
+  @override
+  String get roomAvailable => 'Bakante';
+
+  @override
+  String get availableOnly => 'Bakante lang';
 }

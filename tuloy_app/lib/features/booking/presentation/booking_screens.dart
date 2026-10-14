@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/format.dart';
+import '../../../core/ui.dart' show EmptyState, Section, SectionHeader;
 import '../../../app/theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/presentation/widgets.dart';
@@ -32,7 +33,7 @@ class SearchScreen extends ConsumerWidget {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             child: Column(
               children: [
                 OutlinedButton.icon(
@@ -72,13 +73,12 @@ class SearchScreen extends ConsumerWidget {
               value: results,
               onRetry: () => ref.invalidate(searchProvider),
               builder: (offers) => offers.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(l.noRooms, textAlign: TextAlign.center),
-                      ),
-                    )
-                  : ListView.builder(itemCount: offers.length, itemBuilder: (_, i) => _OfferCard(offers[i])),
+                  ? ListView(children: [EmptyState(l.noRooms, icon: Icons.king_bed_outlined)])
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(top: 6, bottom: 32),
+                      itemCount: offers.length,
+                      itemBuilder: (_, i) => _OfferCard(offers[i]),
+                    ),
             ),
           ),
         ],
@@ -122,7 +122,7 @@ class _OfferCard extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       child: InkWell(
         onTap: () => context.push('/guest/room', extra: o),
         child: Column(
@@ -136,7 +136,10 @@ class _OfferCard extends StatelessWidget {
                 children: [
                   Text(o.name, style: text.titleMedium),
                   const SizedBox(height: 4),
-                  Text(l.perNight(money(o.perNight, o.currency)), style: text.bodyLarge),
+                  Text(
+                    l.perNight(money(o.perNight, o.currency)),
+                    style: text.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                  ),
                   Text(
                     '${l.totalLabel}: ${money(o.total, o.currency)} · ${l.nightsCount('${o.nights}')}',
                     style: text.bodySmall,
@@ -196,19 +199,18 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(o.name)),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
           if (o.description.isNotEmpty) Text(o.description),
-          const SizedBox(height: 16),
-          Text(l.amenities, style: text.titleSmall),
-          Wrap(spacing: 8, children: [for (final a in o.amenities) Chip(label: Text(a))]),
-          const SizedBox(height: 16),
+          SectionHeader(l.amenities, gutter: 0),
+          Wrap(spacing: 8, runSpacing: 8, children: [for (final a in o.amenities) Chip(label: Text(a))]),
+          const SizedBox(height: 24),
           Text(dateRange(context, q.checkIn, q.checkOut), style: text.titleMedium),
           Text('${l.guests}: ${q.guests} · ${l.nightsCount('${o.nights}')}'),
+          const SizedBox(height: 4),
           Text('${l.totalLabel}: ${money(o.total, o.currency)}', style: text.titleLarge),
           if (hotel != null) ...[
-            const SizedBox(height: 16),
-            Text(l.policies, style: text.titleSmall),
+            SectionHeader(l.policies, gutter: 0),
             Text(l.checkInTime(hotel.checkInTime)),
             Text(l.checkOutTime(hotel.checkOutTime)),
             if (hotel.cancellation.isNotEmpty) Text(hotel.cancellation),
@@ -258,19 +260,16 @@ class ReviewScreen extends ConsumerWidget {
           }
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
             children: [
-              if (r.holdExpiresAt != null) HoldTimer(until: r.holdExpiresAt!),
-              const SizedBox(height: 8),
+              if (r.holdExpiresAt != null) ...[HoldTimer(until: r.holdExpiresAt!), const SizedBox(height: 16)],
               PriceBreakdown(r),
-              const SizedBox(height: 8),
-              Text(l.checkInTime(r.checkInTime)),
-              Text(l.checkOutTime(r.checkOutTime)),
-              if (r.cancellation.isNotEmpty) Text(r.cancellation),
+              const SizedBox(height: 12),
+              StayTerms(r),
               const SizedBox(height: 24),
               if (r.offersDeposit) ...[
                 BusyButton(label: l.payDeposit(money(r.depositAmount, r.currency)), onPressed: () => pay(true)),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 OutlinedButton(onPressed: () => pay(false), child: Text(l.payFull(money(r.total, r.currency)))),
               ] else
                 BusyButton(label: l.payFull(money(r.total, r.currency)), onPressed: () => pay(false)),
@@ -320,35 +319,73 @@ class _HoldTimerState extends State<HoldTimer> {
 }
 
 class PriceBreakdown extends StatelessWidget {
-  const PriceBreakdown(this.r, {super.key});
+  const PriceBreakdown(this.r, {super.key, this.payments = false});
+  final Reservation r;
+
+  /// Also show what was paid and what is left.
+  final bool payments;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final t = Theme.of(context);
+    Widget row(String label, double amount, {bool bold = false}) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: bold ? t.textTheme.titleMedium : null)),
+          Text(money(amount, r.currency), style: bold ? t.textTheme.titleMedium : null),
+        ],
+      ),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(r.roomTypeName, style: t.textTheme.titleLarge),
+        const SizedBox(height: 4),
+        Text(
+          '${dateRange(context, r.checkIn, r.checkOut)} · ${l.guests}: ${r.adults + r.children}',
+          style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 16),
+        Section(gutter: 0, [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+            child: Column(
+              children: [
+                for (final n in r.nights) row(date(context, n.date), n.price),
+                if (r.serviceCharge > 0) row(l.serviceCharge, r.serviceCharge),
+                if (r.tax > 0) row(l.vat, r.tax),
+                const Divider(height: 17),
+                row(l.totalLabel, r.total, bold: true),
+                if (payments) ...[row(l.paid, r.paid), row(l.balance, r.balance)],
+              ],
+            ),
+          ),
+        ]),
+      ],
+    );
+  }
+}
+
+/// Check-in and check-out times and the cancellation policy, as one group.
+class StayTerms extends StatelessWidget {
+  const StayTerms(this.r, {super.key});
   final Reservation r;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final text = Theme.of(context).textTheme;
-    Widget row(String label, double amount, {bool bold = false}) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Expanded(child: Text(label, style: bold ? text.titleMedium : null)),
-          Text(money(amount, r.currency), style: bold ? text.titleMedium : null),
-        ],
-      ),
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(r.roomTypeName, style: text.titleLarge),
-        Text('${dateRange(context, r.checkIn, r.checkOut)} · ${l.guests}: ${r.adults + r.children}'),
-        const SizedBox(height: 8),
-        for (final n in r.nights) row(date(context, n.date), n.price),
-        if (r.serviceCharge > 0) row(l.serviceCharge, r.serviceCharge),
-        if (r.tax > 0) row(l.vat, r.tax),
-        const Divider(),
-        row(l.totalLabel, r.total, bold: true),
-      ],
-    );
+    final t = Theme.of(context);
+    return Section(gutter: 0, [
+      ListTile(leading: const Icon(Icons.login), title: Text(l.checkInTime(r.checkInTime))),
+      ListTile(leading: const Icon(Icons.logout), title: Text(l.checkOutTime(r.checkOutTime))),
+      if (r.cancellation.isNotEmpty)
+        ListTile(
+          leading: const Icon(Icons.event_busy_outlined),
+          title: Text(r.cancellation, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+        ),
+    ]);
   }
 }
 

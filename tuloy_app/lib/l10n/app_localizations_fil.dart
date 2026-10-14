@@ -12,12 +12,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get appTitle => 'Tuloy';
 
   @override
-  String get chooseLanguage => 'Piliin ang iyong wika';
-
-  @override
-  String get continueLabel => 'Magpatuloy';
-
-  @override
   String get signIn => 'Mag-sign in';
 
   @override
@@ -27,7 +21,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get signOut => 'Mag-sign out';
 
   @override
-  String get noAccount => 'Wala pang account? Gumawa';
+  String get noAccount => 'Wala pang account?';
+
+  @override
+  String get haveAccount => 'May account na?';
 
   @override
   String get emailOrPhone => 'Email o numero ng telepono';

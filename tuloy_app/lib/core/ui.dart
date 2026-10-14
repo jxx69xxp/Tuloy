@@ -195,15 +195,79 @@ class JsonList extends ConsumerWidget {
           return ListView(
             children: [
               if (header != null) header!,
-              if (rows.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(empty ?? AppLocalizations.of(context).nothingHere),
-                ),
+              if (rows.isEmpty) EmptyState(empty ?? AppLocalizations.of(context).nothingHere),
               for (final r in rows) item(context, r),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// Title above a [Section]: more room above than below, so it reads with the group it names.
+class SectionHeader extends StatelessWidget {
+  const SectionHeader(this.title, {super.key, this.onMore, this.gutter = 20});
+  final String title;
+  final VoidCallback? onMore;
+
+  /// Outer side inset; 0 when the list already pads its children.
+  final double gutter;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.fromLTRB(gutter + 4, 24, onMore == null ? gutter : gutter - 12, 8),
+    child: Row(
+      children: [
+        Expanded(child: Text(title, style: Theme.of(context).textTheme.titleMedium)),
+        if (onMore != null) IconButton(tooltip: title, icon: const Icon(Icons.arrow_forward), onPressed: onMore),
+      ],
+    ),
+  );
+}
+
+/// Rounded group of related rows (list tiles, figures).
+class Section extends StatelessWidget {
+  const Section(this.children, {super.key, this.gutter = 20});
+  final List<Widget> children;
+  final double gutter;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.symmetric(horizontal: gutter),
+    child: Card(
+      margin: EdgeInsets.zero,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+    ),
+  );
+}
+
+/// Centered icon and message for a list with nothing in it.
+class EmptyState extends StatelessWidget {
+  const EmptyState(this.text, {super.key, this.icon = Icons.inbox_outlined});
+  final String text;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 96, 32, 32),
+      child: Column(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(color: t.colorScheme.tertiaryContainer, shape: BoxShape.circle),
+            child: Icon(icon, size: 32, color: t.colorScheme.onTertiaryContainer),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: t.textTheme.bodyLarge?.copyWith(color: t.colorScheme.onSurfaceVariant),
+          ),
+        ],
       ),
     );
   }

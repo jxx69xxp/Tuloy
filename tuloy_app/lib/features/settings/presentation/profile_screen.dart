@@ -8,6 +8,7 @@ import '../../../core/config.dart';
 import '../../../core/format.dart';
 import '../../../core/http.dart';
 import '../../../core/map.dart';
+import '../../../core/ui.dart' show Section, SectionHeader;
 import '../../../l10n/app_localizations.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../../booking/presentation/booking_providers.dart';
@@ -119,15 +120,15 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ),
 
-            _Header(l.personalDetails),
-            _Group([
+            SectionHeader(l.personalDetails),
+            Section([
               ListTile(leading: const Icon(Icons.person_outline), title: Text(name)),
               if (user?.email != null) ListTile(leading: const Icon(Icons.mail_outline), title: Text(user!.email!)),
               if (user?.phone != null) ListTile(leading: const Icon(Icons.phone_outlined), title: Text(user!.phone!)),
             ]),
 
-            _Header(l.paymentHistory),
-            _Group([
+            SectionHeader(l.paymentHistory),
+            Section([
               if (payments.isEmpty) ListTile(title: Text(l.noneYet)),
               for (final p in payments.take(5).cast<Map>())
                 ListTile(
@@ -144,8 +145,8 @@ class ProfileScreen extends ConsumerWidget {
                 ),
             ]),
 
-            _Header(l.servicesUsed, onMore: requests.isEmpty ? null : () => context.push('/guest/requests')),
-            _Group([
+            SectionHeader(l.servicesUsed, onMore: requests.isEmpty ? null : () => context.push('/guest/requests')),
+            Section([
               if (requests.isEmpty) ListTile(title: Text(l.noneYet)),
               for (final r in requests.take(5).cast<Map>())
                 ListTile(
@@ -158,7 +159,7 @@ class ProfileScreen extends ConsumerWidget {
             ]),
 
             if (hotel?.latitude != null && hotel?.longitude != null) ...[
-              _Header(l.gettingHere),
+              SectionHeader(l.gettingHere),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Card(
@@ -182,8 +183,8 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ],
 
-            _Header(l.language),
-            _Group([
+            SectionHeader(l.language),
+            Section([
               for (final e in supportedLanguages.entries)
                 ListTile(
                   title: Text(e.value),
@@ -193,7 +194,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
             ]),
             const SizedBox(height: 12),
-            _Group([
+            Section([
               ListTile(
                 leading: Icon(Icons.logout, color: c.error),
                 title: Text(l.signOut, style: TextStyle(color: c.error)),
@@ -304,36 +305,4 @@ class _Stat extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Header extends StatelessWidget {
-  const _Header(this.title, {this.onMore});
-  final String title;
-  final VoidCallback? onMore;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(24, 24, 8, 8),
-    child: Row(
-      children: [
-        Expanded(child: Text(title, style: Theme.of(context).textTheme.titleMedium)),
-        if (onMore != null) IconButton(tooltip: title, icon: const Icon(Icons.arrow_forward), onPressed: onMore),
-      ],
-    ),
-  );
-}
-
-/// Rounded white group of list rows.
-class _Group extends StatelessWidget {
-  const _Group(this.children);
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20),
-    child: Card(
-      margin: EdgeInsets.zero,
-      child: Column(children: children),
-    ),
-  );
 }

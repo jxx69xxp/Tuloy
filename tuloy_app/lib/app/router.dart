@@ -28,7 +28,7 @@ import '../features/settings/presentation/settings_screen.dart';
 import '../features/settings/presentation/web_guest_screen.dart';
 import '../l10n/app_localizations.dart';
 
-const _public = {'/language', '/signin', '/signup', '/reset'};
+const _public = {'/signin', '/signup', '/reset'};
 
 /// Chat thread; the title (guest name / hotel) rides along as `extra`.
 final _chat = GoRoute(
@@ -143,12 +143,10 @@ String homeFor(Role role) => switch (role) {
 /// `?from=` and is reopened afterwards if it is internal and the user's role may open it.
 String? redirectFor({
   required String location,
-  required bool languageChosen,
   required AsyncValue<User?> auth,
   Uri? uri,
   bool isWeb = kIsWeb,
 }) {
-  if (!languageChosen) return location == '/language' ? null : '/language';
   final detour = location == '/splash' || _public.contains(location);
   // Where the user was heading: carried along while detouring, else the requested URI itself.
   final target = detour ? uri?.queryParameters['from'] : uri?.toString();
@@ -179,7 +177,6 @@ bool _allowed(String path, String home) =>
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
   ref.listen(authProvider, (_, __) => refresh.value++);
-  ref.listen(languageProvider, (_, __) => refresh.value++);
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
@@ -188,12 +185,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (_, state) => redirectFor(
       location: state.matchedLocation,
       uri: state.uri,
-      languageChosen: ref.read(languageProvider) != null,
       auth: ref.read(authProvider),
     ),
     routes: [
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
-      GoRoute(path: '/language', builder: (_, __) => const LanguageScreen()),
       GoRoute(path: '/signin', builder: (_, __) => const SignInScreen()),
       GoRoute(path: '/signup', builder: (_, __) => const SignUpScreen()),
       GoRoute(path: '/reset', builder: (_, __) => const ResetScreen()),

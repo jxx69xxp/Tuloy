@@ -29,13 +29,16 @@ ThemeData tuloyTheme(Brightness b) {
     outlineVariant: dark ? const Color(0xFF2C3736) : const Color(0xFFE4DED2),
   );
   final base = ThemeData(colorScheme: scheme, useMaterial3: true);
-  final text = base.textTheme.copyWith(
-    displaySmall: base.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -1),
-    headlineMedium: base.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.8),
-    headlineSmall: base.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.5),
-    titleLarge: base.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.3),
-    titleMedium: base.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-    labelLarge: base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600, letterSpacing: 0.2),
+  // base.textTheme carries colors only; sizes are merged in later by Theme.of. Merge them here
+  // too, or styles handed straight to component themes (app bar titles) fall back to 14px.
+  final sized = Typography.englishLike2021.merge(base.textTheme);
+  final text = sized.copyWith(
+    displaySmall: sized.displaySmall?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -1),
+    headlineMedium: sized.headlineMedium?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.8),
+    headlineSmall: sized.headlineSmall?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.5),
+    titleLarge: sized.titleLarge?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.3),
+    titleMedium: sized.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+    labelLarge: sized.labelLarge?.copyWith(fontWeight: FontWeight.w600, letterSpacing: 0.2),
   );
   final field = FieldBorder(borderSide: BorderSide(color: scheme.outlineVariant));
   const button = Size.fromHeight(56);

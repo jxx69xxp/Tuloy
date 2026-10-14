@@ -19,11 +19,10 @@ void main() {
   });
 
   test('redirects', () {
-    String? go(String loc, {bool lang = true, AsyncValue<User?> auth = const AsyncData(null)}) =>
-        redirectFor(location: loc, languageChosen: lang, auth: auth);
+    String? go(String loc, {AsyncValue<User?> auth = const AsyncData(null)}) =>
+        redirectFor(location: loc, auth: auth);
     final staff = AsyncData<User?>(_user(const [Membership(hotelId: hotelId, role: Role.staff)]));
 
-    expect(go('/signin', lang: false), '/language');
     expect(go('/guest', auth: const AsyncLoading()), '/splash');
     expect(go('/admin'), '/signin');
     expect(go('/reset'), isNull);
@@ -34,7 +33,7 @@ void main() {
 
   test('web redirects: guests get the placeholder, staff/admin unchanged', () {
     String? go(String loc, {AsyncValue<User?> auth = const AsyncData(null), bool isWeb = true}) =>
-        redirectFor(location: loc, languageChosen: true, auth: auth, isWeb: isWeb);
+        redirectFor(location: loc, auth: auth, isWeb: isWeb);
     final guest = AsyncData<User?>(_user(const []));
     final staff = AsyncData<User?>(_user(const [Membership(hotelId: hotelId, role: Role.staff)]));
 
@@ -53,7 +52,7 @@ void main() {
   test('deep links survive the splash and sign-in detours', () {
     String? go(String loc, {AsyncValue<User?> auth = const AsyncData(null), bool isWeb = false}) {
       final uri = Uri.parse(loc);
-      return redirectFor(location: uri.path, uri: uri, languageChosen: true, auth: auth, isWeb: isWeb);
+      return redirectFor(location: uri.path, uri: uri, auth: auth, isWeb: isWeb);
     }
 
     String splash(String from) => '/splash?from=${Uri.encodeComponent(from)}';

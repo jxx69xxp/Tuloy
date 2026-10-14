@@ -45,10 +45,20 @@ class ServicesScreen extends StatelessWidget {
       body: JsonList(
         path: '/hotels/$hotelId/services',
         item: (context, s) => Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
           child: ListTile(
             title: Text('${s['name']}'),
-            subtitle: Text('${s['description']}\n${priceLabel(l, s)}', maxLines: 3, overflow: TextOverflow.ellipsis),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${s['description']}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 6),
+                Text(
+                  priceLabel(l, s),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.primary),
+                ),
+              ],
+            ),
             isThreeLine: true,
             onTap: () => context.push('/guest/services/${s['id']}'),
           ),
@@ -143,15 +153,12 @@ class _ServiceRequestState extends ConsumerState<ServiceRequestScreen> {
         );
       case 'datetime':
         final v = _answers[key] as String?;
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(label),
-          subtitle: Text(
-            v == null
-                ? '—'
-                : '${date(context, DateTime.parse(v))} ${TimeOfDay.fromDateTime(DateTime.parse(v).toLocal()).format(context)}',
-          ),
-          trailing: const Icon(Icons.event),
+        return _PickerField(
+          label: label,
+          value: v == null
+              ? null
+              : '${date(context, DateTime.parse(v))} ${TimeOfDay.fromDateTime(DateTime.parse(v).toLocal()).format(context)}',
+          icon: Icons.event,
           onTap: () async {
             await _pickWhen();
             if (_when != null) setState(() => _answers[key] = _when!.toUtc().toIso8601String());
@@ -160,6 +167,7 @@ class _ServiceRequestState extends ConsumerState<ServiceRequestScreen> {
       default: // text, location; file uploads arrive with guest photo support
         return TextField(
           decoration: InputDecoration(labelText: label),
+          minLines: 1,
           maxLines: f['type'] == 'text' ? 3 : 1,
           onChanged: (v) => _answers[key] = v,
         );
@@ -183,13 +191,19 @@ class _ServiceRequestState extends ConsumerState<ServiceRequestScreen> {
               .where((m) => m != 'ROOM_CHARGE' || stay?.status == BookingStatus.checkedIn)
               .toList();
           _method ??= methods.isEmpty ? null : methods.first;
+          final t = Theme.of(context);
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
             children: [
-              Text('${s['name']}', style: Theme.of(context).textTheme.titleLarge),
-              Text(priceLabel(l, s)),
-              if (s['etaMin'] != null) Text(l.etaMinutes('${s['etaMin']}')),
-              const SizedBox(height: 8),
+              Text('${s['name']}', style: t.textTheme.titleLarge),
+              const SizedBox(height: 4),
+              Text(priceLabel(l, s), style: t.textTheme.titleSmall?.copyWith(color: t.colorScheme.primary)),
+              if (s['etaMin'] != null)
+                Text(
+                  l.etaMinutes('${s['etaMin']}'),
+                  style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant),
+                ),
+              const SizedBox(height: 12),
               Text('${s['description']}'),
               if (s['instructions'] != null) Text('${s['instructions']}', style: Theme.of(context).textTheme.bodySmall),
               if (const {'airport', 'transport'}.contains(s['category']) && hotel?.latitude != null) ...[
@@ -217,7 +231,7 @@ class _ServiceRequestState extends ConsumerState<ServiceRequestScreen> {
                   ),
                 ),
               ],
-              const Divider(),
+              const SizedBox(height: 24),
               for (final o in jsonList(s['options']))
                 CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
@@ -227,27 +241,29 @@ class _ServiceRequestState extends ConsumerState<ServiceRequestScreen> {
                   onChanged: (v) => setState(() => v == true ? _options.add('${o['id']}') : _options.remove(o['id'])),
                 ),
               for (final f in jsonList(s['fields']))
-                Padding(padding: const EdgeInsets.only(bottom: 8), child: _field(f)),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l.preferredTime),
-                subtitle: Text(
-                  _when == null
-                      ? l.asSoonAsPossible
-                      : '${date(context, _when!)} ${TimeOfDay.fromDateTime(_when!).format(context)}',
-                ),
-                trailing: const Icon(Icons.schedule),
+                Padding(padding: const EdgeInsets.only(bottom: 12), child: _field(f)),
+              _PickerField(
+                label: l.preferredTime,
+                value: _when == null
+                    ? l.asSoonAsPossible
+                    : '${date(context, _when!)} ${TimeOfDay.fromDateTime(_when!).format(context)}',
+                icon: Icons.schedule,
                 onTap: _pickWhen,
               ),
+              const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: _method,
                 decoration: InputDecoration(labelText: l.paymentMethod),
                 items: [for (final m in methods) DropdownMenuItem(value: m, child: Text(paymentMethodLabel(l, m)))],
                 onChanged: (v) => setState(() => _method = v),
               ),
-              const SizedBox(height: 8),
-              Text('${s['cancellationPolicy']}', style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 8, 4, 24),
+                child: Text(
+                  '${s['cancellationPolicy']}',
+                  style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant),
+                ),
+              ),
               if (_method != null) BusyButton(label: l.sendRequest, onPressed: () => _submit(s, stay)),
             ],
           );
@@ -255,6 +271,26 @@ class _ServiceRequestState extends ConsumerState<ServiceRequestScreen> {
       ),
     );
   }
+}
+
+/// Tappable field that opens a picker; looks like the text fields around it.
+class _PickerField extends StatelessWidget {
+  const _PickerField({required this.label, required this.value, required this.icon, required this.onTap});
+  final String label;
+  final String? value;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(14),
+    child: InputDecorator(
+      isEmpty: value == null,
+      decoration: InputDecoration(labelText: label, suffixIcon: Icon(icon)),
+      child: Text(value ?? ''),
+    ),
+  );
 }
 
 String paymentMethodLabel(AppLocalizations l, String m) => switch (m) {

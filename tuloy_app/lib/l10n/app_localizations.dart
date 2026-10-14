@@ -106,18 +106,6 @@ abstract class AppLocalizations {
   /// **'Tuloy'**
   String get appTitle;
 
-  /// No description provided for @chooseLanguage.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose your language'**
-  String get chooseLanguage;
-
-  /// No description provided for @continueLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue'**
-  String get continueLabel;
-
   /// No description provided for @signIn.
   ///
   /// In en, this message translates to:
@@ -139,8 +127,14 @@ abstract class AppLocalizations {
   /// No description provided for @noAccount.
   ///
   /// In en, this message translates to:
-  /// **'No account yet? Create one'**
+  /// **'Don\'t have an account?'**
   String get noAccount;
+
+  /// No description provided for @haveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account?'**
+  String get haveAccount;
 
   /// No description provided for @emailOrPhone.
   ///

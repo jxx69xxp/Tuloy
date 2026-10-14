@@ -31,46 +31,58 @@ class LoyaltyScreen extends ConsumerWidget {
           final next = d['next'] as Map?;
           final canRedeem =
               stay != null && (stay.status == BookingStatus.confirmed || stay.status == BookingStatus.checkedIn);
+          final muted = text.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
+          final history = jsonList(d['history']);
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
             children: [
               Text(l.pointsBalance('${d['balance']}'), style: text.headlineMedium),
+              const SizedBox(height: 4),
               Text(l.tier(stepLabelOf('${d['tier']}'))),
-              if (next != null) Text(l.nextTier('${next['pointsNeeded']}', stepLabelOf('${next['name']}'))),
-              Text(l.earnRate('${d['earnPer100']}'), style: text.bodySmall),
-              const Divider(),
-              Text(l.rewards, style: text.titleMedium),
-              for (final r in jsonList(d['rewards']))
-                ListTile(
-                  title: Text('${r['name']}'),
-                  subtitle: Text(l.pointsCost('${r['points']}')),
-                  trailing: canRedeem && (d['balance'] as num) >= (r['points'] as num)
-                      ? TextButton(
-                          onPressed: () async {
-                            if (!await confirm(context, l.redeem, '${r['name']}')) return;
-                            if (!context.mounted) return;
-                            final ok = await act(
-                              context,
-                              () => ref.read(apiProvider).post('/me/loyalty/redeem', {
-                                'rewardId': r['id'],
-                                'reservationId': stay.id,
-                              }),
-                              done: l.redeemed,
-                            );
-                            if (ok) ref.invalidate(getProvider(path));
-                          },
-                          child: Text(l.redeem),
-                        )
-                      : null,
+              if (next != null)
+                Text(l.nextTier('${next['pointsNeeded']}', stepLabelOf('${next['name']}')), style: muted),
+              Text(l.earnRate('${d['earnPer100']}'), style: muted),
+              SectionHeader(l.rewards, gutter: 0),
+              Section(gutter: 0, [
+                for (final r in jsonList(d['rewards']))
+                  ListTile(
+                    title: Text('${r['name']}'),
+                    subtitle: Text(l.pointsCost('${r['points']}')),
+                    trailing: canRedeem && (d['balance'] as num) >= (r['points'] as num)
+                        ? TextButton(
+                            onPressed: () async {
+                              if (!await confirm(context, l.redeem, '${r['name']}')) return;
+                              if (!context.mounted) return;
+                              final ok = await act(
+                                context,
+                                () => ref.read(apiProvider).post('/me/loyalty/redeem', {
+                                  'rewardId': r['id'],
+                                  'reservationId': stay.id,
+                                }),
+                                done: l.redeemed,
+                              );
+                              if (ok) ref.invalidate(getProvider(path));
+                            },
+                            child: Text(l.redeem),
+                          )
+                        : null,
+                  ),
+              ]),
+              if (!canRedeem)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                  child: Text(l.redeemNeedsStay, style: text.bodySmall),
                 ),
-              if (!canRedeem) Text(l.redeemNeedsStay, style: text.bodySmall),
-              const Divider(),
-              Text(l.history, style: text.titleMedium),
-              for (final h in jsonList(d['history']))
-                KV(
-                  '${stepLabelOf('${h['kind']}')} · ${date(context, DateTime.parse('${h['createdAt']}').toLocal())}',
-                  '${h['points']}',
-                ),
+              SectionHeader(l.history, gutter: 0),
+              Section(gutter: 0, [
+                if (history.isEmpty) ListTile(title: Text(l.nothingHere, style: muted)),
+                for (final h in history)
+                  ListTile(
+                    title: Text(stepLabelOf('${h['kind']}')),
+                    subtitle: Text(date(context, DateTime.parse('${h['createdAt']}').toLocal())),
+                    trailing: Text('${h['points']}', style: text.titleMedium),
+                  ),
+              ]),
             ],
           );
         },
@@ -98,18 +110,20 @@ class WifiScreen extends ConsumerWidget {
         onRetry: () => ref.invalidate(getProvider(path)),
         builder: (data) {
           final w = (data as Map).cast<String, dynamic>();
+          final until = DateTime.parse('${w['validUntil']}').toLocal();
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
             children: [
-              if (w['ssid'] != null) CopyRow(l.network, '${w['ssid']}'),
-              if (w['username'] != null) CopyRow(l.username, '${w['username']}'),
-              CopyRow(l.password, '${w['password']}'),
-              KV(
-                l.validUntil,
-                '${date(context, DateTime.parse('${w['validUntil']}').toLocal())} '
-                '${TimeOfDay.fromDateTime(DateTime.parse('${w['validUntil']}').toLocal()).format(context)}',
-              ),
-              const SizedBox(height: 16),
+              Section(gutter: 0, [
+                if (w['ssid'] != null) CopyRow(l.network, '${w['ssid']}'),
+                if (w['username'] != null) CopyRow(l.username, '${w['username']}'),
+                CopyRow(l.password, '${w['password']}'),
+                ListTile(
+                  title: Text('${date(context, until)} ${TimeOfDay.fromDateTime(until).format(context)}'),
+                  subtitle: Text(l.validUntil),
+                ),
+              ]),
+              const SizedBox(height: 24),
               if (w['joinQr'] != null) ...[
                 Center(
                   child: QrImageView(data: '${w['joinQr']}', size: 200, backgroundColor: Colors.white),

@@ -12,12 +12,6 @@ class AppLocalizationsCeb extends AppLocalizations {
   String get appTitle => 'Tuloy';
 
   @override
-  String get chooseLanguage => 'Pilia ang imong pinulongan';
-
-  @override
-  String get continueLabel => 'Padayon';
-
-  @override
   String get signIn => 'Sign in';
 
   @override
@@ -27,7 +21,10 @@ class AppLocalizationsCeb extends AppLocalizations {
   String get signOut => 'Sign out';
 
   @override
-  String get noAccount => 'Wala pay account? Paghimo';
+  String get noAccount => 'Wala pay account?';
+
+  @override
+  String get haveAccount => 'Naa nay account?';
 
   @override
   String get emailOrPhone => 'Email o numero sa telepono';

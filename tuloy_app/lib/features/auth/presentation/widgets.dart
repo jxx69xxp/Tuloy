@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/adaptive.dart' show isWide;
 import '../../../core/failure.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -42,6 +43,7 @@ class AuthScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (isWide(context)) return _wide(context);
     final l = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
     final c = Theme.of(context).colorScheme;
@@ -119,6 +121,105 @@ class AuthScaffold extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Web/desktop: brand panel on the left (the doorway at dusk), the form in a fixed column on the right.
+extension on AuthScaffold {
+  Widget _wide(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final text = Theme.of(context).textTheme;
+    final canPop = Navigator.of(context).canPop();
+    return Scaffold(
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            flex: 5,
+            // The arch pattern paints past its box; keep it inside the brand panel.
+            child: ClipRect(
+              child: Stack(
+                children: [
+                  const Positioned.fill(child: DuskBackdrop(rounded: false)),
+                  Padding(
+                    padding: const EdgeInsets.all(56),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            _logo(44),
+                            const SizedBox(width: 14),
+                            Text(l.appTitle, style: text.titleLarge?.copyWith(color: Colors.white)),
+                          ],
+                        ),
+                        const Spacer(),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 440),
+                          child: Text(
+                            l.authTagline,
+                            style: text.displaySmall?.copyWith(color: Colors.white, height: 1.15),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        ExcludeSemantics(
+                          child: Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              for (final icon in AuthScaffold._services)
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: .12),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white.withValues(alpha: .25)),
+                                  ),
+                                  child: Icon(icon, size: 22, color: Colors.white),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 4,
+            child: SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (canPop)
+                          Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: BackButton(onPressed: () => Navigator.of(context).maybePop()),
+                            ),
+                          ),
+                        Semantics(header: true, child: Text(title, style: text.headlineMedium)),
+                        const SizedBox(height: 28),
+                        ...children,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

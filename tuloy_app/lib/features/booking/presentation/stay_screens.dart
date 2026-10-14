@@ -7,7 +7,7 @@ import '../../../core/config.dart';
 import '../../../core/format.dart';
 import '../../../core/http.dart';
 import '../../../core/map.dart';
-import '../../../core/ui.dart' show act;
+import '../../../core/ui.dart' show Section, act;
 import '../../../app/theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../services/services_screens.dart' show priceLabel;
@@ -48,6 +48,8 @@ class GuestHomeScreen extends ConsumerWidget {
       DateTime(now.year, now.month, now.day),
     );
     final top = MediaQuery.paddingOf(context).top + kToolbarHeight;
+    // Card rails: fixed art and padding plus text lines that grow with the user's text size.
+    final ts = MediaQuery.textScalerOf(context);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -122,21 +124,24 @@ class GuestHomeScreen extends ConsumerWidget {
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 24, 12, 0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _Category(Icons.event_note, l.myBookings, () => context.push('/guest/bookings')),
-                  _Category(Icons.room_service, l.services, () => context.push('/guest/services')),
-                  _Category(Icons.qr_code_scanner, l.scanTable, () => context.push('/guest/scan')),
-                  _Category(Icons.menu_book, l.hotelGuide, () => context.push('/guest/guide')),
-                  _Category(Icons.loyalty, l.loyalty, () => context.push('/guest/loyalty')),
-                ],
+              child: MediaQuery.withClampedTextScaling(
+                maxScaleFactor: 1.2,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _Category(Icons.event_note, l.myBookings, () => context.push('/guest/bookings')),
+                    _Category(Icons.room_service, l.services, () => context.push('/guest/services')),
+                    _Category(Icons.qr_code_scanner, l.scanTable, () => context.push('/guest/scan')),
+                    _Category(Icons.menu_book, l.hotelGuide, () => context.push('/guest/guide')),
+                    _Category(Icons.loyalty, l.loyalty, () => context.push('/guest/loyalty')),
+                  ],
+                ),
               ),
             ),
             if (offers.isNotEmpty) ...[
               _Section(l.roomsAndRates, () => context.push('/guest/search')),
               SizedBox(
-                height: 200,
+                height: 156 + ts.scale(44),
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -149,7 +154,7 @@ class GuestHomeScreen extends ConsumerWidget {
             if (services.isNotEmpty) ...[
               _Section(l.services, () => context.push('/guest/services')),
               SizedBox(
-                height: 196,
+                height: 140 + ts.scale(56),
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -370,7 +375,7 @@ class _Category extends StatelessWidget {
               Text(
                 label,
                 textAlign: TextAlign.center,
-                maxLines: 2,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelMedium,
               ),
@@ -454,63 +459,80 @@ class MyStayScreen extends ConsumerWidget {
       body: AsyncBody(
         value: ref.watch(reservationProvider(id)),
         onRetry: () => ref.invalidate(reservationProvider(id)),
-        builder: (r) => ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(r.roomTypeName, style: text.titleLarge),
-            if (r.room != null) Text(l.roomNumber(r.room!), style: text.titleMedium),
-            Text(l.bookingCode(r.code)),
-            const SizedBox(height: 12),
-            ListTile(
-              leading: const Icon(Icons.login),
-              title: Text(date(context, r.checkIn)),
-              subtitle: Text(l.checkInTime(r.checkInTime)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: Text(date(context, r.checkOut)),
-              subtitle: Text(l.checkOutTime(r.checkOutTime)),
-            ),
-            const Divider(),
-            if (r.status == BookingStatus.checkedIn)
-              ListTile(
-                leading: const Icon(Icons.wifi),
-                title: Text(l.wifi),
-                onTap: () => context.push('/guest/wifi/${r.id}'),
+        builder: (r) {
+          const go = Icon(Icons.chevron_right);
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+            children: [
+              Text(r.roomTypeName, style: text.titleLarge),
+              const SizedBox(height: 4),
+              Text(
+                [if (r.room != null) l.roomNumber(r.room!), l.bookingCode(r.code)].join(' · '),
+                style: text.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
-            ListTile(
-              leading: const Icon(Icons.room_service),
-              title: Text(l.services),
-              onTap: () => context.push('/guest/services'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.qr_code_scanner),
-              title: Text(l.scanTable),
-              onTap: () => context.push('/guest/scan'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.chat_bubble_outline),
-              title: Text(l.chatWithHotel),
-              onTap: () => openHotelChat(context, ref, reservationId: r.id),
-            ),
-            ListTile(
-              leading: const Icon(Icons.menu_book),
-              title: Text(l.hotelGuide),
-              onTap: () => context.push('/guest/guide'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.receipt_long),
-              title: Text(l.invoice),
-              subtitle: r.balance > 0 ? Text('${l.balance}: ${money(r.balance, r.currency)}') : null,
-              onTap: () => context.push('/guest/bookings/${r.id}/invoice'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.rate_review),
-              title: Text(l.feedback),
-              onTap: () => context.push('/guest/feedback/${r.id}'),
-            ),
-          ],
-        ),
+              const SizedBox(height: 16),
+              Section(gutter: 0, [
+                ListTile(
+                  leading: const Icon(Icons.login),
+                  title: Text(date(context, r.checkIn)),
+                  subtitle: Text(l.checkInTime(r.checkInTime)),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.logout),
+                  title: Text(date(context, r.checkOut)),
+                  subtitle: Text(l.checkOutTime(r.checkOutTime)),
+                ),
+              ]),
+              const SizedBox(height: 16),
+              Section(gutter: 0, [
+                if (r.status == BookingStatus.checkedIn)
+                  ListTile(
+                    leading: const Icon(Icons.wifi),
+                    title: Text(l.wifi),
+                    trailing: go,
+                    onTap: () => context.push('/guest/wifi/${r.id}'),
+                  ),
+                ListTile(
+                  leading: const Icon(Icons.room_service),
+                  title: Text(l.services),
+                  trailing: go,
+                  onTap: () => context.push('/guest/services'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.qr_code_scanner),
+                  title: Text(l.scanTable),
+                  trailing: go,
+                  onTap: () => context.push('/guest/scan'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.chat_bubble_outline),
+                  title: Text(l.chatWithHotel),
+                  trailing: go,
+                  onTap: () => openHotelChat(context, ref, reservationId: r.id),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.menu_book),
+                  title: Text(l.hotelGuide),
+                  trailing: go,
+                  onTap: () => context.push('/guest/guide'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.receipt_long),
+                  title: Text(l.invoice),
+                  subtitle: r.balance > 0 ? Text('${l.balance}: ${money(r.balance, r.currency)}') : null,
+                  trailing: go,
+                  onTap: () => context.push('/guest/bookings/${r.id}/invoice'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.rate_review),
+                  title: Text(l.feedback),
+                  trailing: go,
+                  onTap: () => context.push('/guest/feedback/${r.id}'),
+                ),
+              ]),
+            ],
+          );
+        },
       ),
     );
   }
@@ -580,29 +602,34 @@ class _FeedbackState extends ConsumerState<FeedbackScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l.feedback)),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
           Text(l.rateStay, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               for (var i = 1; i <= 5; i++)
                 IconButton(
                   tooltip: '$i/5',
-                  iconSize: 36,
-                  icon: Icon(i <= _rating ? Icons.star : Icons.star_border),
+                  iconSize: 40,
+                  color: i <= _rating ? Theme.of(context).colorScheme.tertiary : null,
+                  icon: Icon(i <= _rating ? Icons.star_rounded : Icons.star_border_rounded),
                   onPressed: () => setState(() => _rating = i),
                 ),
             ],
           ),
+          const SizedBox(height: 16),
           TextField(
             controller: _comment,
             maxLines: 4,
             maxLength: 2000,
             decoration: InputDecoration(labelText: l.comment),
           ),
-          const SizedBox(height: 8),
-          if (_rating > 0) BusyButton(label: l.send, onPressed: _send),
+          const SizedBox(height: 16),
+          _rating > 0
+              ? BusyButton(label: l.send, onPressed: _send)
+              : FilledButton(onPressed: null, child: Text(l.send)),
         ],
       ),
     );

@@ -12,12 +12,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'Tuloy';
 
   @override
-  String get chooseLanguage => 'Choose your language';
-
-  @override
-  String get continueLabel => 'Continue';
-
-  @override
   String get signIn => 'Sign in';
 
   @override
@@ -27,7 +21,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signOut => 'Sign out';
 
   @override
-  String get noAccount => 'No account yet? Create one';
+  String get noAccount => 'Don\'t have an account?';
+
+  @override
+  String get haveAccount => 'Already have an account?';
 
   @override
   String get emailOrPhone => 'Email or phone number';

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/config.dart';
 import '../../../l10n/app_localizations.dart';
 import 'auth_controller.dart';
 import 'widgets.dart';
@@ -14,37 +13,6 @@ String? _validPassword(BuildContext c, String? v) =>
 
 void _showError(BuildContext context, Object e) =>
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(failureText(context, e))));
-
-/// S1 — first run, and reachable from Settings.
-class LanguageScreen extends ConsumerWidget {
-  const LanguageScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l = AppLocalizations.of(context);
-    final current = ref.watch(languageProvider) ?? Localizations.localeOf(context).languageCode;
-    return AuthScaffold(
-      title: l.chooseLanguage,
-      children: [
-        for (final e in supportedLanguages.entries)
-          ListTile(
-            title: Text(e.value),
-            trailing: e.key == current ? const Icon(Icons.check) : null,
-            selected: e.key == current,
-            onTap: () => ref.read(authProvider.notifier).setLanguage(e.key),
-          ),
-        const SizedBox(height: 24),
-        FilledButton(
-          onPressed: () async {
-            await ref.read(authProvider.notifier).setLanguage(current);
-            if (context.mounted) context.go('/signin');
-          },
-          child: Text(l.continueLabel),
-        ),
-      ],
-    );
-  }
-}
 
 /// S2
 class SignInScreen extends ConsumerStatefulWidget {
@@ -90,6 +58,7 @@ class _SignInState extends ConsumerState<SignInScreen> {
                   controller: _login,
                   decoration: InputDecoration(labelText: l.emailOrPhone, prefixIcon: const Icon(Icons.alternate_email)),
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.username],
                   validator: (v) => _validRequired(context, v),
                 ),
@@ -105,11 +74,14 @@ class _SignInState extends ConsumerState<SignInScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: TextButton(onPressed: () => context.push('/reset'), child: Text(l.forgotPassword)),
+        ),
+        const SizedBox(height: 12),
         BusyButton(label: l.signIn, onPressed: _submit),
-        TextButton(onPressed: () => context.push('/reset'), child: Text(l.forgotPassword)),
-        TextButton(onPressed: () => context.push('/signup'), child: Text(l.noAccount)),
-        TextButton(onPressed: () => context.push('/language'), child: Text(l.language)),
+        const SizedBox(height: 16),
+        _SwitchPrompt(prompt: l.noAccount, action: l.signUp, onPressed: () => context.push('/signup')),
       ],
     );
   }
@@ -162,6 +134,7 @@ class _SignUpState extends ConsumerState<SignUpScreen> {
                 controller: _name,
                 decoration: InputDecoration(labelText: l.fullName, prefixIcon: const Icon(Icons.person_outline)),
                 textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.name],
                 validator: (v) => _validRequired(context, v),
               ),
@@ -170,6 +143,7 @@ class _SignUpState extends ConsumerState<SignUpScreen> {
                 controller: _login,
                 decoration: InputDecoration(labelText: l.emailOrPhone, prefixIcon: const Icon(Icons.alternate_email)),
                 keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.username],
                 validator: (v) => _validRequired(context, v),
               ),
@@ -180,15 +154,36 @@ class _SignUpState extends ConsumerState<SignUpScreen> {
                 helper: l.passwordHint,
                 autofillHints: const [AutofillHints.newPassword],
                 validator: (v) => _validPassword(context, v),
+                onFieldSubmitted: (_) => _submit(),
               ),
             ],
           ),
         ),
         const SizedBox(height: 24),
         BusyButton(label: l.signUp, onPressed: _submit),
+        const SizedBox(height: 16),
+        _SwitchPrompt(prompt: l.haveAccount, action: l.signIn, onPressed: () => context.go('/signin')),
       ],
     );
   }
+}
+
+/// "Don't have an account? Create account" line under the main button.
+class _SwitchPrompt extends StatelessWidget {
+  const _SwitchPrompt({required this.prompt, required this.action, required this.onPressed});
+  final String prompt;
+  final String action;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    alignment: WrapAlignment.center,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    children: [
+      Text(prompt),
+      TextButton(onPressed: onPressed, child: Text(action)),
+    ],
+  );
 }
 
 /// S4 — request a code, then set a new password.

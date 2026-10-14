@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/format.dart';
+import '../../../core/ui.dart' show EmptyState, Section;
 import '../../../l10n/app_localizations.dart';
 import '../../auth/presentation/widgets.dart';
 import '../domain/booking.dart';
@@ -26,20 +27,21 @@ class MyBookingsScreen extends ConsumerWidget {
           value: ref.watch(myBookingsProvider),
           onRetry: () => ref.invalidate(myBookingsProvider),
           builder: (list) => list.isEmpty
-              ? ListView(
-                  children: [Padding(padding: const EdgeInsets.all(24), child: Text(l.noBookings))],
-                )
+              ? ListView(children: [EmptyState(l.noBookings, icon: Icons.event_note)])
               : ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
                   children: [
                     for (final r in list)
-                      ListTile(
-                        title: Text(r.roomTypeName),
-                        subtitle: Text('${dateRange(context, r.checkIn, r.checkOut)}\n${r.code}'),
-                        isThreeLine: true,
-                        trailing: StatusChip(r.status),
-                        onTap: () => r.status == BookingStatus.hold
-                            ? context.push('/guest/review/${r.id}')
-                            : context.push('/guest/bookings/${r.id}'),
+                      Card(
+                        child: ListTile(
+                          title: Text(r.roomTypeName),
+                          subtitle: Text('${dateRange(context, r.checkIn, r.checkOut)}\n${r.code}'),
+                          isThreeLine: true,
+                          trailing: StatusChip(r.status),
+                          onTap: () => r.status == BookingStatus.hold
+                              ? context.push('/guest/review/${r.id}')
+                              : context.push('/guest/bookings/${r.id}'),
+                        ),
                       ),
                   ],
                 ),
@@ -103,48 +105,54 @@ class BookingDetailScreen extends ConsumerWidget {
           value: ref.watch(reservationProvider(id)),
           onRetry: () => ref.invalidate(reservationProvider(id)),
           builder: (r) => ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
             children: [
               Row(
                 children: [
-                  Expanded(child: Text(l.bookingCode(r.code), style: Theme.of(context).textTheme.titleMedium)),
+                  Expanded(
+                    child: Text(
+                      [l.bookingCode(r.code), if (r.room != null) l.roomNumber(r.room!)].join(' · '),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
                   StatusChip(r.status),
                 ],
               ),
-              if (r.room != null) Text(l.roomNumber(r.room!)),
               const SizedBox(height: 8),
-              PriceBreakdown(r),
-              const SizedBox(height: 8),
-              _Line(l.paid, money(r.paid, r.currency)),
-              _Line(l.balance, money(r.balance, r.currency)),
-              const SizedBox(height: 8),
-              Text(l.checkInTime(r.checkInTime)),
-              Text(l.checkOutTime(r.checkOutTime)),
-              if (r.cancellation.isNotEmpty) Text(r.cancellation),
-              const SizedBox(height: 16),
+              PriceBreakdown(r, payments: true),
+              const SizedBox(height: 12),
+              StayTerms(r),
+              const SizedBox(height: 24),
               if (r.isConfirmed) ...[
                 FilledButton.icon(
                   icon: const Icon(Icons.hotel),
                   label: Text(l.myStay),
                   onPressed: () => context.push('/guest/stay/${r.id}'),
                 ),
-                if (r.balance > 0)
+                const SizedBox(height: 12),
+                if (r.balance > 0) ...[
                   BusyButton(
                     label: l.payBalance(money(r.balance, r.currency)),
                     onPressed: () => _payBalance(context, ref),
                   ),
+                  const SizedBox(height: 12),
+                ],
               ],
               OutlinedButton.icon(
                 icon: const Icon(Icons.receipt_long),
                 label: Text(l.invoice),
                 onPressed: () => context.push('/guest/bookings/${r.id}/invoice'),
               ),
-              if (r.canCancel)
+              if (r.canCancel) ...[
+                const SizedBox(height: 8),
                 TextButton(
                   style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
                   onPressed: () => _cancel(context, ref),
                   child: Text(l.cancelBooking),
                 ),
+              ],
             ],
           ),
         ),
@@ -154,17 +162,24 @@ class BookingDetailScreen extends ConsumerWidget {
 }
 
 class _Line extends StatelessWidget {
-  const _Line(this.label, this.value);
+  const _Line(this.label, this.value, {this.bold = false});
   final String label;
   final String value;
+  final bool bold;
 
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Expanded(child: Text(label)),
-      Text(value),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final style = bold ? Theme.of(context).textTheme.titleMedium : null;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: style)),
+          Text(value, style: style),
+        ],
+      ),
+    );
+  }
 }
 
 // ───────────── G21: invoice ─────────────
@@ -182,16 +197,31 @@ class InvoiceScreen extends ConsumerWidget {
         value: ref.watch(invoiceProvider(id)),
         onRetry: () => ref.invalidate(invoiceProvider(id)),
         builder: (inv) => ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           children: [
             Text(inv.hotelName, style: Theme.of(context).textTheme.titleLarge),
-            Text(l.bookingCode(inv.code)),
-            const Divider(),
-            for (final line in inv.lines) _Line(line.description, money(line.amount, inv.currency)),
-            const Divider(),
-            _Line(l.charges, money(inv.charges, inv.currency)),
-            _Line(l.paid, money(inv.paid, inv.currency)),
-            _Line(l.balance, money(inv.balance, inv.currency)),
+            const SizedBox(height: 4),
+            Text(
+              l.bookingCode(inv.code),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Section(gutter: 0, [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                child: Column(
+                  children: [
+                    for (final line in inv.lines) _Line(line.description, money(line.amount, inv.currency)),
+                    const Divider(height: 17),
+                    _Line(l.charges, money(inv.charges, inv.currency)),
+                    _Line(l.paid, money(inv.paid, inv.currency)),
+                    _Line(l.balance, money(inv.balance, inv.currency), bold: true),
+                  ],
+                ),
+              ),
+            ]),
           ],
         ),
       ),

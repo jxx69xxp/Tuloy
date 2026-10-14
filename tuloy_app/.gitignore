@@ -49,3 +49,5 @@ app.*.map.json
 
 # Flutter SDK cloned by the Vercel build
 .flutter/
+.vercel
+.env*

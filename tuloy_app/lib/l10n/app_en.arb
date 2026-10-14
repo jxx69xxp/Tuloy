@@ -556,5 +556,8 @@
   "themeLight": "Light",
   "themeDark": "Dark",
   "roomAvailable": "Available",
-  "availableOnly": "Available only"
+  "availableOnly": "Available only",
+  "floor": "Floor",
+  "allRoomTypes": "All room types",
+  "guestLabel": "Guest"
 }

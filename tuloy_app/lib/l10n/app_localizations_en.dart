@@ -1142,4 +1142,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get availableOnly => 'Available only';
+
+  @override
+  String get floor => 'Floor';
+
+  @override
+  String get allRoomTypes => 'All room types';
+
+  @override
+  String get guestLabel => 'Guest';
 }

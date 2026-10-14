@@ -72,6 +72,7 @@ List<RouteBase> _deskRoutes(String base) => [
     ),
   ),
   GoRoute(path: 'leave', builder: (_, __) => const LeaveScreen()),
+  GoRoute(path: 'rooms', builder: (_, __) => RoomsScreen(base: base)),
   GoRoute(
     path: 'guests',
     builder: (_, __) => GuestListScreen(base: base),
@@ -90,6 +91,7 @@ Page<void> _inboxPage(BuildContext c, GoRouterState s, String base, Widget child
 List<RailItem> _staffItems(AppLocalizations l) => [
   RailItem(Icons.support_agent, l.frontDesk, '/staff', section: l.frontDesk),
   RailItem(Icons.book_online_outlined, l.reservations, '/staff/reservations', section: l.frontDesk),
+  RailItem(Icons.bed_outlined, l.rooms, '/staff/rooms', section: l.frontDesk),
   RailItem(Icons.checklist, l.tasks, '/staff/tasks', section: l.frontDesk),
   RailItem(Icons.restaurant, l.restaurant, '/staff/orders', section: l.frontDesk),
   RailItem(Icons.chat_bubble_outline, l.chat, '/staff/inbox', section: l.frontDesk),

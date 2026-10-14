@@ -1146,4 +1146,13 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get availableOnly => 'Bakante lang';
+
+  @override
+  String get floor => 'Palapag';
+
+  @override
+  String get allRoomTypes => 'Lahat ng uri ng kuwarto';
+
+  @override
+  String get guestLabel => 'Bisita';
 }

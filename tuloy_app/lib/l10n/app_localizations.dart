@@ -2241,6 +2241,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Available only'**
   String get availableOnly;
+
+  /// No description provided for @floor.
+  ///
+  /// In en, this message translates to:
+  /// **'Floor'**
+  String get floor;
+
+  /// No description provided for @allRoomTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'All room types'**
+  String get allRoomTypes;
+
+  /// No description provided for @guestLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Guest'**
+  String get guestLabel;
 }
 
 class _AppLocalizationsDelegate

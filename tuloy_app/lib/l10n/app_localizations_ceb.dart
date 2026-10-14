@@ -1145,4 +1145,13 @@ class AppLocalizationsCeb extends AppLocalizations {
 
   @override
   String get availableOnly => 'Bakante ra';
+
+  @override
+  String get floor => 'Andana';
+
+  @override
+  String get allRoomTypes => 'Tanang klase sa kwarto';
+
+  @override
+  String get guestLabel => 'Bisita';
 }

@@ -15,8 +15,11 @@ import '../auth/presentation/auth_controller.dart' show tokenStoreProvider;
 /// Every room's state today, grouped by room type (photo, name, how many are available), colored by status.
 /// Tapping a room with a guest opens the booking.
 class RoomBoard extends ConsumerStatefulWidget {
-  const RoomBoard({super.key, required this.base});
+  const RoomBoard({super.key, required this.base, this.full = false});
   final String base;
+
+  /// The Rooms page: adds search (number, type, guest) and a room-type filter.
+  final bool full;
 
   /// Room states in the order the legend lists them.
   static const states = ['free', 'arriving', 'occupied', 'departing', 'reserved', 'blocked'];
@@ -53,6 +56,8 @@ class RoomBoard extends ConsumerStatefulWidget {
 
 class _RoomBoardState extends ConsumerState<RoomBoard> {
   bool _availableOnly = false;
+  String _q = '';
+  String? _type;
 
   @override
   Widget build(BuildContext context) {
@@ -71,19 +76,57 @@ class _RoomBoardState extends ConsumerState<RoomBoard> {
             final rooms = jsonList(d['rooms']);
             // A departing room is free again for tonight, so it counts as available.
             bool available(J r) => r['status'] == 'free' || r['status'] == 'departing';
+            final q = _q.toLowerCase();
+            bool shown(J r) =>
+                (!_availableOnly || available(r)) &&
+                (q.isEmpty ||
+                    [r['number'], r['roomType'], r['guestName']].any((v) => '${v ?? ''}'.toLowerCase().contains(q)));
+            final types = [
+              for (final type in jsonList(d['types']))
+                if (_type == null || _type == type['roomTypeId']) type,
+            ];
+            final availableChip = FilterChip(
+              label: Text(l.availableOnly),
+              selected: _availableOnly,
+              onSelected: (v) => setState(() => _availableOnly = v),
+            );
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Expanded(child: Text(l.roomBoard, style: t.textTheme.titleLarge)),
-                    FilterChip(
-                      label: Text(l.availableOnly),
-                      selected: _availableOnly,
-                      onSelected: (v) => setState(() => _availableOnly = v),
-                    ),
+                    if (!widget.full) availableChip,
                   ],
                 ),
+                if (widget.full) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 280,
+                        child: TextField(
+                          decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: l.search),
+                          onChanged: (v) => setState(() => _q = v.trim()),
+                        ),
+                      ),
+                      DropdownButton<String?>(
+                        value: _type,
+                        underline: const SizedBox(),
+                        items: [
+                          DropdownMenuItem(value: null, child: Text(l.allRoomTypes)),
+                          for (final x in jsonList(d['types']))
+                            DropdownMenuItem(value: '${x['roomTypeId']}', child: Text('${x['roomType']}')),
+                        ],
+                        onChanged: (v) => setState(() => _type = v),
+                      ),
+                      availableChip,
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Wrap(
                   spacing: 16,
@@ -108,20 +151,21 @@ class _RoomBoardState extends ConsumerState<RoomBoard> {
                       ),
                   ],
                 ),
-                for (final type in jsonList(d['types'])) ...[
-                  const SizedBox(height: 20),
-                  _TypeHeader(type),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final r in rooms)
-                        if (r['roomTypeId'] == type['roomTypeId'] && (!_availableOnly || available(r)))
-                          _RoomTile(r, widget.base),
-                    ],
-                  ),
-                ],
+                for (final type in types)
+                  if (rooms.any((r) => r['roomTypeId'] == type['roomTypeId'] && shown(r))) ...[
+                    const SizedBox(height: 20),
+                    _TypeHeader(type),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final r in rooms)
+                          if (r['roomTypeId'] == type['roomTypeId'] && shown(r)) _RoomTile(r, widget.base),
+                      ],
+                    ),
+                  ],
+                if (!rooms.any(shown)) EmptyState(l.nothingHere, icon: Icons.bed_outlined),
               ],
             );
           },
@@ -220,6 +264,23 @@ class _RoomTile extends StatelessWidget {
       ),
     );
   }
+}
+
+// ───────────── rooms table ─────────────
+
+/// The room board on its own page, with search and a room-type filter.
+class RoomsScreen extends StatelessWidget {
+  const RoomsScreen({super.key, required this.base});
+  final String base;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(AppLocalizations.of(context).rooms)),
+    body: SingleChildScrollView(
+      padding: EdgeInsets.all(isWide(context) ? 0 : 12),
+      child: RoomBoard(base: base, full: true),
+    ),
+  );
 }
 
 // ───────────── arrivals / departures ─────────────

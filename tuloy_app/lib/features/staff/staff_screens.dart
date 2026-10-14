@@ -143,6 +143,7 @@ class StaffHomeScreen extends ConsumerWidget {
                       () => context.push('$base/inbox'),
                       badge: n('unreadChats'),
                     ),
+                    NavTile(Icons.bed_outlined, l.rooms, () => context.push('$base/rooms')),
                     NavTile(Icons.people_outline, l.guestList, () => context.push('$base/guests')),
                     NavTile(Icons.groups_outlined, l.team, () => context.push('$base/team')),
                     NavTile(Icons.beach_access, l.myLeave, () => context.push('$base/leave')),

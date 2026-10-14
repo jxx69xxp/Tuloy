@@ -356,5 +356,8 @@
   "themeLight": "Maliwanag",
   "themeDark": "Madilim",
   "roomAvailable": "Bakante",
-  "availableOnly": "Bakante lang"
+  "availableOnly": "Bakante lang",
+  "floor": "Palapag",
+  "allRoomTypes": "Lahat ng uri ng kuwarto",
+  "guestLabel": "Bisita"
 }

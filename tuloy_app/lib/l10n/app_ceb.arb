@@ -356,5 +356,8 @@
   "themeLight": "Hayag",
   "themeDark": "Ngitngit",
   "roomAvailable": "Bakante",
-  "availableOnly": "Bakante ra"
+  "availableOnly": "Bakante ra",
+  "floor": "Andana",
+  "allRoomTypes": "Tanang klase sa kwarto",
+  "guestLabel": "Bisita"
 }

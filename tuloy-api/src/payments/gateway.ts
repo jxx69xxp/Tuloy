@@ -36,7 +36,10 @@ export function gatewayFromEnv(): PaymentGateway {
     return new PayMongoGateway(key, hook);
   }
   if (provider === 'mock') {
-    if (process.env.NODE_ENV === 'production') throw new Error('PAYMENT_PROVIDER=mock is not allowed in production');
+    // Fake checkout moves no money: refused in production unless a demo deployment opts in explicitly.
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_MOCK_PAYMENTS !== '1') {
+      throw new Error('PAYMENT_PROVIDER=mock is not allowed in production (set ALLOW_MOCK_PAYMENTS=1 for a demo)');
+    }
     return new MockGateway();
   }
   throw new Error(`Unknown PAYMENT_PROVIDER ${provider}`);

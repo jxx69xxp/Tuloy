@@ -1,0 +1,10 @@
+.flutter
+build
+.dart_tool
+ios
+android
+macos
+linux
+windows
+test
+.env

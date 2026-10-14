@@ -22,6 +22,7 @@ class JsonTable {
     this.onSearch,
     this.searchHint,
     this.expanded,
+    this.leading,
   });
   final List<String> columns;
   final List<String> Function(BuildContext, J row) cells;
@@ -42,6 +43,9 @@ class JsonTable {
 
   /// Optional detail area under a row, toggled by a chevron; null for a row hides its chevron.
   final Widget? Function(BuildContext, J row)? expanded;
+
+  /// Small widget before the first column (e.g. a photo); its header is blank.
+  final Widget Function(BuildContext, J row)? leading;
 }
 
 /// Wide-screen table: search toolbar, sortable sticky header, hover/selected rows, actions and
@@ -189,9 +193,15 @@ class _WebTableState extends State<WebTable> {
     );
   }
 
-  Widget _line(List<Widget> cells, Widget? actions, [Widget? toggle]) => Row(
+  /// [no] is the row's position in the current view (after search and sort); every table shows it.
+  Widget _line(Widget no, Widget? lead, List<Widget> cells, Widget? actions, [Widget? toggle]) => Row(
     children: [
       if (t.expanded != null) SizedBox(width: 48, child: toggle),
+      SizedBox(
+        width: 56,
+        child: Padding(padding: const EdgeInsets.only(left: 12), child: no),
+      ),
+      if (t.leading != null) SizedBox(width: 48, child: lead),
       for (final c in cells)
         Expanded(
           child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: c),
@@ -244,7 +254,9 @@ class _WebTableState extends State<WebTable> {
         Container(
           constraints: const BoxConstraints(minHeight: 44),
           color: scheme.surfaceContainerHigh,
-          child: _line([for (var i = 0; i < t.columns.length; i++) _head(context, i)], null),
+          child: _line(Text(l.rowNo, style: Theme.of(context).textTheme.labelLarge), null, [
+            for (var i = 0; i < t.columns.length; i++) _head(context, i),
+          ], null),
         ),
         const Divider(height: 1),
         Expanded(
@@ -283,6 +295,14 @@ class _WebTableState extends State<WebTable> {
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(minHeight: 48),
                           child: _line(
+                            Text(
+                              '${i + 1}',
+                              style: TextStyle(
+                                color: scheme.onSurfaceVariant,
+                                fontFeatures: const [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                            t.leading?.call(context, r),
                             [
                               for (final c in t.cells(context, r))
                                 Text(c, maxLines: 2, overflow: TextOverflow.ellipsis),

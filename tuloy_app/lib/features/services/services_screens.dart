@@ -153,7 +153,7 @@ class _ServiceRequestState extends ConsumerState<ServiceRequestScreen> {
         );
       case 'datetime':
         final v = _answers[key] as String?;
-        return _PickerField(
+        return PickerField(
           label: label,
           value: v == null
               ? null
@@ -242,7 +242,7 @@ class _ServiceRequestState extends ConsumerState<ServiceRequestScreen> {
                 ),
               for (final f in jsonList(s['fields']))
                 Padding(padding: const EdgeInsets.only(bottom: 12), child: _field(f)),
-              _PickerField(
+              PickerField(
                 label: l.preferredTime,
                 value: _when == null
                     ? l.asSoonAsPossible
@@ -271,26 +271,6 @@ class _ServiceRequestState extends ConsumerState<ServiceRequestScreen> {
       ),
     );
   }
-}
-
-/// Tappable field that opens a picker; looks like the text fields around it.
-class _PickerField extends StatelessWidget {
-  const _PickerField({required this.label, required this.value, required this.icon, required this.onTap});
-  final String label;
-  final String? value;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(14),
-    child: InputDecorator(
-      isEmpty: value == null,
-      decoration: InputDecoration(labelText: label, suffixIcon: Icon(icon)),
-      child: Text(value ?? ''),
-    ),
-  );
 }
 
 String paymentMethodLabel(AppLocalizations l, String m) => switch (m) {

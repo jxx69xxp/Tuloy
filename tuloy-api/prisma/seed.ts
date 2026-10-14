@@ -67,18 +67,18 @@ async function main() {
     dept[name] = d.id;
   }
 
-  const users: { email: string; fullName: string; role: Role; permissions: string[]; departmentId?: string }[] = [
-    { email: 'admin@tuloy.test', fullName: 'Ana Admin', role: 'ADMIN', permissions: [] },
-    { email: 'staff@tuloy.test', fullName: 'Sam Staff', role: 'STAFF', permissions: ['booking.approve'], departmentId: dept['Front Office'] },
-    { email: 'house@tuloy.test', fullName: 'Hana Housekeeping', role: 'STAFF', permissions: [], departmentId: dept['Housekeeping'] },
+  const users: { email: string; fullName: string; role: Role; permissions: string[]; departmentId?: string; employeeNo?: string }[] = [
+    { email: 'admin@tuloy.test', fullName: 'Ana Admin', role: 'ADMIN', permissions: [], employeeNo: 'LSD-001' },
+    { email: 'staff@tuloy.test', fullName: 'Sam Staff', role: 'STAFF', permissions: ['booking.approve'], departmentId: dept['Front Office'], employeeNo: 'LSD-014' },
+    { email: 'house@tuloy.test', fullName: 'Hana Housekeeping', role: 'STAFF', permissions: [], departmentId: dept['Housekeeping'], employeeNo: 'LSD-027' },
     { email: 'guest@tuloy.test', fullName: 'Gina Guest', role: 'GUEST', permissions: [] },
   ];
-  for (const { role, permissions, departmentId, ...u } of users) {
+  for (const { role, permissions, departmentId, employeeNo, ...u } of users) {
     const user = await prisma.user.upsert({ where: { email: u.email }, update: {}, create: { ...u, passwordHash: password } });
     await prisma.membership.upsert({
       where: { userId_hotelId: { userId: user.id, hotelId: hotel.id } },
-      update: {},
-      create: { userId: user.id, hotelId: hotel.id, role, permissions, departmentId },
+      update: { employeeNo },
+      create: { userId: user.id, hotelId: hotel.id, role, permissions, departmentId, employeeNo },
     });
   }
 

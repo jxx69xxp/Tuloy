@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/adaptive.dart';
 import '../../core/config.dart';
@@ -8,7 +9,7 @@ import '../../core/http.dart';
 import '../../core/ui.dart';
 import '../../core/web/overlays.dart';
 import '../../l10n/app_localizations.dart';
-import '../staff/staff_screens.dart' show leaveStatus;
+import '../staff/staff_screens.dart' show leaveStatus, leaveTypeLabel;
 import 'admin_catalog_screens.dart' show trOf;
 
 // ───────────── A14/A15 staff, departments, leave ─────────────
@@ -51,6 +52,7 @@ class _StaffTab extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     final wide = isWide(context);
     List<String> cells(J s) => [
+      '${s['employeeNo'] ?? ''}',
       '${s['fullName']}',
       '${s['email']}',
       '${s['role']}',
@@ -68,10 +70,11 @@ class _StaffTab extends ConsumerWidget {
       body: JsonList(
         path: '/admin/staff',
         table: JsonTable(
-          columns: [l.fullName, l.email, l.role, l.department],
+          leading: (context, s) => StaffAvatar(name: '${s['fullName']}', url: s['photoUrl'] as String?),
+          columns: [l.employeeId, l.fullName, l.email, l.role, l.department],
           cells: (context, s) => cells(s),
           onTap: (s) => _edit(context, ref, s),
-          sortKeys: [for (var i = 0; i < 4; i++) (s) => cells(s)[i].toLowerCase()],
+          sortKeys: [for (var i = 0; i < 5; i++) (s) => cells(s)[i].toLowerCase()],
           toolbar: [
             FilledButton.icon(
               onPressed: () => _edit(context, ref),
@@ -81,9 +84,10 @@ class _StaffTab extends ConsumerWidget {
           ],
         ),
         item: (context, s) => ListTile(
+          leading: StaffAvatar(name: '${s['fullName']}', url: s['photoUrl'] as String?),
           title: Text('${s['fullName']}'),
           subtitle: Text(
-            '${s['email']} · ${s['role']}${s['department'] != null ? ' · ${s['department']['name']}' : ''}',
+            '${s['employeeNo'] != null ? '${s['employeeNo']} · ' : ''}${s['email']} · ${s['role']}${s['department'] != null ? ' · ${s['department']['name']}' : ''}',
           ),
           onTap: () => _edit(context, ref, s),
         ),
@@ -103,6 +107,8 @@ class _StaffEditState extends ConsumerState<_StaffEdit> {
   final _email = TextEditingController();
   final _name = TextEditingController();
   final _password = TextEditingController();
+  late final _employeeNo = TextEditingController(text: '${widget.member?['employeeNo'] ?? ''}');
+  late String? _photoKey = widget.member?['photoKey'] as String?;
   late String _role = '${widget.member?['role'] ?? 'STAFF'}';
   late String? _department = (widget.member?['department'] as Map?)?['id'] as String?;
   late final Set<String> _perms = {...((widget.member?['permissions'] as List?) ?? const []).cast<String>()};
@@ -112,7 +118,20 @@ class _StaffEditState extends ConsumerState<_StaffEdit> {
     _email.dispose();
     _name.dispose();
     _password.dispose();
+    _employeeNo.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickPhoto() async {
+    final f = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 800, imageQuality: 85);
+    if (f == null || !mounted) return;
+    final ext = f.name.toLowerCase().endsWith('.png') ? 'png' : 'jpg';
+    final bytes = await f.readAsBytes();
+    if (!mounted) return;
+    await act(context, () async {
+      final key = await ref.read(apiProvider).upload('staff', bytes, ext);
+      setState(() => _photoKey = key);
+    });
   }
 
   @override
@@ -128,6 +147,8 @@ class _StaffEditState extends ConsumerState<_StaffEdit> {
         'role': _role,
         if (_department != null) 'departmentId': _department,
         'permissions': _perms.toList(),
+        'employeeNo': _employeeNo.text.trim(),
+        if (_photoKey != null) 'photoKey': _photoKey,
       };
       final ok = await act(
         context,
@@ -169,6 +190,28 @@ class _StaffEditState extends ConsumerState<_StaffEdit> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          Row(
+            children: [
+              StaffAvatar(
+                name: m == null ? _name.text : '${m['fullName']}',
+                // Saved photo; a newly picked one shows after saving.
+                url: _photoKey != null && _photoKey == m?['photoKey'] ? (m!['photoUrl'] as String?) : null,
+                radius: 32,
+              ),
+              const SizedBox(width: 16),
+              OutlinedButton.icon(
+                onPressed: _pickPhoto,
+                icon: const Icon(Icons.add_a_photo_outlined),
+                label: Text(l.photo),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _employeeNo,
+            decoration: InputDecoration(labelText: l.employeeId),
+          ),
+          const SizedBox(height: 8),
           if (m == null) ...[
             TextField(
               controller: _name,
@@ -236,7 +279,7 @@ class _LeaveTab extends ConsumerWidget {
         title: Text(
           '${r['fullName']} · ${dateRange(context, DateTime.parse('${r['from']}'), DateTime.parse('${r['to']}'))}',
         ),
-        subtitle: Text('${r['type']} · ${r['reason'] ?? ''}'),
+        subtitle: Text('${leaveTypeLabel(l, '${r['type']}')} · ${r['reason'] ?? ''}'),
         trailing: r['status'] == 'pending'
             ? Row(
                 mainAxisSize: MainAxisSize.min,

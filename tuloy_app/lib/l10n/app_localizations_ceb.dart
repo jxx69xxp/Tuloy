@@ -1154,4 +1154,37 @@ class AppLocalizationsCeb extends AppLocalizations {
 
   @override
   String get guestLabel => 'Bisita';
+
+  @override
+  String get rowNo => 'Num.';
+
+  @override
+  String get employeeId => 'Employee ID';
+
+  @override
+  String get photo => 'Litrato';
+
+  @override
+  String get dateFrom => 'Gikan';
+
+  @override
+  String get dateTo => 'Hangtod';
+
+  @override
+  String get leaveType => 'Klase sa leave';
+
+  @override
+  String get leaveVacation => 'Bakasyon';
+
+  @override
+  String get leaveSick => 'Masakiton';
+
+  @override
+  String get leaveEmergency => 'Emergency';
+
+  @override
+  String get leaveOther => 'Uban pa';
+
+  @override
+  String get submit => 'Isumite';
 }

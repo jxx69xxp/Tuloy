@@ -764,36 +764,139 @@ class LeaveScreen extends ConsumerWidget {
         icon: const Icon(Icons.add),
         label: Text(l.applyLeave),
         onPressed: () async {
-          final now = DateTime.now();
-          final range = await showDateRangePicker(
+          final sent = await showDialog<bool>(
             context: context,
-            firstDate: now,
-            lastDate: now.add(const Duration(days: 365)),
+            builder: (_) => const _LeaveForm(path: path),
           );
-          if (range == null || !context.mounted) return;
-          final reason = await prompt(context, l.applyLeave, label: l.reason);
-          if (reason == null || !context.mounted) return;
-          String d(DateTime x) => x.toIso8601String().substring(0, 10);
-          final ok = await act(
-            context,
-            () => ref.read(apiProvider).post(path, {
-              'from': d(range.start),
-              'to': d(range.end),
-              'type': 'vacation',
-              if (reason.isNotEmpty) 'reason': reason,
-            }),
-          );
-          if (ok) ref.invalidate(getProvider(path));
+          if (sent == true) ref.invalidate(getProvider(path));
         },
       ),
       body: JsonList(
         path: path,
         item: (context, r) => ListTile(
           title: Text(dateRange(context, DateTime.parse('${r['from']}'), DateTime.parse('${r['to']}'))),
-          subtitle: Text('${r['reason'] ?? ''}'),
+          subtitle: Text(
+            [leaveTypeLabel(l, '${r['type']}'), r['reason']].where((s) => '${s ?? ''}'.isNotEmpty).join(' · '),
+          ),
           trailing: Chip(label: Text(leaveStatus(l, '${r['status']}'))),
         ),
       ),
+    );
+  }
+}
+
+String leaveTypeLabel(AppLocalizations l, String t) => switch (t) {
+  'sick' => l.leaveSick,
+  'emergency' => l.leaveEmergency,
+  'other' => l.leaveOther,
+  _ => l.leaveVacation,
+};
+
+/// Apply for leave in one form: type, From and To dates (To starts on From, so one day is one tap), reason.
+class _LeaveForm extends ConsumerStatefulWidget {
+  const _LeaveForm({required this.path});
+  final String path;
+  @override
+  ConsumerState<_LeaveForm> createState() => _LeaveFormState();
+}
+
+class _LeaveFormState extends ConsumerState<_LeaveForm> {
+  static DateTime _today() {
+    final n = DateTime.now();
+    return DateTime(n.year, n.month, n.day);
+  }
+
+  late DateTime _from = _today().add(const Duration(days: 1));
+  late DateTime _to = _from;
+  String _type = 'vacation';
+  final _reason = TextEditingController();
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
+  Future<DateTime?> _pick(DateTime initial, DateTime first) => showDatePicker(
+    context: context,
+    initialDate: initial,
+    firstDate: first,
+    lastDate: _today().add(const Duration(days: 365)),
+  );
+
+  Future<void> _submit() async {
+    String d(DateTime x) => x.toIso8601String().substring(0, 10);
+    final reason = _reason.text.trim();
+    final ok = await act(
+      context,
+      () => ref.read(apiProvider).post(widget.path, {
+        'from': d(_from),
+        'to': d(_to),
+        'type': _type,
+        if (reason.isNotEmpty) 'reason': reason,
+      }),
+    );
+    if (ok && mounted) Navigator.pop(context, true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l.applyLeave),
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            DropdownButtonFormField<String>(
+              initialValue: _type,
+              decoration: InputDecoration(labelText: l.leaveType),
+              items: [
+                for (final t in const ['vacation', 'sick', 'emergency', 'other'])
+                  DropdownMenuItem(value: t, child: Text(leaveTypeLabel(l, t))),
+              ],
+              onChanged: (v) => setState(() => _type = v ?? _type),
+            ),
+            const SizedBox(height: 12),
+            PickerField(
+              label: l.dateFrom,
+              value: date(context, _from),
+              icon: Icons.event,
+              onTap: () async {
+                final v = await _pick(_from, _today());
+                if (v == null) return;
+                setState(() {
+                  _from = v;
+                  if (_to.isBefore(v)) _to = v; // To never ends before From
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+            PickerField(
+              label: l.dateTo,
+              value: date(context, _to),
+              icon: Icons.event,
+              onTap: () async {
+                final v = await _pick(_to, _from);
+                if (v != null) setState(() => _to = v);
+              },
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _reason,
+              minLines: 1,
+              maxLines: 3,
+              decoration: InputDecoration(labelText: l.reason),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.cancel)),
+        BusyButton(label: l.submit, onPressed: _submit),
+      ],
     );
   }
 }

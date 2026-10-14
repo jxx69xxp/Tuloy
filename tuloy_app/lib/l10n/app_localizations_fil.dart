@@ -1155,4 +1155,37 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get guestLabel => 'Bisita';
+
+  @override
+  String get rowNo => 'Blg.';
+
+  @override
+  String get employeeId => 'Employee ID';
+
+  @override
+  String get photo => 'Larawan';
+
+  @override
+  String get dateFrom => 'Mula';
+
+  @override
+  String get dateTo => 'Hanggang';
+
+  @override
+  String get leaveType => 'Uri ng leave';
+
+  @override
+  String get leaveVacation => 'Bakasyon';
+
+  @override
+  String get leaveSick => 'May sakit';
+
+  @override
+  String get leaveEmergency => 'Emergency';
+
+  @override
+  String get leaveOther => 'Iba pa';
+
+  @override
+  String get submit => 'Ipasa';
 }

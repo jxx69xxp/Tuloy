@@ -1151,4 +1151,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guestLabel => 'Guest';
+
+  @override
+  String get rowNo => 'No.';
+
+  @override
+  String get employeeId => 'Employee ID';
+
+  @override
+  String get photo => 'Photo';
+
+  @override
+  String get dateFrom => 'From';
+
+  @override
+  String get dateTo => 'To';
+
+  @override
+  String get leaveType => 'Type of leave';
+
+  @override
+  String get leaveVacation => 'Vacation';
+
+  @override
+  String get leaveSick => 'Sick';
+
+  @override
+  String get leaveEmergency => 'Emergency';
+
+  @override
+  String get leaveOther => 'Other';
+
+  @override
+  String get submit => 'Submit';
 }

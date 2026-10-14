@@ -5,6 +5,8 @@ import { hashPassword } from '../auth/password';
 import { AuthUser, CurrentMembership, CurrentUser, Roles, STAFF } from '../common/auth';
 import { AppError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
+import { assetUrl } from '../common/storage';
+import { Prisma } from '@prisma/client';
 
 /** Every permission string the API checks. ADMIN implicitly has all of them. */
 export const PERMISSIONS = [
@@ -39,12 +41,27 @@ class StaffDto {
   @IsOptional() @IsIn(PERMISSIONS, { each: true }) permissions?: string[];
   /** Temporary password, shared with the staff member out of band; they can reset it with a code. */
   @IsString() @MinLength(8) @MaxLength(200) password: string;
+  @IsOptional() @IsString() @MaxLength(40) employeeNo?: string;
+  @IsOptional() @Matches(/^staff\/[\w-]+\.(jpg|jpeg|png|webp)$/) photoKey?: string;
 }
 class StaffPatchDto {
   @IsOptional() @IsIn(['STAFF', 'ADMIN']) role?: 'STAFF' | 'ADMIN';
   @IsOptional() @IsUUID() departmentId?: string;
   @IsOptional() @IsIn(PERMISSIONS, { each: true }) permissions?: string[];
+  /** Empty string clears it. */
+  @IsOptional() @IsString() @MaxLength(40) employeeNo?: string;
+  @IsOptional() @Matches(/^staff\/[\w-]+\.(jpg|jpeg|png|webp)$/) photoKey?: string;
 }
+
+/** Employee ID is unique per hotel; a clash is a user error, not a crash. */
+const staffWrite = async <T>(run: () => Promise<T>) => {
+  try {
+    return await run();
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') throw new AppError('EMPLOYEE_NO_TAKEN', 409);
+    throw e;
+  }
+};
 
 /** Leave (T-5, A-5), departments and staff accounts (A-5). */
 @Controller()
@@ -130,6 +147,9 @@ export class TeamController {
       role: r.role,
       department: r.department ? { id: r.department.id, name: r.department.name } : null,
       permissions: r.permissions,
+      employeeNo: r.employeeNo,
+      photoKey: r.photoKey,
+      photoUrl: r.photoKey ? assetUrl(r.photoKey) : null,
       disabled: !!r.user.disabledAt,
     }));
   }
@@ -143,12 +163,20 @@ export class TeamController {
     const user =
       (await this.prisma.user.findUnique({ where: { email } })) ??
       (await this.prisma.user.create({ data: { email, fullName: dto.fullName, passwordHash: await hashPassword(dto.password) } }));
-    const data = { role: dto.role, departmentId: dto.departmentId, permissions: dto.permissions ?? [] };
-    await this.prisma.membership.upsert({
-      where: { userId_hotelId: { userId: user.id, hotelId: m.hotelId } },
-      create: { ...data, userId: user.id, hotelId: m.hotelId },
-      update: data,
-    });
+    const data = {
+      role: dto.role,
+      departmentId: dto.departmentId,
+      permissions: dto.permissions ?? [],
+      employeeNo: dto.employeeNo?.trim() || null,
+      photoKey: dto.photoKey,
+    };
+    await staffWrite(() =>
+      this.prisma.membership.upsert({
+        where: { userId_hotelId: { userId: user.id, hotelId: m.hotelId } },
+        create: { ...data, userId: user.id, hotelId: m.hotelId },
+        update: data,
+      }),
+    );
     await this.prisma.audit({ hotelId: m.hotelId, actorId: u.sub, action: 'staff.add', entityType: 'user', entityId: user.id, after: data });
     return { userId: user.id };
   }
@@ -159,7 +187,10 @@ export class TeamController {
   async updateStaff(@CurrentMembership() m: Membership, @CurrentUser() u: AuthUser, @Param('userId', ParseUUIDPipe) userId: string, @Body() dto: StaffPatchDto) {
     if (userId === u.sub && dto.role && dto.role !== 'ADMIN') throw new AppError('CANNOT_DEMOTE_SELF', 409);
     await this.department(m, dto.departmentId);
-    const ok = await this.prisma.membership.updateMany({ where: { userId, hotelId: m.hotelId, role: { not: 'GUEST' } }, data: dto });
+    const data = { ...dto, ...(dto.employeeNo !== undefined && { employeeNo: dto.employeeNo.trim() || null }) };
+    const ok = await staffWrite(() =>
+      this.prisma.membership.updateMany({ where: { userId, hotelId: m.hotelId, role: { not: 'GUEST' } }, data }),
+    );
     if (!ok.count) throw new AppError('NOT_FOUND', 404);
     await this.prisma.audit({ hotelId: m.hotelId, actorId: u.sub, action: 'staff.update', entityType: 'user', entityId: userId, after: dto });
   }

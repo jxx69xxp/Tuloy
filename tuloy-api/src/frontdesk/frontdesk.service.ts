@@ -240,7 +240,16 @@ export class FrontDeskService {
       include: { user: true, department: true },
     });
     return rows
-      .map((r) => ({ id: r.userId, fullName: r.user.fullName, email: r.user.email, phone: r.user.phone, role: r.role, department: r.department?.name ?? null }))
+      .map((r) => ({
+        id: r.userId,
+        employeeNo: r.employeeNo,
+        photoUrl: r.photoKey ? assetUrl(r.photoKey) : null,
+        fullName: r.user.fullName,
+        email: r.user.email,
+        phone: r.user.phone,
+        role: r.role,
+        department: r.department?.name ?? null,
+      }))
       .sort((a, b) => a.fullName.localeCompare(b.fullName));
   }
 

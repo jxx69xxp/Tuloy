@@ -359,5 +359,16 @@
   "availableOnly": "Bakante ra",
   "floor": "Andana",
   "allRoomTypes": "Tanang klase sa kwarto",
-  "guestLabel": "Bisita"
+  "guestLabel": "Bisita",
+  "rowNo": "Num.",
+  "employeeId": "Employee ID",
+  "photo": "Litrato",
+  "dateFrom": "Gikan",
+  "dateTo": "Hangtod",
+  "leaveType": "Klase sa leave",
+  "leaveVacation": "Bakasyon",
+  "leaveSick": "Masakiton",
+  "leaveEmergency": "Emergency",
+  "leaveOther": "Uban pa",
+  "submit": "Isumite"
 }

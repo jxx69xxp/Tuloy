@@ -359,5 +359,16 @@
   "availableOnly": "Bakante lang",
   "floor": "Palapag",
   "allRoomTypes": "Lahat ng uri ng kuwarto",
-  "guestLabel": "Bisita"
+  "guestLabel": "Bisita",
+  "rowNo": "Blg.",
+  "employeeId": "Employee ID",
+  "photo": "Larawan",
+  "dateFrom": "Mula",
+  "dateTo": "Hanggang",
+  "leaveType": "Uri ng leave",
+  "leaveVacation": "Bakasyon",
+  "leaveSick": "May sakit",
+  "leaveEmergency": "Emergency",
+  "leaveOther": "Iba pa",
+  "submit": "Ipasa"
 }

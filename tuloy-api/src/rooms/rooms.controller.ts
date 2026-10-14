@@ -61,7 +61,7 @@ class BlockDto extends RangeQuery {
   @IsOptional() @IsString() @MaxLength(200) note?: string;
 }
 class UploadDto {
-  @IsIn(['rooms', 'services', 'menu', 'content']) folder: string;
+  @IsIn(['rooms', 'services', 'menu', 'content', 'staff']) folder: string;
   @IsIn(['jpg', 'jpeg', 'png', 'webp']) ext: string;
 }
 

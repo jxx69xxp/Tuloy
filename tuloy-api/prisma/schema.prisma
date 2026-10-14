@@ -58,12 +58,15 @@ model Membership {
   role         Role
   departmentId String?
   permissions  String[] // fine-grained, e.g. "booking.approve", "refund.create", "loyalty.adjust"
+  employeeNo   String? // hotel's own staff ID, unique per hotel
+  photoKey     String? // staff photo (object-storage key)
   createdAt    DateTime    @default(now())
   user         User        @relation(fields: [userId], references: [id])
   hotel        Hotel       @relation(fields: [hotelId], references: [id])
   department   Department? @relation(fields: [departmentId], references: [id])
 
   @@unique([userId, hotelId])
+  @@unique([hotelId, employeeNo])
 }
 
 /// Rotating refresh tokens: one row per issued token; reuse of a revoked token revokes the family.

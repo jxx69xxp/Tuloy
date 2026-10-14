@@ -559,5 +559,16 @@
   "availableOnly": "Available only",
   "floor": "Floor",
   "allRoomTypes": "All room types",
-  "guestLabel": "Guest"
+  "guestLabel": "Guest",
+  "rowNo": "No.",
+  "employeeId": "Employee ID",
+  "photo": "Photo",
+  "dateFrom": "From",
+  "dateTo": "To",
+  "leaveType": "Type of leave",
+  "leaveVacation": "Vacation",
+  "leaveSick": "Sick",
+  "leaveEmergency": "Emergency",
+  "leaveOther": "Other",
+  "submit": "Submit"
 }

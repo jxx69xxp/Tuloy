@@ -2259,6 +2259,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Guest'**
   String get guestLabel;
+
+  /// No description provided for @rowNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No.'**
+  String get rowNo;
+
+  /// No description provided for @employeeId.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee ID'**
+  String get employeeId;
+
+  /// No description provided for @photo.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get photo;
+
+  /// No description provided for @dateFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get dateFrom;
+
+  /// No description provided for @dateTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get dateTo;
+
+  /// No description provided for @leaveType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type of leave'**
+  String get leaveType;
+
+  /// No description provided for @leaveVacation.
+  ///
+  /// In en, this message translates to:
+  /// **'Vacation'**
+  String get leaveVacation;
+
+  /// No description provided for @leaveSick.
+  ///
+  /// In en, this message translates to:
+  /// **'Sick'**
+  String get leaveSick;
+
+  /// No description provided for @leaveEmergency.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency'**
+  String get leaveEmergency;
+
+  /// No description provided for @leaveOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get leaveOther;
+
+  /// No description provided for @submit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get submit;
 }
 
 class _AppLocalizationsDelegate

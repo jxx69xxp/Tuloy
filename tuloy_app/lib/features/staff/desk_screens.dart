@@ -415,8 +415,10 @@ class TeamScreen extends StatelessWidget {
       body: JsonList(
         path: '/staff/team',
         table: JsonTable(
-          columns: [l.name, l.department, l.role, l.email, l.phone],
+          leading: (context, m) => StaffAvatar(name: '${m['fullName']}', url: m['photoUrl'] as String?),
+          columns: [l.employeeId, l.name, l.department, l.role, l.email, l.phone],
           cells: (context, m) => [
+            '${m['employeeNo'] ?? ''}',
             '${m['fullName']}',
             '${m['department'] ?? ''}',
             role(m),
@@ -424,6 +426,7 @@ class TeamScreen extends StatelessWidget {
             '${m['phone'] ?? ''}',
           ],
           sortKeys: [
+            (m) => '${m['employeeNo'] ?? ''}',
             (m) => '${m['fullName']}'.toLowerCase(),
             (m) => '${m['department'] ?? ''}'.toLowerCase(),
             (m) => '${m['role']}',
@@ -432,8 +435,11 @@ class TeamScreen extends StatelessWidget {
           ],
         ),
         item: (context, m) => ListTile(
+          leading: StaffAvatar(name: '${m['fullName']}', url: m['photoUrl'] as String?),
           title: Text('${m['fullName']}'),
-          subtitle: Text([m['department'], role(m), m['email'], m['phone']].whereType<String>().join(' · ')),
+          subtitle: Text(
+            [m['employeeNo'], m['department'], role(m), m['email'], m['phone']].whereType<String>().join(' · '),
+          ),
         ),
       ),
     );

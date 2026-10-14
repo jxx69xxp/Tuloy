@@ -26,6 +26,11 @@ const MESSAGES: Record<string, Record<Locale, string>> = {
     fil: 'Mali ang email/phone o password.',
     ceb: 'Sayop ang email/phone o password.',
   },
+  EMPLOYEE_NO_TAKEN: {
+    en: 'Another staff member already has this employee ID.',
+    fil: 'May ibang staff na may ganitong employee ID.',
+    ceb: 'Naa nay laing staff nga adunay ingon ani nga employee ID.',
+  },
   ACCOUNT_EXISTS: {
     en: 'An account already exists for this email or phone.',
     fil: 'May account na para sa email o phone na ito.',

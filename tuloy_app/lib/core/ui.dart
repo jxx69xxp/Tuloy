@@ -324,6 +324,57 @@ class ThemeMenuButton extends ConsumerWidget {
   }
 }
 
+/// Tappable field that opens a picker (date, time); looks like the text fields around it.
+class PickerField extends StatelessWidget {
+  const PickerField({super.key, required this.label, required this.value, required this.icon, required this.onTap});
+  final String label;
+  final String? value;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(14),
+    child: InputDecorator(
+      isEmpty: value == null,
+      decoration: InputDecoration(labelText: label, suffixIcon: Icon(icon)),
+      child: Text(value ?? ''),
+    ),
+  );
+}
+
+/// Staff photo, or their initials when none is uploaded.
+class StaffAvatar extends StatelessWidget {
+  const StaffAvatar({super.key, required this.name, this.url, this.radius = 18});
+  final String name;
+  final String? url;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    final initials = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .take(2)
+        .map((w) => w[0])
+        .join()
+        .toUpperCase();
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: c.tertiaryContainer,
+      foregroundColor: c.onTertiaryContainer,
+      foregroundImage: url == null ? null : NetworkImage(url!),
+      child: Text(
+        initials,
+        style: TextStyle(fontSize: radius * .8, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}
+
 /// Tile for a home-screen menu.
 class NavTile extends StatelessWidget {
   const NavTile(this.icon, this.label, this.onTap, {super.key, this.badge = 0});

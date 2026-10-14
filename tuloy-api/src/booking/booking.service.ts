@@ -97,7 +97,8 @@ export class BookingService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
-    if (process.env.JOBS !== 'off') {
+    // JOBS=off: no background work here; JOBS=inline: serverless, /v1/internal/cron runs it instead.
+    if (process.env.JOBS !== 'off' && process.env.JOBS !== 'inline') {
       this.timer = setInterval(() => void this.expireHolds().catch((e) => console.error('[expire]', e)), EXPIRE_TICK_MS);
     }
   }

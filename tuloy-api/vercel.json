@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci",
+  "buildCommand": "prisma generate && prisma migrate deploy && ([ \"$SEED\" = \"1\" ] && prisma db seed || true) && nest build",
+  "outputDirectory": "public",
+  "functions": {
+    "api/index.js": { "includeFiles": "dist/**", "maxDuration": 30 }
+  },
+  "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
+  "crons": [{ "path": "/v1/internal/cron", "schedule": "0 3 * * *" }]
+}

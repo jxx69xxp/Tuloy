@@ -151,6 +151,18 @@ Widget _shell(
   },
 );
 
+List<RailItem> _guestItems(AppLocalizations l) => [
+  RailItem(Icons.home_outlined, l.guestHome, '/guest', section: l.stays),
+  RailItem(Icons.search, l.findRoom, '/guest/search', section: l.stays),
+  RailItem(Icons.event_note_outlined, l.myBookings, '/guest/bookings', section: l.stays),
+  RailItem(Icons.room_service_outlined, l.services, '/guest/services', section: l.services),
+  RailItem(Icons.assignment_outlined, l.myRequests, '/guest/requests', section: l.services),
+  RailItem(Icons.qr_code_scanner, l.scanTable, '/guest/scan', section: l.services),
+  RailItem(Icons.menu_book_outlined, l.hotelGuide, '/guest/guide', section: l.services),
+  RailItem(Icons.loyalty_outlined, l.loyalty, '/guest/loyalty', section: l.profile),
+  RailItem(Icons.account_circle_outlined, l.profile, '/guest/profile', section: l.profile),
+];
+
 List<RailItem> _restaurantItems(AppLocalizations l) => [
   RailItem(Icons.receipt_long_outlined, l.restaurantOrders, '/restaurant', section: l.restaurant),
   RailItem(Icons.menu_book_outlined, l.menu, '/restaurant/menu', section: l.restaurant),
@@ -212,9 +224,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/signup', builder: (_, __) => const SignUpScreen()),
       GoRoute(path: '/reset', builder: (_, __) => const ResetScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
-      // Web: the same guest app in a phone-width column (see GuestFrame).
       ShellRoute(
-        builder: (_, __, child) => GuestFrame(child: child),
+        builder: (_, s, child) => _shell(_guestItems, s, child, desk: null),
         routes: [
           GoRoute(
             path: '/guest',

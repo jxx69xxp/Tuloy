@@ -9,35 +9,6 @@ const double kWideBreakpoint = 840;
 
 bool isWide(BuildContext context) => MediaQuery.sizeOf(context).width >= kWideBreakpoint;
 
-/// Guest app on a wide (web) screen: a phone-width column, and its screens see a phone-sized
-/// MediaQuery so they keep their mobile layout. Narrow screens get the child unchanged.
-class GuestFrame extends StatelessWidget {
-  const GuestFrame({super.key, required this.child});
-  final Widget child;
-  static const width = 480.0;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!isWide(context)) return child;
-    final mq = MediaQuery.of(context);
-    return ColoredBox(
-      color: Theme.of(context).colorScheme.surfaceContainer,
-      child: Center(
-        child: SizedBox(
-          width: width,
-          child: Material(
-            elevation: 2,
-            child: MediaQuery(
-              data: mq.copyWith(size: Size(width, mq.size.height)),
-              child: child,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class RailItem {
   const RailItem(this.icon, this.label, this.path, {this.section});
   final IconData icon;

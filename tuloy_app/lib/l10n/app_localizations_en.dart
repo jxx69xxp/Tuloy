@@ -1264,4 +1264,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String floorN(String floor) {
     return 'Floor $floor';
   }
+
+  @override
+  String get paymentPaid => 'Paid';
+
+  @override
+  String get paymentDeposit => 'Deposit paid';
+
+  @override
+  String get paymentPartial => 'Partly paid';
+
+  @override
+  String get paymentUnpaid => 'Not paid';
 }

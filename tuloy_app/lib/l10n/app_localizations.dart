@@ -2469,6 +2469,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Floor {floor}'**
   String floorN(String floor);
+
+  /// No description provided for @paymentPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get paymentPaid;
+
+  /// No description provided for @paymentDeposit.
+  ///
+  /// In en, this message translates to:
+  /// **'Deposit paid'**
+  String get paymentDeposit;
+
+  /// No description provided for @paymentPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'Partly paid'**
+  String get paymentPartial;
+
+  /// No description provided for @paymentUnpaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Not paid'**
+  String get paymentUnpaid;
 }
 
 class _AppLocalizationsDelegate

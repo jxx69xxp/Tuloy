@@ -11,6 +11,7 @@ import '../../l10n/app_localizations.dart';
 import '../../core/config.dart' show hotelId;
 import '../admin/admin_catalog_screens.dart' show MenuAdminScreen, trOf;
 import '../booking/domain/booking.dart';
+import '../booking/presentation/booking_providers.dart' show paymentLabel;
 import '../services/services_screens.dart' show ServiceRequestScreen;
 import '../auth/presentation/auth_controller.dart' show tokenStoreProvider;
 
@@ -388,6 +389,7 @@ class StayListCard extends ConsumerWidget {
                 [
                   r['room'] == null ? null : l.roomNumber('${r['room']}'),
                   '${r['roomType']}',
+                  paymentLabel(l, r['payment'] as String?),
                 ].whereType<String>().join(' · '),
               ),
               trailing: departures

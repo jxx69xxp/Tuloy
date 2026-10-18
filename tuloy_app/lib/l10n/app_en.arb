@@ -598,5 +598,9 @@
   "byType": "By type",
   "byFloor": "By floor",
   "floorN": "Floor {floor}",
-  "@floorN": {"placeholders": {"floor": {"type": "String"}}}
+  "@floorN": {"placeholders": {"floor": {"type": "String"}}},
+  "paymentPaid": "Paid",
+  "paymentDeposit": "Deposit paid",
+  "paymentPartial": "Partly paid",
+  "paymentUnpaid": "Not paid"
 }

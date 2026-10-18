@@ -249,7 +249,7 @@ class _QueueState extends ConsumerState<ReservationsQueueScreen> {
             child: JsonList(
               path: path,
               table: JsonTable(
-                columns: [l.name, l.codeLabel, l.roomTypeLabel, l.roomLabel, l.dates, l.status],
+                columns: [l.name, l.codeLabel, l.roomTypeLabel, l.roomLabel, l.dates, l.status, l.paymentMethod],
                 cells: (context, r) => [
                   '${r['guestName']}',
                   '${r['code']}',
@@ -257,6 +257,7 @@ class _QueueState extends ConsumerState<ReservationsQueueScreen> {
                   '${r['room'] ?? ''}',
                   dateRange(context, DateTime.parse('${r['checkIn']}'), DateTime.parse('${r['checkOut']}')),
                   statusLabel(l, parseStatus('${r['status']}')),
+                  paymentLabel(l, r['payment'] as String?),
                 ],
                 // Wide only: go (not push) keeps this queue page and opens the detail as a side panel over it.
                 onTap: (r) => context.go('${widget.base}/reservations/${r['id']}'),
@@ -267,6 +268,8 @@ class _QueueState extends ConsumerState<ReservationsQueueScreen> {
                   (r) => text(r['room']),
                   (r) => day(r['checkIn']),
                   (r) => text(r['status']),
+                  // Not paid first: that is what the desk chases.
+                  (r) => const ['unpaid', 'partial', 'deposit', 'paid'].indexOf('${r['payment']}'),
                 ],
                 onSearch: (q) => setState(() => _q = q),
                 searchHint: l.searchGuest,
@@ -284,7 +287,8 @@ class _QueueState extends ConsumerState<ReservationsQueueScreen> {
                 title: Text('${r['guestName']} · ${r['code']}'),
                 subtitle: Text(
                   '${r['roomType']}${r['room'] != null ? ' · ${l.roomNumber('${r['room']}')}' : ''}\n'
-                  '${dateRange(context, DateTime.parse('${r['checkIn']}'), DateTime.parse('${r['checkOut']}'))}',
+                  '${dateRange(context, DateTime.parse('${r['checkIn']}'), DateTime.parse('${r['checkOut']}'))}'
+                  ' · ${paymentLabel(l, r['payment'] as String?)}',
                 ),
                 isThreeLine: true,
                 trailing: StatusChip(parseStatus('${r['status']}')),
@@ -363,6 +367,8 @@ class StaffReservationScreen extends ConsumerWidget {
               Row(
                 children: [
                   Expanded(child: Text('${guest['fullName']}', style: Theme.of(context).textTheme.titleLarge)),
+                  PaymentChip(r['payment'] as String?),
+                  const SizedBox(width: 8),
                   StatusChip(status),
                 ],
               ),

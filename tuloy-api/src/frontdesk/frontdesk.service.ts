@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Membership, Prisma } from '@prisma/client';
-import { BookingService, PAID_STATUSES, discountCents, paidCents, snap } from '../booking/booking.service';
+import { BookingService, PAID_STATUSES, discountCents, paidCents, paymentState, snap } from '../booking/booking.service';
 import { DAY_MS, canTransition, fromCents, isoDate, toCents, todayIn, zonedToUtc } from '../booking/domain';
 import { sameHotel } from '../common/auth';
 import { assetUrl } from '../common/storage';
@@ -73,18 +73,23 @@ export class FrontDeskService {
       roomType: t(snap(r).roomType.name, locale, hotel.defaultLocale),
       room: r.nights[0]?.room.number ?? null,
       balance: fromCents(Math.max(0, toCents(r.total) - discountCents(r.invoiceLines) - paidCents(r.payments))),
+      payment: paymentState(r.payments, toCents(r.total) - discountCents(r.invoiceLines)),
       currency: r.currency,
     }));
   }
 
   /** Booking detail + guest contact and internal notes (staff only). */
   async detail(m: Membership, id: string, userId: string, locale: Locale) {
-    const r = sameHotel(await this.prisma.reservation.findUnique({ where: { id }, include: { guest: true } }), m);
+    const r = sameHotel(
+      await this.prisma.reservation.findUnique({ where: { id }, include: { guest: true, payments: true, invoiceLines: true } }),
+      m,
+    );
     const history = await this.prisma.statusEvent.findMany({ where: { entityType: 'reservation', entityId: id }, orderBy: { at: 'asc' } });
     return {
       ...(await this.booking.view(id, userId, locale)),
       guest: { id: r.guest.id, fullName: r.guest.fullName, email: r.guest.email, phone: r.guest.phone },
       internalNotes: r.internalNotes,
+      payment: paymentState(r.payments, toCents(r.total) - discountCents(r.invoiceLines)),
       history: history.map((h) => ({ from: h.fromStatus, to: h.toStatus, at: h.at, note: h.note })),
     };
   }

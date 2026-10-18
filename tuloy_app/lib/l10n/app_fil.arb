@@ -395,5 +395,9 @@
   "notAvailableForDates": "Puno ang ganitong kuwarto sa mga petsang ito. Subukan ang ibang petsa o ibang kuwarto.",
   "byType": "Ayon sa uri",
   "byFloor": "Ayon sa palapag",
-  "floorN": "Palapag {floor}"
+  "floorN": "Palapag {floor}",
+  "paymentPaid": "Bayad na",
+  "paymentDeposit": "May deposit na",
+  "paymentPartial": "Bahagyang bayad",
+  "paymentUnpaid": "Hindi pa bayad"
 }

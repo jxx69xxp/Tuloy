@@ -395,5 +395,9 @@
   "notAvailableForDates": "Puno kini nga klase sa kwarto niining mga petsa. Sulayi ang laing petsa o laing kwarto.",
   "byType": "Sumala sa klase",
   "byFloor": "Sumala sa andana",
-  "floorN": "Andana {floor}"
+  "floorN": "Andana {floor}",
+  "paymentPaid": "Bayad na",
+  "paymentDeposit": "Naay deposit na",
+  "paymentPartial": "Bahin pa ang bayad",
+  "paymentUnpaid": "Wala pa bayri"
 }

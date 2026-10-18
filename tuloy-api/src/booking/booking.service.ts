@@ -70,6 +70,18 @@ export const paidCents = (payments: Payment[]) =>
     .filter((p) => PAID_STATUSES.includes(p.status))
     .reduce((s, p) => s + toCents(p.amount) - toCents(p.refundedAmount), 0);
 
+/**
+ * How much of a stay is paid, for the desk's payment badge: nothing yet, a deposit (a DEPOSIT payment,
+ * balance still due), part of it, or all of it. [dueCents] is the total after loyalty discounts.
+ */
+export type PaymentState = 'unpaid' | 'deposit' | 'partial' | 'paid';
+export function paymentState(payments: Payment[], dueCents: number): PaymentState {
+  const paid = paidCents(payments);
+  if (paid <= 0) return 'unpaid';
+  if (paid >= dueCents) return 'paid';
+  return payments.some((p) => p.kind === 'DEPOSIT' && PAID_STATUSES.includes(p.status)) ? 'deposit' : 'partial';
+}
+
 /** Loyalty redemptions lower what the guest owes. */
 export const discountCents = (lines: { kind: string; amount: Prisma.Decimal }[]) =>
   -lines.filter((l) => l.kind === 'loyalty_redemption').reduce((s, l) => s + toCents(l.amount), 0);

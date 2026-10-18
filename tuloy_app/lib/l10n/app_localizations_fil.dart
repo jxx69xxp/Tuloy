@@ -1268,4 +1268,16 @@ class AppLocalizationsFil extends AppLocalizations {
   String floorN(String floor) {
     return 'Palapag $floor';
   }
+
+  @override
+  String get paymentPaid => 'Bayad na';
+
+  @override
+  String get paymentDeposit => 'May deposit na';
+
+  @override
+  String get paymentPartial => 'Bahagyang bayad';
+
+  @override
+  String get paymentUnpaid => 'Hindi pa bayad';
 }

@@ -1267,4 +1267,16 @@ class AppLocalizationsCeb extends AppLocalizations {
   String floorN(String floor) {
     return 'Andana $floor';
   }
+
+  @override
+  String get paymentPaid => 'Bayad na';
+
+  @override
+  String get paymentDeposit => 'Naay deposit na';
+
+  @override
+  String get paymentPartial => 'Bahin pa ang bayad';
+
+  @override
+  String get paymentUnpaid => 'Wala pa bayri';
 }

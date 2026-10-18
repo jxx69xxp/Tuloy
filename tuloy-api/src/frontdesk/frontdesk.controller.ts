@@ -1,6 +1,8 @@
 import { Body, Controller, Get, Headers, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import type { Membership } from '@prisma/client';
-import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsEmail, IsIn, IsInt, IsNumber, IsOptional, IsString, IsUUID, Length, Matches, Max, MaxLength, Min, ValidateNested } from 'class-validator';
+import { BookingService } from '../booking/booking.service';
 import { AuthUser, CurrentMembership, CurrentUser, Perm, Roles, STAFF } from '../common/auth';
 import { pickLocale } from '../common/i18n';
 import { FrontDeskService, ReservationView } from './frontdesk.service';
@@ -8,6 +10,38 @@ import { FrontDeskService, ReservationView } from './frontdesk.service';
 class ListQuery {
   @IsOptional() @IsIn(['arrivals', 'departures', 'inhouse', 'pending', 'upcoming', 'all']) view?: ReservationView;
   @IsOptional() @IsString() @MaxLength(100) q?: string;
+}
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+class DeskGuestDto {
+  @IsString() @Length(1, 120) fullName: string;
+  @IsOptional() @IsEmail() email?: string;
+  @IsOptional() @IsString() @MaxLength(30) phone?: string;
+}
+class DeskBookDto {
+  @IsUUID() roomId: string;
+  @Matches(DATE) checkIn: string;
+  @Matches(DATE) checkOut: string;
+  @IsInt() @Min(1) @Max(20) adults: number;
+  @IsOptional() @IsInt() @Min(0) @Max(20) children?: number;
+  @IsOptional() @IsString() @MaxLength(500) specialRequests?: string;
+  @ValidateNested() @Type(() => DeskGuestDto) guest: DeskGuestDto;
+}
+class DeskGuestPatchDto {
+  @IsOptional() @IsString() @Length(1, 120) fullName?: string;
+  @IsOptional() @IsString() @MaxLength(30) phone?: string;
+}
+class DeskChangeDto {
+  @IsOptional() @Matches(DATE) checkIn?: string;
+  @IsOptional() @Matches(DATE) checkOut?: string;
+  @IsOptional() @IsUUID() roomId?: string;
+  @IsOptional() @IsInt() @Min(1) @Max(20) adults?: number;
+  @IsOptional() @IsInt() @Min(0) @Max(20) children?: number;
+  @IsOptional() @IsString() @MaxLength(500) specialRequests?: string;
+  @IsOptional() @ValidateNested() @Type(() => DeskGuestPatchDto) guest?: DeskGuestPatchDto;
+}
+class DeskPaymentDto {
+  @IsNumber({ maxDecimalPlaces: 2 }) @Min(0.01) @Max(10_000_000) amount: number;
+  @IsIn(['cash', 'card']) method: 'cash' | 'card';
 }
 class SearchQuery {
   @IsOptional() @IsString() @MaxLength(100) q?: string;
@@ -23,7 +57,29 @@ class NotesDto {
 @Roles(...STAFF)
 @Controller('staff')
 export class FrontDeskController {
-  constructor(private readonly desk: FrontDeskService) {}
+  constructor(
+    private readonly desk: FrontDeskService,
+    private readonly booking: BookingService,
+  ) {}
+
+  /** Walk-in or phone booking for a chosen room: confirmed, paid at the hotel. */
+  @Post('reservations')
+  book(@CurrentMembership() m: Membership, @CurrentUser() u: AuthUser, @Body() dto: DeskBookDto) {
+    return this.booking.deskBook(m.hotelId, u.sub, dto);
+  }
+
+  @Patch('reservations/:id')
+  @HttpCode(204)
+  change(@CurrentMembership() m: Membership, @CurrentUser() u: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: DeskChangeDto) {
+    return this.booking.deskChange(m.hotelId, u.sub, id, dto);
+  }
+
+  /** Cash or card taken at the desk. */
+  @Post('reservations/:id/payments')
+  @HttpCode(204)
+  pay(@CurrentMembership() m: Membership, @CurrentUser() u: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: DeskPaymentDto) {
+    return this.booking.deskPayment(m.hotelId, u.sub, id, dto.amount, dto.method);
+  }
 
   @Get('dashboard')
   dashboard(@CurrentMembership() m: Membership, @CurrentUser() u: AuthUser) {

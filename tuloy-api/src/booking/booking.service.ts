@@ -1,6 +1,8 @@
 import { Inject, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Hotel, Payment, PaymentStatus, Prisma, Reservation, RoomRate, RoomType } from '@prisma/client';
-import { randomInt } from 'node:crypto';
+import { randomBytes, randomInt, randomUUID } from 'node:crypto';
+import { hashPassword } from '../auth/password';
+import { isStaff } from '../common/auth';
 import { AppError } from '../common/errors';
 import { Locale, t } from '../common/i18n';
 import { PrismaService } from '../common/prisma.service';
@@ -73,6 +75,26 @@ export const discountCents = (lines: { kind: string; amount: Prisma.Decimal }[])
   -lines.filter((l) => l.kind === 'loyalty_redemption').reduce((s, l) => s + toCents(l.amount), 0);
 
 // Folio line descriptions, stored translated like all hotel content.
+export type DeskGuestInput = { fullName: string; email?: string; phone?: string };
+export type DeskBookInput = {
+  roomId: string;
+  checkIn: string;
+  checkOut: string;
+  adults: number;
+  children?: number;
+  specialRequests?: string;
+  guest: DeskGuestInput;
+};
+export type DeskChangeInput = {
+  checkIn?: string;
+  checkOut?: string;
+  roomId?: string;
+  adults?: number;
+  children?: number;
+  specialRequests?: string;
+  guest?: { fullName?: string; phone?: string };
+};
+
 export const TEXT = {
   serviceCharge: { en: 'Service charge', fil: 'Service charge', ceb: 'Service charge' },
   tax: { en: 'VAT', fil: 'VAT', ceb: 'VAT' },
@@ -167,17 +189,7 @@ export class BookingService implements OnModuleInit, OnModuleDestroy {
       skipDuplicates: true,
     });
 
-    const price = this.quote(rt, dto.checkIn, dto.checkOut, hotel);
-    const snapshot: Snapshot = {
-      roomType: { id: rt.id, name: rt.name as Json },
-      nights: price.nights.map((n) => ({ date: n.date, price: fromCents(n.cents) })),
-      subtotal: fromCents(price.subtotal),
-      serviceCharge: fromCents(price.serviceCharge),
-      tax: fromCents(price.tax),
-      total: fromCents(price.total),
-      policy: readPolicy(hotel.policies),
-      terms: (hotel.policies ?? {}) as Record<string, unknown>,
-    };
+    const { price, snapshot } = this.priced(rt, dto.checkIn, dto.checkOut, hotel);
     const holdUntil = new Date(Date.now() + HOLD_MS);
 
     for (const roomId of await this.freeRoomIds(rt.id, hotel.id, from, to)) {
@@ -443,6 +455,170 @@ export class BookingService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  // ───────────── front desk: walk-in and phone bookings, changes, payment at the desk ─────────────
+
+  /** A specific room booked by staff: confirmed now and paid at the hotel, so the full balance is due. */
+  async deskBook(hotelId: string, staffId: string, dto: DeskBookInput) {
+    const hotel = await this.hotel(hotelId);
+    this.checkDates(dto.checkIn, dto.checkOut, hotel);
+    const { room, rt } = await this.deskRoom(hotelId, dto.roomId, dto.checkIn, dto.checkOut);
+    if (dto.adults + (dto.children ?? 0) > rt.maxGuests) throw new AppError('TOO_MANY_GUESTS', 400);
+    const guestId = await this.deskGuest(hotelId, dto.guest);
+    const { price, snapshot } = this.priced(rt, dto.checkIn, dto.checkOut, hotel);
+    let r: Reservation;
+    try {
+      r = await this.prisma.reservation.create({
+        data: {
+          hotelId,
+          code: bookingCode((n) => randomInt(n)),
+          guestId,
+          roomTypeId: rt.id,
+          status: 'CONFIRMED',
+          checkIn: day(dto.checkIn),
+          checkOut: day(dto.checkOut),
+          adults: dto.adults,
+          children: dto.children ?? 0,
+          specialRequests: dto.specialRequests,
+          priceSnapshot: snapshot as unknown as Prisma.InputJsonValue,
+          total: snapshot.total,
+          currency: hotel.currency,
+          idempotencyKey: randomUUID(),
+          nights: {
+            createMany: {
+              data: price.nights.map((n) => ({ roomId: room.id, date: day(n.date), hotelId, kind: 'BOOKED' as const })),
+            },
+          },
+        },
+      });
+    } catch (e) {
+      if (isUnique(e)) throw new AppError('ROOM_UNAVAILABLE', 409); // the room is taken on one of these nights
+      throw e;
+    }
+    await this.statusEvent(r, null, 'CONFIRMED', staffId, 'Booked at the front desk');
+    await this.confirmed(r, hotel);
+    await this.prisma.audit({ hotelId, actorId: staffId, action: 'reservation.desk_book', entityType: 'reservation', entityId: r.id, after: { roomId: room.id } });
+    return { id: r.id, code: r.code };
+  }
+
+  /**
+   * Staff change dates, room, guest count or guest details. New dates or room re-take the nights in one
+   * transaction (the room-night key refuses a clash) and re-price the stay; confirmed folios are re-charged.
+   */
+  async deskChange(hotelId: string, staffId: string, id: string, dto: DeskChangeInput) {
+    const r = await this.prisma.reservation.findUnique({ where: { id }, include: { nights: { orderBy: { date: 'asc' } } } });
+    if (!r || r.hotelId !== hotelId) throw new AppError('NOT_FOUND', 404);
+    if (!['PENDING', 'CONFIRMED', 'CHECKED_IN'].includes(r.status)) throw new AppError('CANNOT_CHANGE', 409);
+    const checkIn = dto.checkIn ?? isoDate(r.checkIn);
+    const checkOut = dto.checkOut ?? isoDate(r.checkOut);
+    const roomId = dto.roomId ?? r.nights[0]?.roomId;
+    if (!roomId) throw new AppError('CANNOT_CHANGE', 409);
+    const stayChanged = checkIn !== isoDate(r.checkIn) || checkOut !== isoDate(r.checkOut) || roomId !== r.nights[0]?.roomId;
+    const hotel = await this.hotel(hotelId);
+    const { room, rt } = await this.deskRoom(hotelId, roomId, checkIn, checkOut);
+    const adults = dto.adults ?? r.adults;
+    const children = dto.children ?? r.children;
+    if (adults + children > rt.maxGuests) throw new AppError('TOO_MANY_GUESTS', 400);
+
+    if (stayChanged) {
+      if (r.status === 'CHECKED_IN') {
+        // In-house: the arrival is history; only the departure and the room can move.
+        if (checkIn !== isoDate(r.checkIn)) throw new AppError('CANNOT_CHANGE', 409);
+        if (checkOut <= todayIn(hotel.timezone)) throw new AppError('INVALID_DATES', 400);
+      } else {
+        this.checkDates(checkIn, checkOut, hotel);
+      }
+      const { price, snapshot } = this.priced(rt, checkIn, checkOut, hotel);
+      const charged = r.status !== 'PENDING'; // confirmed stays already have room charges on the folio
+      try {
+        await this.prisma.$transaction([
+          this.prisma.roomNight.deleteMany({ where: { reservationId: id } }),
+          this.prisma.roomNight.createMany({
+            data: price.nights.map((n) => ({ roomId: room.id, date: day(n.date), hotelId, kind: 'BOOKED' as const, reservationId: id })),
+          }),
+          this.prisma.reservation.update({
+            where: { id },
+            data: {
+              checkIn: day(checkIn),
+              checkOut: day(checkOut),
+              roomTypeId: rt.id,
+              priceSnapshot: snapshot as unknown as Prisma.InputJsonValue,
+              total: snapshot.total,
+            },
+          }),
+          ...(charged
+            ? [this.prisma.invoiceLine.deleteMany({ where: { reservationId: id, sourceId: id, kind: { in: ['room', 'service_charge', 'tax'] } } })]
+            : []),
+        ]);
+      } catch (e) {
+        if (isUnique(e)) throw new AppError('ROOM_UNAVAILABLE', 409); // nothing changed: the transaction rolled back
+        throw e;
+      }
+      if (charged) await this.chargeRoom(await this.prisma.reservation.findUniqueOrThrow({ where: { id } }));
+    }
+    await this.prisma.reservation.update({
+      where: { id },
+      data: { adults, children, ...(dto.specialRequests !== undefined && { specialRequests: dto.specialRequests }) },
+    });
+    // Name and phone only: changing a guest's sign-in email from the desk would let staff take over the account.
+    if (dto.guest) {
+      await this.prisma.user.update({
+        where: { id: r.guestId },
+        data: { ...(dto.guest.fullName && { fullName: dto.guest.fullName }), ...(dto.guest.phone !== undefined && { phone: dto.guest.phone || null }) },
+      });
+    }
+    await this.prisma.audit({
+      hotelId,
+      actorId: staffId,
+      action: 'reservation.change',
+      entityType: 'reservation',
+      entityId: id,
+      before: { checkIn: isoDate(r.checkIn), checkOut: isoDate(r.checkOut), roomId: r.nights[0]?.roomId, adults: r.adults, children: r.children },
+      after: { checkIn, checkOut, roomId, adults, children },
+    });
+  }
+
+  /** Cash or card taken at the desk: a succeeded payment and a folio credit. */
+  async deskPayment(hotelId: string, staffId: string, id: string, amount: number, method: 'cash' | 'card') {
+    const r = await this.prisma.reservation.findUnique({ where: { id } });
+    if (!r || r.hotelId !== hotelId) throw new AppError('NOT_FOUND', 404);
+    if (!['PENDING', 'CONFIRMED', 'CHECKED_IN', 'CHECKED_OUT'].includes(r.status)) throw new AppError('CANNOT_CHANGE', 409);
+    const cents = Math.round(amount * 100);
+    if (cents <= 0) throw new AppError('VALIDATION', 400, { field: 'amount' });
+    const p = await this.prisma.payment.create({
+      data: { hotelId, reservationId: id, provider: `desk_${method}`, kind: 'BALANCE', amount: fromCents(cents), currency: r.currency, status: 'SUCCEEDED', idempotencyKey: randomUUID() },
+    });
+    await this.prisma.invoiceLine.create({
+      data: { hotelId, reservationId: id, kind: 'payment', description: TEXT.payment, amount: fromCents(-cents), sourceId: p.id },
+    });
+    await this.prisma.audit({ hotelId, actorId: staffId, action: 'payment.desk', entityType: 'reservation', entityId: id, after: { amount: fromCents(cents), method } });
+  }
+
+  private async deskRoom(hotelId: string, roomId: string, checkIn: string, checkOut: string) {
+    const room = await this.prisma.room.findFirst({
+      where: { id: roomId, hotelId, active: true },
+      include: { roomType: { include: { rates: { where: { date: { gte: day(checkIn), lt: day(checkOut) } } } } } },
+    });
+    if (!room) throw new AppError('NOT_FOUND', 404);
+    // Lapsed checkout holds on these nights must not block the room.
+    await this.prisma.roomNight.deleteMany({ where: { roomId, kind: 'HOLD', holdExpiresAt: { lte: new Date() } } });
+    return { room, rt: room.roomType };
+  }
+
+  /** The guest's account by email or phone, or a new one (they can set a password later with a reset code). */
+  private async deskGuest(hotelId: string, g: DeskGuestInput) {
+    const email = g.email?.trim().toLowerCase() || undefined;
+    const phone = g.phone?.trim() || undefined;
+    if (!email && !phone) throw new AppError('LOGIN_REQUIRED', 400);
+    const found = await this.prisma.user.findFirst({ where: { OR: [...(email ? [{ email }] : []), ...(phone ? [{ phone }] : [])] } });
+    const user =
+      found ??
+      (await this.prisma.user.create({
+        data: { fullName: g.fullName.trim(), email, phone, passwordHash: await hashPassword(randomBytes(32).toString('base64url')) },
+      }));
+    await this.prisma.membership.createMany({ data: [{ userId: user.id, hotelId, role: 'GUEST' }], skipDuplicates: true });
+    return user.id;
+  }
+
   // ───────────── B-5 view, list, cancel ─────────────
 
   async view(id: string, userId: string, locale: Locale) {
@@ -592,7 +768,7 @@ export class BookingService implements OnModuleInit, OnModuleDestroy {
     if (!r) throw new AppError('NOT_FOUND', 404);
     if (r.guestId !== userId) {
       const m = await this.prisma.membership.findUnique({ where: { userId_hotelId: { userId, hotelId: r.hotelId } } });
-      if (!m || m.role === 'GUEST') throw new AppError('NOT_FOUND', 404);
+      if (!isStaff(m)) throw new AppError('NOT_FOUND', 404);
     }
     return r;
   }
@@ -611,6 +787,22 @@ export class BookingService implements OnModuleInit, OnModuleDestroy {
   private checkDates(checkIn: string, checkOut: string, hotel: Hotel) {
     const err = validateStay(checkIn, checkOut, todayIn(hotel.timezone));
     if (err) throw new AppError(err, 400);
+  }
+
+  /** Nightly prices plus the snapshot stored on the reservation (rates, charges, policy at booking time). */
+  private priced(rt: RoomType & { rates: RoomRate[] }, checkIn: string, checkOut: string, hotel: Hotel) {
+    const price = this.quote(rt, checkIn, checkOut, hotel);
+    const snapshot: Snapshot = {
+      roomType: { id: rt.id, name: rt.name as Json },
+      nights: price.nights.map((n) => ({ date: n.date, price: fromCents(n.cents) })),
+      subtotal: fromCents(price.subtotal),
+      serviceCharge: fromCents(price.serviceCharge),
+      tax: fromCents(price.tax),
+      total: fromCents(price.total),
+      policy: readPolicy(hotel.policies),
+      terms: (hotel.policies ?? {}) as Record<string, unknown>,
+    };
+    return { price, snapshot };
   }
 
   private quote(rt: RoomType & { rates: RoomRate[] }, checkIn: string, checkOut: string, hotel: Hotel) {

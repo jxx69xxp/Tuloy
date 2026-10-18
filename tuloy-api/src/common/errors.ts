@@ -31,6 +31,11 @@ const MESSAGES: Record<string, Record<Locale, string>> = {
     fil: 'May ibang staff na may ganitong employee ID.',
     ceb: 'Naa nay laing staff nga adunay ingon ani nga employee ID.',
   },
+  CANNOT_CHANGE: {
+    en: 'This booking can no longer be changed.',
+    fil: 'Hindi na mababago ang booking na ito.',
+    ceb: 'Dili na mausab kini nga booking.',
+  },
   ACCOUNT_EXISTS: {
     en: 'An account already exists for this email or phone.',
     fil: 'May account na para sa email o phone na ito.',

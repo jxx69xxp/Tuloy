@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Membership, PaymentMethod, Prisma, Service, ServiceOption, ServiceRequest } from '@prisma/client';
 import { BookingService, isUnique } from '../booking/booking.service';
 import { DAY_MS, fromCents, toCents } from '../booking/domain';
-import { sameHotel } from '../common/auth';
+import { isStaff, sameHotel } from '../common/auth';
 import { AppError } from '../common/errors';
 import { Locale, t } from '../common/i18n';
 import { PrismaService } from '../common/prisma.service';
@@ -282,6 +282,13 @@ export class ServicesService {
     return req;
   }
 
+  /** Front desk files a request on a guest's booking (phone call, walk-up); same rules as the guest's own request. */
+  async requestForGuest(m: Membership, i: RequestInput, key: string) {
+    if (!i.reservationId) throw new AppError('VALIDATION', 400, { field: 'reservationId' });
+    const r = sameHotel(await this.prisma.reservation.findUnique({ where: { id: i.reservationId } }), m);
+    return this.request(r.guestId, i, key);
+  }
+
   async mine(userId: string, locale: Locale) {
     const rows = await this.prisma.serviceRequest.findMany({ where: { guestId: userId }, orderBy: { createdAt: 'desc' }, take: 100 });
     return rows.map((r) => this.requestView(r, locale));
@@ -292,7 +299,7 @@ export class ServicesService {
     if (!r) throw new AppError('NOT_FOUND', 404);
     if (r.guestId !== userId) {
       const m = await this.prisma.membership.findUnique({ where: { userId_hotelId: { userId, hotelId: r.hotelId } } });
-      if (!m || m.role === 'GUEST') throw new AppError('NOT_FOUND', 404);
+      if (!isStaff(m)) throw new AppError('NOT_FOUND', 404);
     }
     const history = await this.prisma.statusEvent.findMany({ where: { entityType: 'service_request', entityId: id }, orderBy: { at: 'asc' } });
     return { ...this.requestView(r, locale), answers: r.answers, history: history.map((h) => ({ to: h.toStatus, at: h.at, note: h.note })) };
@@ -390,7 +397,7 @@ export class ServicesService {
   async assign(m: Membership, id: string, assigneeId: string, userId: string) {
     const r = await this.task(m, id);
     const staff = await this.prisma.membership.findUnique({ where: { userId_hotelId: { userId: assigneeId, hotelId: m.hotelId } } });
-    if (!staff || staff.role === 'GUEST') throw new AppError('NOT_FOUND', 404);
+    if (!isStaff(staff)) throw new AppError('NOT_FOUND', 404);
     await this.prisma.serviceRequest.update({ where: { id }, data: { assigneeId } });
     await this.event(r, r.status, r.status, userId, `Assigned to ${assigneeId}`);
   }

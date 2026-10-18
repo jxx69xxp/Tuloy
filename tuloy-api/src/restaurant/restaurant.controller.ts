@@ -7,7 +7,7 @@ import { idempotencyKey } from '../booking/booking.controller';
 import { isUnique } from '../booking/booking.service';
 import { fromCents, priceStay, toCents } from '../booking/domain';
 import { sha256 } from '../auth/password';
-import { AuthUser, CurrentMembership, CurrentUser, Public, Roles, STAFF, sameHotel } from '../common/auth';
+import { AuthUser, CurrentMembership, CurrentUser, Public, RESTAURANT, Roles, sameHotel } from '../common/auth';
 import { AppError } from '../common/errors';
 import { Locale, pickLocale, t } from '../common/i18n';
 import { PrismaService } from '../common/prisma.service';
@@ -183,7 +183,7 @@ export class RestaurantController {
 
   // ── R-1 admin ──
 
-  @Roles(...STAFF)
+  @Roles(...RESTAURANT)
   @Get('admin/outlets')
   outlets(@CurrentMembership() m: Membership) {
     return this.prisma.outlet.findMany({ where: { hotelId: m.hotelId }, include: { tables: { orderBy: { label: 'asc' } } } });
@@ -236,7 +236,7 @@ export class RestaurantController {
     return tbl;
   }
 
-  @Roles(...STAFF)
+  @Roles(...RESTAURANT)
   @Get('admin/outlets/:id/menu')
   async menuAdmin(@CurrentMembership() m: Membership, @Param('id', ParseUUIDPipe) id: string) {
     sameHotel(await this.prisma.outlet.findUnique({ where: { id } }), m);
@@ -251,7 +251,7 @@ export class RestaurantController {
   }
 
   /** Staff can toggle `available` (86 an item); admins edit everything. */
-  @Roles(...STAFF)
+  @Roles(...RESTAURANT)
   @Patch('admin/menu-items/:id')
   async editItem(@CurrentMembership() m: Membership, @Param('id', ParseUUIDPipe) id: string, @Body() dto: MenuItemPatchDto) {
     const item = await this.prisma.menuItem.findUnique({ where: { id }, include: { outlet: true } });
@@ -288,7 +288,7 @@ export class RestaurantController {
 
   // ── R-3 staff queue ──
 
-  @Roles(...STAFF)
+  @Roles(...RESTAURANT)
   @Get('staff/restaurant-orders')
   async queue(@CurrentMembership() m: Membership, @Query() q: OutletQuery) {
     const orders = await this.prisma.restaurantOrder.findMany({
@@ -300,7 +300,7 @@ export class RestaurantController {
     return orders.map((o) => ({ ...o, table: tables.find((x) => x.id === o.tableId)?.label ?? '' }));
   }
 
-  @Roles(...STAFF)
+  @Roles(...RESTAURANT)
   @Post('staff/restaurant-orders/:id/status')
   @HttpCode(204)
   status(@CurrentMembership() m: Membership, @CurrentUser() u: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: StatusDto) {
@@ -308,7 +308,7 @@ export class RestaurantController {
   }
 
   /** Correction when the guest scanned the wrong table. */
-  @Roles(...STAFF)
+  @Roles(...RESTAURANT)
   @Post('staff/restaurant-orders/:id/move-table')
   @HttpCode(204)
   async move(@CurrentMembership() m: Membership, @CurrentUser() u: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: MoveDto) {

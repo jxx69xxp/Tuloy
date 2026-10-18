@@ -80,5 +80,9 @@ export function sameHotel<T extends { hotelId: string } | null>(entity: T, m: Me
   return entity as NonNullable<T>;
 }
 
-/** Staff-facing roles. */
+/** Staff-facing roles (front desk and back office). */
 export const STAFF = ['STAFF', 'ADMIN'] as const;
+/** Restaurant routes: restaurant staff plus everyone in STAFF. */
+export const RESTAURANT = ['RESTAURANT', ...STAFF] as const;
+/** Front desk or admin at this hotel; restaurant staff and guests are not. */
+export const isStaff = (m: { role: string } | null | undefined): m is Membership => !!m && (STAFF as readonly string[]).includes(m.role);

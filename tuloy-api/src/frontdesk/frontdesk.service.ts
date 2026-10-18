@@ -235,14 +235,27 @@ export class FrontDeskService {
 
   /** Staff directory (read-only); admins edit it under /admin/staff. */
   async team(m: Membership) {
-    const rows = await this.prisma.membership.findMany({
-      where: { hotelId: m.hotelId, role: { in: ['STAFF', 'ADMIN'] }, user: { disabledAt: null } },
-      include: { user: true, department: true },
-    });
+    const { todayDate } = await this.hotelDay(m.hotelId);
+    const [rows, leave] = await Promise.all([
+      this.prisma.membership.findMany({
+        where: { hotelId: m.hotelId, role: { in: ['RESTAURANT', 'STAFF', 'ADMIN'] }, user: { disabledAt: null } },
+        include: { user: true, department: true },
+      }),
+      // Approved leave covering today, or starting later (shown as upcoming).
+      this.prisma.leaveRequest.findMany({
+        where: { hotelId: m.hotelId, status: 'approved', to: { gte: todayDate } },
+        orderBy: { from: 'asc' },
+      }),
+    ]);
+    const leaveOf = (userId: string) => leave.find((x) => x.userId === userId);
     return rows
       .map((r) => ({
         id: r.userId,
         employeeNo: r.employeeNo,
+        leave: (() => {
+          const x = leaveOf(r.userId);
+          return x && { from: isoDate(x.from), to: isoDate(x.to), type: x.type, today: x.from <= todayDate };
+        })(),
         photoUrl: r.photoKey ? assetUrl(r.photoKey) : null,
         fullName: r.user.fullName,
         email: r.user.email,

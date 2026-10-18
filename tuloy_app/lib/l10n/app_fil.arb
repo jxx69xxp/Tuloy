@@ -57,7 +57,7 @@
   "checkInTime": "Check-in simula {time}",
   "checkOutTime": "Check-out bago mag-{time}",
   "specialRequests": "Espesyal na kahilingan (opsyonal)",
-  "reserve": "Mag-reserve",
+  "reserve": "I-reserve",
   "review": "Suriin at magbayad",
   "holdTimer": "Nakareserba ang kuwarto sa loob ng {time}",
   "holdExpired": "Nag-expire na ang hold. Maghanap muli.",
@@ -293,8 +293,6 @@
   "wifiPortalHint": "Kumonekta sa network; magbubukas ang login page. Ilagay ang username at password sa itaas.",
   "wifiQrHint": "I-scan gamit ang camera para kumonekta.",
   "wifiSharedPassword": "Shared na Wi-Fi password (psk mode)",
-  "webGuestTitle": "Mga bisita, gamitin po ang Tuloy mobile app",
-  "webGuestBody": "Ang pag-book at mga feature ng pananatili ay available sa iOS at Android app. Dito maaaring mag-sign in ang mga staff at admin.",
   "action": "Aksyon",
   "entity": "Entidad",
   "dateLabel": "Petsa",
@@ -380,7 +378,6 @@
   "guestBooking": "Booking ng bisita",
   "bookRoom": "I-book ang kuwarto {room}",
   "bookAndCheckIn": "I-book at i-check in",
-  "reserve": "I-reserve",
   "changeBooking": "Baguhin ang booking",
   "recordPayment": "Itala ang bayad",
   "emailOrPhoneRequired": "Maglagay ng email o numero ng telepono",
@@ -399,5 +396,6 @@
   "paymentPaid": "Bayad na",
   "paymentDeposit": "May deposit na",
   "paymentPartial": "Bahagyang bayad",
-  "paymentUnpaid": "Hindi pa bayad"
+  "paymentUnpaid": "Hindi pa bayad",
+  "moreLanguages": "Iba pang wika"
 }

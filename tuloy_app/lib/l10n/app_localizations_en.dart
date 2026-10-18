@@ -943,13 +943,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wifiSharedPassword => 'Shared Wi-Fi password (psk mode)';
 
   @override
-  String get webGuestTitle => 'Guests, please use the Tuloy mobile app';
-
-  @override
-  String get webGuestBody =>
-      'Booking and stay features are available in the iOS and Android app. Staff and admins can sign in here.';
-
-  @override
   String get action => 'Action';
 
   @override
@@ -1276,4 +1269,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paymentUnpaid => 'Not paid';
+
+  @override
+  String get moreLanguages => 'More languages';
 }

@@ -1,6 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { Locale, pickLocale } from './i18n';
+import { WORLD } from './i18n.world';
 
 /** Throw this from anywhere. `code` is stable for the app; the message is localized. */
 export class AppError extends HttpException {
@@ -10,7 +11,7 @@ export class AppError extends HttpException {
 }
 
 // Translations need review by the hotel's approver (open decision #13).
-const MESSAGES: Record<string, Record<Locale, string>> = {
+const MESSAGES: Record<string, Partial<Record<Locale, string>> & { en: string }> = {
   UNAUTHENTICATED: {
     en: 'Please sign in again.',
     fil: 'Mag-sign in muli.',
@@ -212,6 +213,7 @@ const MESSAGES: Record<string, Record<Locale, string>> = {
     ceb: 'Naay sayop. Palihug sulayi pag-usab.',
   },
 };
+for (const [loc, { e }] of Object.entries(WORLD)) for (const [code, text] of Object.entries(e)) MESSAGES[code][loc as Locale] = text;
 
 /** Every error leaves the API as { error: { code, message, details } }. */
 @Catch()
@@ -235,6 +237,6 @@ export class AppExceptionFilter implements ExceptionFilter {
       console.error(e);
     }
     const locale = pickLocale(req.headers['accept-language']);
-    res.status(status).json({ error: { code, message: MESSAGES[code]?.[locale] ?? code, details } });
+    res.status(status).json({ error: { code, message: MESSAGES[code]?.[locale] ?? MESSAGES[code]?.en ?? code, details } });
   }
 }

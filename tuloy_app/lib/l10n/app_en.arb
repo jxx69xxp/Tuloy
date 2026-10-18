@@ -474,8 +474,6 @@
   "wifiPortalHint": "Join the network; the login page opens. Enter the username and password above.",
   "wifiQrHint": "Scan with your camera to join.",
   "wifiSharedPassword": "Shared Wi-Fi password (psk mode)",
-  "webGuestTitle": "Guests, please use the Tuloy mobile app",
-  "webGuestBody": "Booking and stay features are available in the iOS and Android app. Staff and admins can sign in here.",
   "action": "Action",
   "entity": "Entity",
   "dateLabel": "Date",
@@ -534,7 +532,16 @@
   "roomReserved": "Reserved",
   "roomBlocked": "Blocked",
   "freeOf": "{free} of {total} available",
-  "@freeOf": {"placeholders": {"free": {"type": "String"}, "total": {"type": "String"}}},
+  "@freeOf": {
+    "placeholders": {
+      "free": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
   "todaysArrivals": "Today's arrivals",
   "todaysDepartures": "Today's departures",
   "guestList": "Guest list",
@@ -549,7 +556,13 @@
   "notifOrder": "New food order",
   "notifMessage": "New message",
   "staffCancelConfirm": "Cancel this booking? The guest gets {refund} back, following the cancellation policy.",
-  "@staffCancelConfirm": {"placeholders": {"refund": {"type": "String"}}},
+  "@staffCancelConfirm": {
+    "placeholders": {
+      "refund": {
+        "type": "String"
+      }
+    }
+  },
   "phone": "Phone",
   "appearance": "Appearance",
   "themeSystem": "Match device",
@@ -579,16 +592,27 @@
   "newRequest": "New request",
   "guestBooking": "Guest's booking",
   "bookRoom": "Book room {room}",
-  "@bookRoom": {"placeholders": {"room": {"type": "String"}}},
+  "@bookRoom": {
+    "placeholders": {
+      "room": {
+        "type": "String"
+      }
+    }
+  },
   "bookAndCheckIn": "Book and check in",
-  "reserve": "Reserve",
   "changeBooking": "Change booking",
   "recordPayment": "Record payment",
   "emailOrPhoneRequired": "Enter an email or phone number",
   "emailLocked": "The guest's sign-in email can't be changed here.",
   "onLeaveToday": "On leave",
   "leaveUpcoming": "Leave {dates}",
-  "@leaveUpcoming": {"placeholders": {"dates": {"type": "String"}}},
+  "@leaveUpcoming": {
+    "placeholders": {
+      "dates": {
+        "type": "String"
+      }
+    }
+  },
   "collapseMenu": "Collapse menu",
   "expandMenu": "Expand menu",
   "roleRestaurant": "Restaurant staff",
@@ -598,9 +622,16 @@
   "byType": "By type",
   "byFloor": "By floor",
   "floorN": "Floor {floor}",
-  "@floorN": {"placeholders": {"floor": {"type": "String"}}},
+  "@floorN": {
+    "placeholders": {
+      "floor": {
+        "type": "String"
+      }
+    }
+  },
   "paymentPaid": "Paid",
   "paymentDeposit": "Deposit paid",
   "paymentPartial": "Partly paid",
-  "paymentUnpaid": "Not paid"
+  "paymentUnpaid": "Not paid",
+  "moreLanguages": "More languages"
 }

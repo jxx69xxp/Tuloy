@@ -16,7 +16,8 @@ import '../../l10n/app_localizations.dart';
 String _d(DateTime x) => x.toIso8601String().substring(0, 10);
 String trOf(BuildContext context, dynamic v) {
   final m = (v as Map?) ?? const {};
-  return '${m[Localizations.localeOf(context).languageCode] ?? m['en'] ?? ''}';
+  final own = '${m[Localizations.localeOf(context).languageCode] ?? ''}'.trim();
+  return own.isNotEmpty ? own : '${m['en'] ?? ''}'; // blank translation: English
 }
 
 /// Wide screens: "Add" in the app bar instead of a floating button (same callback).

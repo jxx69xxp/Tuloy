@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../features/auth/presentation/auth_controller.dart' show setThemeMode, themeModeProvider;
+import '../features/auth/presentation/auth_controller.dart' show authProvider, languageProvider, setThemeMode, themeModeProvider;
 import '../features/auth/presentation/widgets.dart';
 import '../features/booking/presentation/booking_providers.dart';
 import '../l10n/app_localizations.dart';
@@ -150,17 +150,70 @@ class Tr {
     }
   }
 
-  List<Widget> fields(String label, {int maxLines = 1}) => [
-    for (final e in c.entries)
-      Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: TextField(
-          controller: e.value,
-          maxLines: maxLines,
-          decoration: InputDecoration(labelText: '$label · ${supportedLanguages[e.key]}'),
+  /// English, Filipino and Bisaya first; the other languages folded under "More languages"
+  /// (optional: guests see English where a translation is blank).
+  List<Widget> fields(String label, {int maxLines = 1}) {
+    Widget field(MapEntry<String, TextEditingController> e) => Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: TextField(
+        controller: e.value,
+        maxLines: maxLines,
+        decoration: InputDecoration(labelText: '$label · ${supportedLanguages[e.key]}'),
+      ),
+    );
+    final more = [for (final e in c.entries) if (!mainContentLanguages.contains(e.key)) e];
+    return [
+      for (final e in c.entries)
+        if (mainContentLanguages.contains(e.key)) field(e),
+      Builder(
+        builder: (context) => ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          title: Text('${AppLocalizations.of(context).moreLanguages} · $label'),
+          // Opened by default when something is already translated there.
+          initiallyExpanded: more.any((e) => e.value.text.isNotEmpty),
+          children: [for (final e in more) field(e)],
         ),
       ),
-  ];
+    ];
+  }
+}
+
+/// Current language with a list of all of them; the choice applies to the whole app.
+class LanguagePicker extends ConsumerWidget {
+  const LanguagePicker({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final current = ref.watch(languageProvider) ?? Localizations.localeOf(context).languageCode;
+    return ListTile(
+      leading: const Icon(Icons.language),
+      title: Text(l.language),
+      subtitle: Text(supportedLanguages[current] ?? current),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () async {
+        final picked = await showDialog<String>(
+          context: context,
+          builder: (c) => SimpleDialog(
+            title: Text(l.language),
+            children: [
+              RadioGroup<String>(
+                groupValue: current,
+                onChanged: (v) => Navigator.pop(c, v),
+                child: Column(
+                  children: [
+                    for (final e in supportedLanguages.entries)
+                      RadioListTile<String>(value: e.key, title: Text(e.value)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+        if (picked != null) await ref.read(authProvider.notifier).setLanguage(picked);
+      },
+    );
+  }
 }
 
 /// List of JSON rows from a GET path with pull-to-refresh, empty and error states.

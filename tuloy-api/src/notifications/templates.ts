@@ -1,4 +1,5 @@
 import type { Locale } from '../common/i18n';
+import { WORLD } from '../common/i18n.world';
 
 export type Channel = 'push' | 'email' | 'sms';
 
@@ -16,7 +17,7 @@ export const CHANNELS: Record<string, Channel[]> = {
   'task.new': ['push'],
 };
 
-type Text = Record<Locale, string>;
+type Text = Partial<Record<Locale, string>> & { en: string };
 
 /**
  * Built-in wording. A hotel overrides any of these with a NotificationTemplate row.
@@ -99,6 +100,12 @@ Object.assign(DEFAULTS, {
     body: { en: '{{service}} — {{where}}', fil: '{{service}} — {{where}}', ceb: '{{service}} — {{where}}' },
   },
 });
+
+for (const [loc, { n }] of Object.entries(WORLD))
+  for (const [key, [title, body]] of Object.entries(n)) {
+    if (title) DEFAULTS[key].title[loc as Locale] = title;
+    if (body) DEFAULTS[key].body[loc as Locale] = body;
+  }
 
 export const render = (text: string, vars: Record<string, string>) =>
   text.replace(/\{\{(\w+)\}\}/g, (_, k: string) => vars[k] ?? '').trim();

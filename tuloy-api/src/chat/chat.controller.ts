@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import type { Membership } from '@prisma/client';
 import { IsISO8601, IsOptional, IsString, IsUUID, Length } from 'class-validator';
-import { AuthUser, CurrentMembership, CurrentUser, Roles, STAFF } from '../common/auth';
+import { AuthUser, CurrentMembership, CurrentUser, Roles, STAFF, isStaff } from '../common/auth';
 import { AppError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -35,7 +35,7 @@ export class ChatController {
     if (!c) throw new AppError('NOT_FOUND', 404);
     if (c.guestId === userId) return { c, staff: false };
     const m = await this.prisma.membership.findUnique({ where: { userId_hotelId: { userId, hotelId: c.hotelId } } });
-    if (!m || m.role === 'GUEST') throw new AppError('NOT_FOUND', 404);
+    if (!isStaff(m)) throw new AppError('NOT_FOUND', 404);
     return { c, staff: true };
   }
 

@@ -1,6 +1,7 @@
 // Pure Dart: no Flutter, Dio or storage imports here.
 
-enum Role { guest, staff, admin }
+/// Ordered lowest to highest: [User.roleAt] picks the highest one held.
+enum Role { guest, restaurant, staff, admin }
 
 class Membership {
   const Membership({required this.hotelId, required this.role, this.permissions = const []});

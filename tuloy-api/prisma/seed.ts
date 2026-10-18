@@ -71,6 +71,7 @@ async function main() {
     { email: 'admin@tuloy.test', fullName: 'Ana Admin', role: 'ADMIN', permissions: [], employeeNo: 'LSD-001' },
     { email: 'staff@tuloy.test', fullName: 'Sam Staff', role: 'STAFF', permissions: ['booking.approve'], departmentId: dept['Front Office'], employeeNo: 'LSD-014' },
     { email: 'house@tuloy.test', fullName: 'Hana Housekeeping', role: 'STAFF', permissions: [], departmentId: dept['Housekeeping'], employeeNo: 'LSD-027' },
+    { email: 'resto@tuloy.test', fullName: 'Rico Restaurant', role: 'RESTAURANT', permissions: [], departmentId: dept['Food & Beverage'], employeeNo: 'LSD-033' },
     { email: 'guest@tuloy.test', fullName: 'Gina Guest', role: 'GUEST', permissions: [] },
   ];
   for (const { role, permissions, departmentId, employeeNo, ...u } of users) {

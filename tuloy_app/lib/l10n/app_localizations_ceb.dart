@@ -194,7 +194,7 @@ class AppLocalizationsCeb extends AppLocalizations {
   String get specialRequests => 'Espesyal nga hangyo (opsyonal)';
 
   @override
-  String get reserve => 'Pag-reserve';
+  String get reserve => 'I-reserve';
 
   @override
   String get review => 'Susiha ug bayri';
@@ -946,13 +946,6 @@ class AppLocalizationsCeb extends AppLocalizations {
   String get wifiSharedPassword => 'Shared nga Wi-Fi password (psk mode)';
 
   @override
-  String get webGuestTitle => 'Mga bisita, palihog gamita ang Tuloy mobile app';
-
-  @override
-  String get webGuestBody =>
-      'Ang pag-book ug mga feature sa pagpuyo anaa sa iOS ug Android app. Dinhi makasulod ang mga staff ug admin.';
-
-  @override
   String get action => 'Aksyon';
 
   @override
@@ -1187,4 +1180,99 @@ class AppLocalizationsCeb extends AppLocalizations {
 
   @override
   String get submit => 'Isumite';
+
+  @override
+  String get cash => 'Cash';
+
+  @override
+  String get card => 'Card';
+
+  @override
+  String get arrival => 'Pag-abot';
+
+  @override
+  String get departure => 'Pagbiya';
+
+  @override
+  String get serviceRequests => 'Mga service request';
+
+  @override
+  String get newRequest => 'Bag-ong request';
+
+  @override
+  String get guestBooking => 'Booking sa bisita';
+
+  @override
+  String bookRoom(String room) {
+    return 'I-book ang kwarto $room';
+  }
+
+  @override
+  String get bookAndCheckIn => 'I-book ug i-check in';
+
+  @override
+  String get changeBooking => 'Usba ang booking';
+
+  @override
+  String get recordPayment => 'Itala ang bayad';
+
+  @override
+  String get emailOrPhoneRequired => 'Ibutang ang email o numero sa telepono';
+
+  @override
+  String get emailLocked =>
+      'Dili mausab dinhi ang email sa pag-sign in sa bisita.';
+
+  @override
+  String get onLeaveToday => 'Naka-leave';
+
+  @override
+  String leaveUpcoming(String dates) {
+    return 'Leave $dates';
+  }
+
+  @override
+  String get collapseMenu => 'Itago ang menu';
+
+  @override
+  String get expandMenu => 'Ipakita ang menu';
+
+  @override
+  String get roleRestaurant => 'Restaurant staff';
+
+  @override
+  String get next => 'Sunod';
+
+  @override
+  String get payAtDesk => 'Sa desk mobayad ang bisita.';
+
+  @override
+  String get notAvailableForDates =>
+      'Puno kini nga klase sa kwarto niining mga petsa. Sulayi ang laing petsa o laing kwarto.';
+
+  @override
+  String get byType => 'Sumala sa klase';
+
+  @override
+  String get byFloor => 'Sumala sa andana';
+
+  @override
+  String floorN(String floor) {
+    return 'Andana $floor';
+  }
+
+  @override
+  String get paymentPaid => 'Bayad na';
+
+  @override
+  String get paymentDeposit => 'Naay deposit na';
+
+  @override
+  String get paymentPartial => 'Bahin pa ang bayad';
+
+  @override
+  String get paymentUnpaid => 'Wala pa bayri';
+
+  @override
+  String get moreLanguages => 'Uban pang pinulongan';
 }

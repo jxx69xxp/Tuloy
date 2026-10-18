@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, P
 import type { Membership } from '@prisma/client';
 import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, IsUUID, Length, Matches, MaxLength, MinLength } from 'class-validator';
 import { hashPassword } from '../auth/password';
-import { AuthUser, CurrentMembership, CurrentUser, Roles, STAFF } from '../common/auth';
+import { AuthUser, CurrentMembership, CurrentUser, RESTAURANT, Roles, STAFF } from '../common/auth';
 import { AppError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { assetUrl } from '../common/storage';
@@ -36,7 +36,7 @@ class DepartmentDto {
 class StaffDto {
   @IsEmail() email: string;
   @IsString() @Length(1, 120) fullName: string;
-  @IsIn(['STAFF', 'ADMIN']) role: 'STAFF' | 'ADMIN';
+  @IsIn(['RESTAURANT', 'STAFF', 'ADMIN']) role: 'RESTAURANT' | 'STAFF' | 'ADMIN';
   @IsOptional() @IsUUID() departmentId?: string;
   @IsOptional() @IsIn(PERMISSIONS, { each: true }) permissions?: string[];
   /** Temporary password, shared with the staff member out of band; they can reset it with a code. */
@@ -45,7 +45,7 @@ class StaffDto {
   @IsOptional() @Matches(/^staff\/[\w-]+\.(jpg|jpeg|png|webp)$/) photoKey?: string;
 }
 class StaffPatchDto {
-  @IsOptional() @IsIn(['STAFF', 'ADMIN']) role?: 'STAFF' | 'ADMIN';
+  @IsOptional() @IsIn(['RESTAURANT', 'STAFF', 'ADMIN']) role?: 'RESTAURANT' | 'STAFF' | 'ADMIN';
   @IsOptional() @IsUUID() departmentId?: string;
   @IsOptional() @IsIn(PERMISSIONS, { each: true }) permissions?: string[];
   /** Empty string clears it. */
@@ -70,13 +70,13 @@ export class TeamController {
 
   // ── staff: own leave ──
 
-  @Roles(...STAFF)
+  @Roles(...RESTAURANT)
   @Get('me/leave')
   myLeave(@CurrentMembership() m: Membership) {
     return this.prisma.leaveRequest.findMany({ where: { hotelId: m.hotelId, userId: m.userId }, orderBy: { from: 'desc' } });
   }
 
-  @Roles(...STAFF)
+  @Roles(...RESTAURANT)
   @Post('me/leave')
   applyLeave(@CurrentMembership() m: Membership, @Body() dto: LeaveDto) {
     if (dto.to < dto.from) throw new AppError('INVALID_DATES', 400);
@@ -136,7 +136,7 @@ export class TeamController {
   @Get('admin/staff')
   async staff(@CurrentMembership() m: Membership) {
     const rows = await this.prisma.membership.findMany({
-      where: { hotelId: m.hotelId, role: { in: ['STAFF', 'ADMIN'] } },
+      where: { hotelId: m.hotelId, role: { in: ['RESTAURANT', 'STAFF', 'ADMIN'] } },
       include: { user: { select: { id: true, fullName: true, email: true, phone: true, disabledAt: true } }, department: true },
       orderBy: { createdAt: 'asc' },
     });

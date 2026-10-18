@@ -943,13 +943,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wifiSharedPassword => 'Shared Wi-Fi password (psk mode)';
 
   @override
-  String get webGuestTitle => 'Guests, please use the Tuloy mobile app';
-
-  @override
-  String get webGuestBody =>
-      'Booking and stay features are available in the iOS and Android app. Staff and admins can sign in here.';
-
-  @override
   String get action => 'Action';
 
   @override
@@ -1184,4 +1177,99 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get submit => 'Submit';
+
+  @override
+  String get cash => 'Cash';
+
+  @override
+  String get card => 'Card';
+
+  @override
+  String get arrival => 'Arrival';
+
+  @override
+  String get departure => 'Departure';
+
+  @override
+  String get serviceRequests => 'Service requests';
+
+  @override
+  String get newRequest => 'New request';
+
+  @override
+  String get guestBooking => 'Guest\'s booking';
+
+  @override
+  String bookRoom(String room) {
+    return 'Book room $room';
+  }
+
+  @override
+  String get bookAndCheckIn => 'Book and check in';
+
+  @override
+  String get changeBooking => 'Change booking';
+
+  @override
+  String get recordPayment => 'Record payment';
+
+  @override
+  String get emailOrPhoneRequired => 'Enter an email or phone number';
+
+  @override
+  String get emailLocked =>
+      'The guest\'s sign-in email can\'t be changed here.';
+
+  @override
+  String get onLeaveToday => 'On leave';
+
+  @override
+  String leaveUpcoming(String dates) {
+    return 'Leave $dates';
+  }
+
+  @override
+  String get collapseMenu => 'Collapse menu';
+
+  @override
+  String get expandMenu => 'Expand menu';
+
+  @override
+  String get roleRestaurant => 'Restaurant staff';
+
+  @override
+  String get next => 'Next';
+
+  @override
+  String get payAtDesk => 'The guest pays at the desk.';
+
+  @override
+  String get notAvailableForDates =>
+      'This room type is full for these dates. Try other dates or another room.';
+
+  @override
+  String get byType => 'By type';
+
+  @override
+  String get byFloor => 'By floor';
+
+  @override
+  String floorN(String floor) {
+    return 'Floor $floor';
+  }
+
+  @override
+  String get paymentPaid => 'Paid';
+
+  @override
+  String get paymentDeposit => 'Deposit paid';
+
+  @override
+  String get paymentPartial => 'Partly paid';
+
+  @override
+  String get paymentUnpaid => 'Not paid';
+
+  @override
+  String get moreLanguages => 'More languages';
 }

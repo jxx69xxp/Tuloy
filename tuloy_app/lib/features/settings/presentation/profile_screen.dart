@@ -8,7 +8,7 @@ import '../../../core/config.dart';
 import '../../../core/format.dart';
 import '../../../core/http.dart';
 import '../../../core/map.dart';
-import '../../../core/ui.dart' show AppearanceSelector, Section, SectionHeader;
+import '../../../core/ui.dart' show AppearanceSelector, LanguagePicker, Section, SectionHeader;
 import '../../../l10n/app_localizations.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../../booking/presentation/booking_providers.dart';
@@ -32,7 +32,6 @@ class ProfileScreen extends ConsumerWidget {
     final requests = ref.watch(getProvider('/me/service-requests')).valueOrNull as List? ?? const [];
     final payments = ref.watch(getProvider('/me/payments')).valueOrNull as List? ?? const [];
     final stays = ref.watch(myBookingsProvider).valueOrNull?.length ?? 0;
-    final language = ref.watch(languageProvider);
     final top = MediaQuery.paddingOf(context).top + kToolbarHeight;
     final name = user?.fullName ?? '';
     final initials = name
@@ -184,15 +183,7 @@ class ProfileScreen extends ConsumerWidget {
             ],
 
             SectionHeader(l.language),
-            Section([
-              for (final e in supportedLanguages.entries)
-                ListTile(
-                  title: Text(e.value),
-                  trailing: e.key == language ? const Icon(Icons.check) : null,
-                  selected: e.key == language,
-                  onTap: () => ref.read(authProvider.notifier).setLanguage(e.key),
-                ),
-            ]),
+            const Section([LanguagePicker()]),
             SectionHeader(l.appearance),
             const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: AppearanceSelector()),
             const SizedBox(height: 12),

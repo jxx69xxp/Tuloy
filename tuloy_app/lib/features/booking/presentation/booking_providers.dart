@@ -54,6 +54,37 @@ String statusLabel(AppLocalizations l, BookingStatus s) => switch (s) {
   BookingStatus.expired => l.statusExpired,
 };
 
+/// Payment state from the API ('paid' | 'deposit' | 'partial' | 'unpaid') as staff read it.
+String paymentLabel(AppLocalizations l, String? state) => switch (state) {
+  'paid' => l.paymentPaid,
+  'deposit' => l.paymentDeposit,
+  'partial' => l.paymentPartial,
+  _ => l.paymentUnpaid,
+};
+
+/// Paid (teal), deposit or partly paid (amber: money still due), not paid (red).
+class PaymentChip extends StatelessWidget {
+  const PaymentChip(this.state, {super.key});
+  final String? state;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    final (bg, fg) = switch (state) {
+      'paid' => (c.primaryContainer, c.onPrimaryContainer),
+      'deposit' || 'partial' => (c.tertiaryContainer, c.onTertiaryContainer),
+      _ => (c.errorContainer, c.onErrorContainer),
+    };
+    return Chip(
+      label: Text(paymentLabel(AppLocalizations.of(context), state)),
+      backgroundColor: bg,
+      labelStyle: TextStyle(color: fg),
+      side: BorderSide.none,
+      visualDensity: VisualDensity.compact,
+    );
+  }
+}
+
 class StatusChip extends StatelessWidget {
   const StatusChip(this.status, {super.key});
   final BookingStatus status;

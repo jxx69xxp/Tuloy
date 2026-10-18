@@ -167,7 +167,7 @@ void main() {
     await t.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
     await t.pumpAndSettle();
     expect(find.byType(QuickJump), findsOneWidget);
-    await t.enterText(find.descendant(of: find.byType(QuickJump), matching: find.byType(TextField)), 'task');
+    await t.enterText(find.descendant(of: find.byType(QuickJump), matching: find.byType(TextField)), 'service req');
     await t.pump();
     await t.sendKeyEvent(LogicalKeyboardKey.enter);
     await t.pumpAndSettle();

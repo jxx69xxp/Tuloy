@@ -22,6 +22,7 @@ datasource db {
 
 enum Role {
   GUEST
+  RESTAURANT // restaurant staff: orders and menu only
   STAFF
   ADMIN
 }
@@ -30,6 +31,20 @@ enum Locale {
   en
   fil
   ceb
+  zh
+  ja
+  ko
+  es
+  fr
+  de
+  it
+  ru
+  ar
+  hi
+  id
+  vi
+  th
+  ms
 }
 
 model User {

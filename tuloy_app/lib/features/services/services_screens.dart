@@ -71,8 +71,11 @@ class ServicesScreen extends StatelessWidget {
 // ───────────── G15 detail + dynamic form ─────────────
 
 class ServiceRequestScreen extends ConsumerStatefulWidget {
-  const ServiceRequestScreen({super.key, required this.id});
+  const ServiceRequestScreen({super.key, required this.id, this.forGuest});
   final String id;
+
+  /// Front desk filing for a guest: this booking instead of the signed-in user's stay.
+  final ReservationSummary? forGuest;
   @override
   ConsumerState<ServiceRequestScreen> createState() => _ServiceRequestState();
 }
@@ -110,7 +113,7 @@ class _ServiceRequestState extends ConsumerState<ServiceRequestScreen> {
     }
     try {
       final r =
-          await ref.read(apiProvider).post('/service-requests', {
+          await ref.read(apiProvider).post(widget.forGuest == null ? '/service-requests' : '/staff/service-requests', {
                 'serviceId': widget.id,
                 if (stay != null) 'reservationId': stay.id,
                 'optionIds': _options.toList(),
@@ -119,7 +122,8 @@ class _ServiceRequestState extends ConsumerState<ServiceRequestScreen> {
                 'paymentMethod': _method,
               }, true)
               as Map;
-      if (mounted) context.pushReplacement('/guest/requests/${r['id']}');
+      if (!mounted) return;
+      widget.forGuest == null ? context.pushReplacement('/guest/requests/${r['id']}') : Navigator.pop(context, true);
     } catch (e) {
       if (mounted) snack(context, failureText(context, e));
     }
@@ -177,7 +181,7 @@ class _ServiceRequestState extends ConsumerState<ServiceRequestScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final stay = currentStayOf(ref);
+    final stay = widget.forGuest ?? currentStayOf(ref);
     final hotel = ref.watch(hotelProvider).valueOrNull;
     return Scaffold(
       appBar: AppBar(title: Text(l.services)),

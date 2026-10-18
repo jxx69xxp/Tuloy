@@ -160,6 +160,12 @@ export class ServicesController {
     return this.services.request(u.sub, dto, idempotencyKey(key));
   }
 
+  @Roles(...STAFF)
+  @Post('staff/service-requests')
+  requestForGuest(@CurrentMembership() m: Membership, @Body() dto: RequestDto, @Headers('idempotency-key') key?: string) {
+    return this.services.requestForGuest(m, dto, idempotencyKey(key));
+  }
+
   @Get('me/service-requests')
   mine(@CurrentUser() u: AuthUser, @Headers('accept-language') lang?: string) {
     return this.services.mine(u.sub, pickLocale(lang));

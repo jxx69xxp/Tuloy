@@ -43,6 +43,27 @@ void main() {
     addTearDown(t.view.reset);
   }
 
+  testWidgets('sidebar collapses to an icon rail and expands again', (t) async {
+    await size(t, 1400);
+    addTearDown(() => sidebarCollapsed.value = false);
+    await t.pumpWidget(_app(_router()));
+    await t.pumpAndSettle();
+    expect(find.widgetWithText(ListTile, 'Rooms'), findsOneWidget);
+
+    await t.tap(find.byTooltip('Collapse menu'));
+    await t.pumpAndSettle();
+    expect(find.widgetWithText(ListTile, 'Rooms'), findsNothing); // labels hidden
+    expect(find.byTooltip('Rooms'), findsOneWidget); // still reachable by icon
+
+    await t.tap(find.byTooltip('Rooms'));
+    await t.pumpAndSettle();
+    expect(find.text('page-rooms'), findsOneWidget);
+
+    await t.tap(find.byTooltip('Expand menu'));
+    await t.pumpAndSettle();
+    expect(find.widgetWithText(ListTile, 'Rooms'), findsOneWidget);
+  });
+
   testWidgets('narrow shows only the child', (t) async {
     await size(t, 400);
     await t.pumpWidget(_app(_router()));

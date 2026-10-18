@@ -17,6 +17,7 @@ class HomeScreen extends ConsumerWidget {
     final user = ref.watch(authProvider).valueOrNull;
     final title = switch (role) {
       Role.guest => l.guestHome,
+      Role.restaurant => l.restaurant,
       Role.staff => l.staffHome,
       Role.admin => l.adminHome,
     };

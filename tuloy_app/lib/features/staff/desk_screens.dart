@@ -8,6 +8,11 @@ import '../../core/format.dart';
 import '../../core/http.dart';
 import '../../core/ui.dart';
 import '../../l10n/app_localizations.dart';
+import '../../core/config.dart' show hotelId;
+import '../admin/admin_catalog_screens.dart' show MenuAdminScreen, trOf;
+import '../booking/domain/booking.dart';
+import '../booking/presentation/booking_providers.dart' show paymentLabel;
+import '../services/services_screens.dart' show ServiceRequestScreen;
 import '../auth/presentation/auth_controller.dart' show tokenStoreProvider;
 
 // ───────────── room board ─────────────
@@ -27,10 +32,14 @@ class RoomBoard extends ConsumerStatefulWidget {
   static (Color, Color) colors(ColorScheme c, String status) => switch (status) {
     'free' => (c.primaryContainer, c.onPrimaryContainer),
     'arriving' => (c.tertiaryContainer, c.onTertiaryContainer),
-    'departing' => (c.secondaryContainer, c.onSecondaryContainer),
+    'departing' => (c.surfaceContainerHigh, c.onSurface), // still occupied; the amber edge marks today's move
     'blocked' => (c.errorContainer, c.onErrorContainer),
     _ => (c.surfaceContainerHigh, c.onSurface), // occupied, reserved: taken, nothing to do
   };
+
+  /// Tile and legend edge: amber for rooms whose guest leaves today, else the quiet outline.
+  static BorderSide edge(ColorScheme c, String status) =>
+      status == 'departing' ? BorderSide(color: c.tertiary, width: 2) : BorderSide(color: c.outlineVariant);
 
   static IconData icon(String status) => switch (status) {
     'free' => Icons.check_circle_outline,
@@ -58,6 +67,7 @@ class _RoomBoardState extends ConsumerState<RoomBoard> {
   bool _availableOnly = false;
   String _q = '';
   String? _type;
+  bool _byFloor = false; // Rooms page: group by floor (how staff walk the building) or by room type
 
   @override
   Widget build(BuildContext context) {
@@ -124,6 +134,15 @@ class _RoomBoardState extends ConsumerState<RoomBoard> {
                         onChanged: (v) => setState(() => _type = v),
                       ),
                       availableChip,
+                      SegmentedButton<bool>(
+                        showSelectedIcon: false,
+                        segments: [
+                          ButtonSegment(value: false, label: Text(l.byType)),
+                          ButtonSegment(value: true, label: Text(l.byFloor)),
+                        ],
+                        selected: {_byFloor},
+                        onSelectionChanged: (v) => setState(() => _byFloor = v.first),
+                      ),
                     ],
                   ),
                 ],
@@ -142,7 +161,7 @@ class _RoomBoardState extends ConsumerState<RoomBoard> {
                             decoration: BoxDecoration(
                               color: RoomBoard.colors(t.colorScheme, s).$1,
                               borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: t.colorScheme.outlineVariant),
+                              border: Border.fromBorderSide(RoomBoard.edge(t.colorScheme, s)),
                             ),
                           ),
                           const SizedBox(width: 6),
@@ -151,20 +170,58 @@ class _RoomBoardState extends ConsumerState<RoomBoard> {
                       ),
                   ],
                 ),
-                for (final type in types)
-                  if (rooms.any((r) => r['roomTypeId'] == type['roomTypeId'] && shown(r))) ...[
-                    const SizedBox(height: 20),
-                    _TypeHeader(type),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final r in rooms)
-                          if (r['roomTypeId'] == type['roomTypeId'] && shown(r)) _RoomTile(r, widget.base),
-                      ],
-                    ),
-                  ],
+                if (_byFloor)
+                  for (final floor in {for (final r in rooms) '${r['floor'] ?? ''}'})
+                    if (rooms.any(
+                      (r) => '${r['floor'] ?? ''}' == floor && shown(r) && (_type == null || r['roomTypeId'] == _type),
+                    )) ...[
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(child: Text(l.floorN(floor), style: t.textTheme.titleMedium)),
+                          Text(
+                            l.freeOf(
+                              '${rooms.where((r) => '${r['floor'] ?? ''}' == floor && available(r)).length}',
+                              '${rooms.where((r) => '${r['floor'] ?? ''}' == floor).length}',
+                            ),
+                            style: t.textTheme.labelLarge?.copyWith(color: t.colorScheme.primary),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final r in rooms)
+                            if ('${r['floor'] ?? ''}' == floor &&
+                                shown(r) &&
+                                (_type == null || r['roomTypeId'] == _type))
+                              _RoomTile({
+                                ...r,
+                                'photoUrl': jsonList(
+                                  d['types'],
+                                ).where((x) => x['roomTypeId'] == r['roomTypeId']).firstOrNull?['photoUrl'],
+                              }, widget.base),
+                        ],
+                      ),
+                    ],
+                if (!_byFloor)
+                  for (final type in types)
+                    if (rooms.any((r) => r['roomTypeId'] == type['roomTypeId'] && shown(r))) ...[
+                      const SizedBox(height: 20),
+                      _TypeHeader(type),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final r in rooms)
+                            if (r['roomTypeId'] == type['roomTypeId'] && shown(r))
+                              _RoomTile({...r, 'photoUrl': type['photoUrl']}, widget.base),
+                        ],
+                      ),
+                    ],
                 if (!rooms.any(shown)) EmptyState(l.nothingHere, icon: Icons.bed_outlined),
               ],
             );
@@ -228,11 +285,22 @@ class _RoomTile extends StatelessWidget {
           color: bg,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
-            side: BorderSide(color: t.colorScheme.outlineVariant),
+            side: RoomBoard.edge(t.colorScheme, status),
           ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            onTap: id == null ? null : () => context.go('$base/reservations/$id'),
+            // A guest's room opens their booking; a room free tonight opens Book.
+            onTap: id != null && status != 'departing'
+                ? () => context.go('$base/reservations/$id')
+                : status == 'free' || status == 'departing'
+                ? () async {
+                    final newId = await showDialog<String>(
+                      context: context,
+                      builder: (_) => DeskBookDialog(room: r),
+                    );
+                    if (newId != null && context.mounted) context.go('$base/reservations/$newId');
+                  }
+                : null,
             child: SizedBox(
               width: 132,
               height: 76,
@@ -321,6 +389,7 @@ class StayListCard extends ConsumerWidget {
                 [
                   r['room'] == null ? null : l.roomNumber('${r['room']}'),
                   '${r['roomType']}',
+                  paymentLabel(l, r['payment'] as String?),
                 ].whereType<String>().join(' · '),
               ),
               trailing: departures
@@ -409,19 +478,45 @@ class TeamScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    String role(J m) => m['role'] == 'ADMIN' ? l.roleAdmin : l.staff;
+    String role(J m) => switch (m['role']) {
+      'ADMIN' => l.roleAdmin,
+      'RESTAURANT' => l.roleRestaurant,
+      _ => l.staff,
+    };
+    // "On leave" today, or the dates of approved leave still to come; empty when working.
+    String leave(J m) {
+      final x = m['leave'] as Map?;
+      if (x == null) return '';
+      if (x['today'] == true) return l.onLeaveToday;
+      return l.leaveUpcoming(dateRange(context, DateTime.parse('${x['from']}'), DateTime.parse('${x['to']}')));
+    }
+
+    Widget? leaveChip(J m) {
+      final text = leave(m);
+      if (text.isEmpty) return null;
+      final c = Theme.of(context).colorScheme;
+      final today = (m['leave'] as Map)['today'] == true;
+      return Chip(
+        label: Text(text),
+        visualDensity: VisualDensity.compact,
+        backgroundColor: today ? c.errorContainer : c.surfaceContainerHigh,
+        labelStyle: TextStyle(color: today ? c.onErrorContainer : c.onSurface),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(l.team)),
       body: JsonList(
         path: '/staff/team',
         table: JsonTable(
           leading: (context, m) => StaffAvatar(name: '${m['fullName']}', url: m['photoUrl'] as String?),
-          columns: [l.employeeId, l.name, l.department, l.role, l.email, l.phone],
+          columns: [l.employeeId, l.name, l.department, l.role, l.status, l.email, l.phone],
           cells: (context, m) => [
             '${m['employeeNo'] ?? ''}',
             '${m['fullName']}',
             '${m['department'] ?? ''}',
             role(m),
+            leave(m),
             '${m['email'] ?? ''}',
             '${m['phone'] ?? ''}',
           ],
@@ -430,6 +525,8 @@ class TeamScreen extends StatelessWidget {
             (m) => '${m['fullName']}'.toLowerCase(),
             (m) => '${m['department'] ?? ''}'.toLowerCase(),
             (m) => '${m['role']}',
+            // On leave today first, then upcoming leave, then everyone working.
+            (m) => m['leave'] == null ? 2 : ((m['leave'] as Map)['today'] == true ? 0 : 1),
             (m) => '${m['email'] ?? ''}',
             (m) => '${m['phone'] ?? ''}',
           ],
@@ -440,6 +537,7 @@ class TeamScreen extends StatelessWidget {
           subtitle: Text(
             [m['employeeNo'], m['department'], role(m), m['email'], m['phone']].whereType<String>().join(' · '),
           ),
+          trailing: leaveChip(m),
         ),
       ),
     );
@@ -572,6 +670,644 @@ class DeskChatButton extends ConsumerWidget {
         icon: Badge(isLabelVisible: unread > 0, label: Text('$unread'), child: const Icon(Icons.chat_bubble_outline)),
         label: Text(l.chat),
       ),
+    );
+  }
+}
+
+// ───────────── restaurant staff ─────────────
+
+/// Menu availability for restaurant staff: the outlet's menu (first outlet when there is one; a list otherwise).
+class RestaurantMenuScreen extends ConsumerWidget {
+  const RestaurantMenuScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    const path = '/admin/outlets';
+    return AsyncBody(
+      value: ref.watch(getProvider(path)),
+      onRetry: () => ref.invalidate(getProvider(path)),
+      builder: (data) {
+        final outlets = jsonList(data);
+        if (outlets.length == 1) return MenuAdminScreen(outlet: outlets.first, canEdit: false);
+        return Scaffold(
+          appBar: AppBar(title: Text(AppLocalizations.of(context).menu)),
+          body: ListView(
+            children: [
+              if (outlets.isEmpty) EmptyState(AppLocalizations.of(context).nothingHere),
+              for (final o in outlets)
+                ListTile(
+                  title: Text(trOf(context, o['name'])),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute<void>(builder: (_) => MenuAdminScreen(outlet: o, canEdit: false))),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ───────────── front desk: book a room, change a booking, take a payment ─────────────
+
+String _iso(DateTime d) => d.toIso8601String().substring(0, 10);
+
+/// Desk dialogs: normal-size action buttons. The app theme makes buttons full-width (phone forms),
+/// which stacks dialog actions into tall bars.
+Widget _compactActions(Widget dialog) => Builder(
+  builder: (context) {
+    final t = Theme.of(context);
+    const size = WidgetStatePropertyAll(Size(64, 44));
+    return Theme(
+      data: t.copyWith(
+        filledButtonTheme: FilledButtonThemeData(style: t.filledButtonTheme.style?.copyWith(minimumSize: size)),
+        outlinedButtonTheme: OutlinedButtonThemeData(style: t.outlinedButtonTheme.style?.copyWith(minimumSize: size)),
+      ),
+      child: dialog,
+    );
+  },
+);
+DateTime _today() {
+  final n = DateTime.now();
+  return DateTime(n.year, n.month, n.day);
+}
+
+Future<DateTime?> _pickDate(BuildContext context, DateTime initial, DateTime first) => showDatePicker(
+  context: context,
+  initialDate: initial.isBefore(first) ? first : initial,
+  firstDate: first,
+  lastDate: _today().add(const Duration(days: 365)),
+);
+
+/// Arrival and departure side by side; stacked on a phone, where side by side wraps the dates.
+Widget _datePair(Widget arrival, Widget departure) => LayoutBuilder(
+  builder: (context, box) => box.maxWidth < 400
+      ? Column(children: [arrival, const SizedBox(height: 12), departure])
+      : Row(
+          children: [
+            Expanded(child: arrival),
+            const SizedBox(width: 12),
+            Expanded(child: departure),
+          ],
+        ),
+);
+
+/// Small number picker (guests) as a dropdown field.
+Widget _count(String label, int value, int min, int max, ValueChanged<int> onChanged) => DropdownButtonFormField<int>(
+  initialValue: value,
+  decoration: InputDecoration(labelText: label),
+  items: [for (var i = min; i <= max; i++) DropdownMenuItem(value: i, child: Text('$i'))],
+  onChanged: (v) => onChanged(v ?? value),
+);
+
+/// Walk-in or phone booking for one room: confirmed and paid at the hotel. Arriving today can check in at once.
+class DeskBookDialog extends ConsumerStatefulWidget {
+  const DeskBookDialog({super.key, required this.room});
+  final J room;
+  @override
+  ConsumerState<DeskBookDialog> createState() => _DeskBookDialogState();
+}
+
+class _DeskBookDialogState extends ConsumerState<DeskBookDialog> {
+  final _form = GlobalKey<FormState>();
+  final _name = TextEditingController();
+  final _phone = TextEditingController();
+  final _email = TextEditingController();
+  final _requests = TextEditingController();
+  late DateTime _in = _today();
+  late DateTime _out = _in.add(const Duration(days: 1));
+  int _adults = 1;
+  int _children = 0;
+
+  @override
+  void dispose() {
+    for (final c in [_name, _phone, _email, _requests]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  /// Returns the new reservation id, or null when the form or the API refused.
+  Future<String?> _book({required bool checkIn}) async {
+    if (!_form.currentState!.validate()) return null;
+    final api = ref.read(apiProvider);
+    String? id;
+    await act(context, () async {
+      final r =
+          await api.post('/staff/reservations', {
+                'roomId': widget.room['id'],
+                'checkIn': _iso(_in),
+                'checkOut': _iso(_out),
+                'adults': _adults,
+                'children': _children,
+                if (_requests.text.trim().isNotEmpty) 'specialRequests': _requests.text.trim(),
+                'guest': {
+                  'fullName': _name.text.trim(),
+                  if (_phone.text.trim().isNotEmpty) 'phone': _phone.text.trim(),
+                  if (_email.text.trim().isNotEmpty) 'email': _email.text.trim(),
+                },
+              })
+              as Map;
+      id = '${r['id']}';
+      if (checkIn) await api.post('/staff/reservations/$id/check-in');
+    });
+    return id;
+  }
+
+  Future<void> _submit({required bool checkIn}) async {
+    final id = await _book(checkIn: checkIn);
+    if (id == null || !mounted) return;
+    ref.invalidate(getProvider); // board, queues and counts all change
+    Navigator.pop(context, id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    String? contact(String? _) =>
+        _phone.text.trim().isEmpty && _email.text.trim().isEmpty ? l.emailOrPhoneRequired : null;
+    final summary = _StaySummary(room: widget.room, checkIn: _in, checkOut: _out, adults: _adults, children: _children);
+    final wide = isWide(context);
+    // Wide: form left, the stay you read to the guest right. Narrow: the summary under the form.
+    Widget layout(Widget form) => SizedBox(
+      width: wide ? 760 : 440,
+      child: wide
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: form),
+                const SizedBox(width: 24),
+                SizedBox(width: 280, child: summary),
+              ],
+            )
+          : SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [form, const SizedBox(height: 16), summary]),
+            ),
+    );
+    return _compactActions(
+      AlertDialog(
+        title: Text('${l.bookRoom('${widget.room['number']}')} · ${widget.room['roomType']}'),
+        content: layout(
+          Form(
+            key: _form,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextFormField(
+                    controller: _name,
+                    autofocus: true,
+                    decoration: InputDecoration(labelText: l.fullName),
+                    validator: (v) => (v ?? '').trim().isEmpty ? l.required : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _phone,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(labelText: l.phone),
+                    validator: contact,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _email,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(labelText: l.email),
+                    validator: contact,
+                  ),
+                  const SizedBox(height: 12),
+                  _datePair(
+                    PickerField(
+                      label: l.arrival,
+                      value: date(context, _in),
+                      icon: Icons.event,
+                      onTap: () async {
+                        final v = await _pickDate(context, _in, _today());
+                        if (v == null) return;
+                        setState(() {
+                          _in = v;
+                          if (!_out.isAfter(v)) _out = v.add(const Duration(days: 1));
+                        });
+                      },
+                    ),
+                    PickerField(
+                      label: l.departure,
+                      value: date(context, _out),
+                      icon: Icons.event,
+                      onTap: () async {
+                        final v = await _pickDate(context, _out, _in.add(const Duration(days: 1)));
+                        if (v != null) setState(() => _out = v);
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(child: _count(l.adults, _adults, 1, 10, (v) => setState(() => _adults = v))),
+                      const SizedBox(width: 12),
+                      Expanded(child: _count(l.children, _children, 0, 10, (v) => setState(() => _children = v))),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _requests,
+                    minLines: 1,
+                    maxLines: 3,
+                    decoration: InputDecoration(labelText: l.specialRequests),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
+          if (_in == _today()) OutlinedButton(onPressed: () => _submit(checkIn: true), child: Text(l.bookAndCheckIn)),
+          BusyButton(label: l.reserve, onPressed: () => _submit(checkIn: false)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Change dates, room, guest count or guest name/phone on a booking. The sign-in email stays as is.
+class ChangeBookingDialog extends ConsumerStatefulWidget {
+  const ChangeBookingDialog({super.key, required this.reservation});
+
+  /// The staff reservation detail (GET /staff/reservations/:id).
+  final J reservation;
+  @override
+  ConsumerState<ChangeBookingDialog> createState() => _ChangeBookingDialogState();
+}
+
+class _ChangeBookingDialogState extends ConsumerState<ChangeBookingDialog> {
+  J get r => widget.reservation;
+  J get guest => (r['guest'] as Map).cast<String, dynamic>();
+  late DateTime _in = DateTime.parse('${r['checkIn']}');
+  late DateTime _out = DateTime.parse('${r['checkOut']}');
+  late int _adults = (r['adults'] as num).toInt();
+  late int _children = (r['children'] as num).toInt();
+  String? _roomId; // null until the room list arrives
+  late final _name = TextEditingController(text: '${guest['fullName'] ?? ''}');
+  late final _phone = TextEditingController(text: '${guest['phone'] ?? ''}');
+  late final _requests = TextEditingController(text: '${r['specialRequests'] ?? ''}');
+
+  bool get _inHouse => r['status'] == 'CHECKED_IN';
+
+  @override
+  void dispose() {
+    for (final c in [_name, _phone, _requests]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final ok = await act(
+      context,
+      () => ref.read(apiProvider).patch('/staff/reservations/${r['id']}', {
+        if (!_inHouse) 'checkIn': _iso(_in),
+        'checkOut': _iso(_out),
+        if (_roomId != null) 'roomId': _roomId,
+        'adults': _adults,
+        'children': _children,
+        'specialRequests': _requests.text.trim(),
+        'guest': {'fullName': _name.text.trim(), 'phone': _phone.text.trim()},
+      }),
+    );
+    if (ok && mounted) {
+      ref.invalidate(getProvider);
+      Navigator.pop(context, true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final rooms = jsonList((ref.watch(getProvider('/staff/board')).valueOrNull as Map?)?['rooms'] ?? const []);
+    _roomId ??= rooms.where((x) => '${x['number']}' == '${r['room']}').map((x) => '${x['id']}').firstOrNull;
+    return _compactActions(
+      AlertDialog(
+        title: Text('${l.changeBooking} · ${r['code']}'),
+        content: SizedBox(
+          width: 440,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _datePair(
+                  PickerField(
+                    label: l.arrival,
+                    value: date(context, _in),
+                    icon: _inHouse ? Icons.lock_outline : Icons.event,
+                    onTap: _inHouse
+                        ? () {}
+                        : () async {
+                            final v = await _pickDate(context, _in, _today());
+                            if (v == null) return;
+                            setState(() {
+                              _in = v;
+                              if (!_out.isAfter(v)) _out = v.add(const Duration(days: 1));
+                            });
+                          },
+                  ),
+                  PickerField(
+                    label: l.departure,
+                    value: date(context, _out),
+                    icon: Icons.event,
+                    onTap: () async {
+                      final first = _in.isAfter(_today()) ? _in : _today();
+                      final v = await _pickDate(context, _out, first.add(const Duration(days: 1)));
+                      if (v != null) setState(() => _out = v);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _roomId,
+                  decoration: InputDecoration(labelText: l.roomLabel),
+                  items: [
+                    for (final x in rooms)
+                      DropdownMenuItem(value: '${x['id']}', child: Text('${x['number']} · ${x['roomType']}')),
+                  ],
+                  onChanged: (v) => setState(() => _roomId = v),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: _count(l.adults, _adults, 1, 10, (v) => setState(() => _adults = v))),
+                    const SizedBox(width: 12),
+                    Expanded(child: _count(l.children, _children, 0, 10, (v) => setState(() => _children = v))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _name,
+                  decoration: InputDecoration(labelText: l.fullName),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _phone,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(labelText: l.phone),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  enabled: false,
+                  controller: TextEditingController(text: '${guest['email'] ?? ''}'),
+                  decoration: InputDecoration(labelText: l.email, helperText: l.emailLocked, helperMaxLines: 2),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _requests,
+                  minLines: 1,
+                  maxLines: 3,
+                  decoration: InputDecoration(labelText: l.specialRequests),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
+          BusyButton(label: l.save, onPressed: _save),
+        ],
+      ),
+    );
+  }
+}
+
+/// Cash or card taken at the desk; the amount starts at the balance due.
+class RecordPaymentDialog extends ConsumerStatefulWidget {
+  const RecordPaymentDialog({super.key, required this.reservationId, required this.balance, required this.currency});
+  final String reservationId;
+  final double balance;
+  final String currency;
+  @override
+  ConsumerState<RecordPaymentDialog> createState() => _RecordPaymentDialogState();
+}
+
+class _RecordPaymentDialogState extends ConsumerState<RecordPaymentDialog> {
+  late final _amount = TextEditingController(text: widget.balance.toStringAsFixed(2));
+  String _method = 'cash';
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final amount = double.tryParse(_amount.text.replaceAll(',', '').trim());
+    final l = AppLocalizations.of(context);
+    if (amount == null || amount <= 0) return snack(context, l.required);
+    final ok = await act(
+      context,
+      () => ref.read(apiProvider).post('/staff/reservations/${widget.reservationId}/payments', {
+        'amount': amount,
+        'method': _method,
+      }),
+    );
+    if (ok && mounted) {
+      ref.invalidate(getProvider);
+      Navigator.pop(context, true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return _compactActions(
+      AlertDialog(
+        title: Text(l.recordPayment),
+        content: SizedBox(
+          width: 360,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: _amount,
+                autofocus: true,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: l.amount, prefixText: '${widget.currency} '),
+              ),
+              const SizedBox(height: 12),
+              SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(value: 'cash', icon: const Icon(Icons.payments_outlined), label: Text(l.cash)),
+                  ButtonSegment(value: 'card', icon: const Icon(Icons.credit_card), label: Text(l.card)),
+                ],
+                selected: {_method},
+                onSelectionChanged: (s) => setState(() => _method = s.first),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
+          BusyButton(label: l.recordPayment, onPressed: _save),
+        ],
+      ),
+    );
+  }
+}
+
+/// Front desk files a service request for a guest (phone call, walk-up): pick their booking and the service,
+/// then fill the same form the guest would.
+class NewServiceRequestDialog extends ConsumerStatefulWidget {
+  const NewServiceRequestDialog({super.key});
+  @override
+  ConsumerState<NewServiceRequestDialog> createState() => _NewServiceRequestDialogState();
+}
+
+class _NewServiceRequestDialogState extends ConsumerState<NewServiceRequestDialog> {
+  String? _booking; // reservation id: rows are re-fetched, ids stay stable
+  String? _service;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    // In-house and upcoming stays: the guests a request can be for.
+    final stays = jsonList(ref.watch(getProvider('/staff/reservations?view=upcoming')).valueOrNull ?? const []);
+    final services = jsonList(ref.watch(getProvider('/hotels/$hotelId/services')).valueOrNull ?? const []);
+    return _compactActions(
+      AlertDialog(
+        title: Text(l.newRequest),
+        content: SizedBox(
+          width: 440,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DropdownButtonFormField<String>(
+                initialValue: _booking,
+                isExpanded: true,
+                decoration: InputDecoration(labelText: l.guestBooking),
+                items: [
+                  for (final r in stays)
+                    DropdownMenuItem(
+                      value: '${r['id']}',
+                      child: Text(
+                        [
+                          r['guestName'],
+                          r['room'] == null ? null : l.roomNumber('${r['room']}'),
+                          r['code'],
+                        ].whereType<Object>().join(' · '),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+                onChanged: (v) => setState(() => _booking = v),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: _service,
+                isExpanded: true,
+                decoration: InputDecoration(labelText: l.services),
+                items: [
+                  for (final s in services)
+                    DropdownMenuItem(
+                      value: '${s['id']}',
+                      child: Text('${s['name']}', overflow: TextOverflow.ellipsis),
+                    ),
+                ],
+                onChanged: (v) => setState(() => _service = v),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
+          FilledButton(
+            onPressed: _booking == null || _service == null
+                ? null
+                : () async {
+                    final b = stays.firstWhere((r) => '${r['id']}' == _booking);
+                    final stay = ReservationSummary(
+                      id: '${b['id']}',
+                      code: '${b['code']}',
+                      status: parseStatus('${b['status']}'),
+                      checkIn: DateTime.parse('${b['checkIn']}'),
+                      checkOut: DateTime.parse('${b['checkOut']}'),
+                      roomTypeName: '${b['roomType']}',
+                      total: 0,
+                      currency: '${b['currency']}',
+                    );
+                    final sent = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => ServiceRequestScreen(id: _service!, forGuest: stay),
+                      ),
+                    );
+                    if (sent == true && context.mounted) Navigator.pop(context, true);
+                  },
+            child: Text(l.next),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What the receptionist reads to the guest: room, dates, nights and the total, quoted by the same
+/// availability API the booking is priced with.
+class _StaySummary extends ConsumerWidget {
+  const _StaySummary({
+    required this.room,
+    required this.checkIn,
+    required this.checkOut,
+    required this.adults,
+    required this.children,
+  });
+  final J room;
+  final DateTime checkIn;
+  final DateTime checkOut;
+  final int adults;
+  final int children;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final t = Theme.of(context);
+    final path =
+        '/hotels/$hotelId/availability?checkIn=${_iso(checkIn)}&checkOut=${_iso(checkOut)}&adults=$adults&children=$children';
+    final quote = ref.watch(getProvider(path));
+    final offer = jsonList(quote.valueOrNull ?? const []).where((o) => o['id'] == room['roomTypeId']).firstOrNull;
+    final muted = t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: RoomArt(name: '${room['roomType']}', height: 120, imageUrl: room['photoUrl'] as String?),
+        ),
+        const SizedBox(height: 16),
+        Text('${room['number']}', style: t.textTheme.headlineMedium),
+        Text('${room['roomType']}', style: t.textTheme.titleMedium),
+        const SizedBox(height: 4),
+        Text(dateRange(context, checkIn, checkOut), style: muted),
+        const SizedBox(height: 20),
+        if (quote.isLoading)
+          const LinearProgressIndicator()
+        else if (offer == null)
+          Text(l.notAvailableForDates, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.error))
+        else ...[
+          Text(
+            money(num2(offer['total']), '${offer['currency']}'),
+            style: t.textTheme.displaySmall?.copyWith(color: t.colorScheme.primary),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${l.nightsCount('${offer['nights']}')} · ${l.perNight(money(num2(offer['perNight']), '${offer['currency']}'))}',
+            style: muted,
+          ),
+          const SizedBox(height: 12),
+          Text(l.payAtDesk, style: t.textTheme.bodyMedium),
+        ],
+      ],
     );
   }
 }

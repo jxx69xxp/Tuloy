@@ -54,6 +54,8 @@ describe('auth + RBAC', () => {
       .send({ login, password: 'nope-nope' })
       .expect(401);
     expect(res.body.error).toEqual({ code: 'INVALID_CREDENTIALS', message: 'Mali ang email/phone o password.' });
+    const ja = await http().post('/v1/auth/login').set('Accept-Language', 'ja-JP').send({ login, password: 'nope-nope' }).expect(401);
+    expect(ja.body.error.message).toBe('メール/電話番号またはパスワードが違います。');
   });
 
   it('guest cannot change hotel settings; admin can and it is audited', async () => {

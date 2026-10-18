@@ -16,7 +16,8 @@ import '../../l10n/app_localizations.dart';
 String _d(DateTime x) => x.toIso8601String().substring(0, 10);
 String trOf(BuildContext context, dynamic v) {
   final m = (v as Map?) ?? const {};
-  return '${m[Localizations.localeOf(context).languageCode] ?? m['en'] ?? ''}';
+  final own = '${m[Localizations.localeOf(context).languageCode] ?? ''}'.trim();
+  return own.isNotEmpty ? own : '${m['en'] ?? ''}'; // blank translation: English
 }
 
 /// Wide screens: "Add" in the app bar instead of a floating button (same callback).
@@ -1015,8 +1016,11 @@ class RestaurantAdminScreen extends ConsumerWidget {
 }
 
 class MenuAdminScreen extends ConsumerWidget {
-  const MenuAdminScreen({super.key, required this.outlet});
+  const MenuAdminScreen({super.key, required this.outlet, this.canEdit = true});
   final J outlet;
+
+  /// Restaurant staff: availability switches only (the API refuses other edits for them).
+  final bool canEdit;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1032,7 +1036,9 @@ class MenuAdminScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text('${l.menu} · ${trOf(context, outlet['name'])}')),
-      floatingActionButton: FloatingActionButton(tooltip: l.add, onPressed: edit, child: const Icon(Icons.add)),
+      floatingActionButton: canEdit
+          ? FloatingActionButton(tooltip: l.add, onPressed: edit, child: const Icon(Icons.add))
+          : null,
       body: JsonList(
         path: path,
         item: (context, i) => ListTile(
@@ -1046,7 +1052,7 @@ class MenuAdminScreen extends ConsumerWidget {
               }
             },
           ),
-          onTap: () => edit(i),
+          onTap: canEdit ? () => edit(i) : null,
         ),
       ),
     );

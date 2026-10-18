@@ -130,7 +130,12 @@ class StaffHomeScreen extends ConsumerWidget {
                       () => context.push('$base/reservations'),
                       badge: n('pending'),
                     ),
-                    NavTile(Icons.task_alt, l.tasks, () => context.push('$base/tasks'), badge: n('myTasks')),
+                    NavTile(
+                      Icons.room_service_outlined,
+                      l.serviceRequests,
+                      () => context.push('$base/tasks'),
+                      badge: n('myTasks'),
+                    ),
                     NavTile(
                       Icons.restaurant,
                       l.restaurantOrders,
@@ -244,7 +249,7 @@ class _QueueState extends ConsumerState<ReservationsQueueScreen> {
             child: JsonList(
               path: path,
               table: JsonTable(
-                columns: [l.name, l.codeLabel, l.roomTypeLabel, l.roomLabel, l.dates, l.status],
+                columns: [l.name, l.codeLabel, l.roomTypeLabel, l.roomLabel, l.dates, l.status, l.paymentMethod],
                 cells: (context, r) => [
                   '${r['guestName']}',
                   '${r['code']}',
@@ -252,6 +257,7 @@ class _QueueState extends ConsumerState<ReservationsQueueScreen> {
                   '${r['room'] ?? ''}',
                   dateRange(context, DateTime.parse('${r['checkIn']}'), DateTime.parse('${r['checkOut']}')),
                   statusLabel(l, parseStatus('${r['status']}')),
+                  paymentLabel(l, r['payment'] as String?),
                 ],
                 // Wide only: go (not push) keeps this queue page and opens the detail as a side panel over it.
                 onTap: (r) => context.go('${widget.base}/reservations/${r['id']}'),
@@ -262,6 +268,8 @@ class _QueueState extends ConsumerState<ReservationsQueueScreen> {
                   (r) => text(r['room']),
                   (r) => day(r['checkIn']),
                   (r) => text(r['status']),
+                  // Not paid first: that is what the desk chases.
+                  (r) => const ['unpaid', 'partial', 'deposit', 'paid'].indexOf('${r['payment']}'),
                 ],
                 onSearch: (q) => setState(() => _q = q),
                 searchHint: l.searchGuest,
@@ -279,7 +287,8 @@ class _QueueState extends ConsumerState<ReservationsQueueScreen> {
                 title: Text('${r['guestName']} · ${r['code']}'),
                 subtitle: Text(
                   '${r['roomType']}${r['room'] != null ? ' · ${l.roomNumber('${r['room']}')}' : ''}\n'
-                  '${dateRange(context, DateTime.parse('${r['checkIn']}'), DateTime.parse('${r['checkOut']}'))}',
+                  '${dateRange(context, DateTime.parse('${r['checkIn']}'), DateTime.parse('${r['checkOut']}'))}'
+                  ' · ${paymentLabel(l, r['payment'] as String?)}',
                 ),
                 isThreeLine: true,
                 trailing: StatusChip(parseStatus('${r['status']}')),
@@ -358,6 +367,8 @@ class StaffReservationScreen extends ConsumerWidget {
               Row(
                 children: [
                   Expanded(child: Text('${guest['fullName']}', style: Theme.of(context).textTheme.titleLarge)),
+                  PaymentChip(r['payment'] as String?),
+                  const SizedBox(width: 8),
                   StatusChip(status),
                 ],
               ),
@@ -395,6 +406,31 @@ class StaffReservationScreen extends ConsumerWidget {
                       child: Text(l.markNoShow),
                     ),
                   ],
+                  if (const [BookingStatus.pending, BookingStatus.confirmed, BookingStatus.checkedIn].contains(status))
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.edit_calendar_outlined),
+                      label: Text(l.changeBooking),
+                      onPressed: () => showDialog<bool>(
+                        context: context,
+                        builder: (_) => ChangeBookingDialog(reservation: r),
+                      ),
+                    ),
+                  if (num2(r['balance']) > 0 &&
+                      const [
+                        BookingStatus.pending,
+                        BookingStatus.confirmed,
+                        BookingStatus.checkedIn,
+                        BookingStatus.checkedOut,
+                      ].contains(status))
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.point_of_sale),
+                      label: Text(l.recordPayment),
+                      onPressed: () => showDialog<bool>(
+                        context: context,
+                        builder: (_) =>
+                            RecordPaymentDialog(reservationId: id, balance: num2(r['balance']), currency: cur),
+                      ),
+                    ),
                   if (status == BookingStatus.pending || status == BookingStatus.confirmed)
                     TextButton(
                       style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
@@ -457,7 +493,22 @@ class _TasksState extends ConsumerState<TasksScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.tasks)),
+      appBar: AppBar(
+        title: Text(l.serviceRequests),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilledButton.icon(
+              icon: const Icon(Icons.add),
+              label: Text(l.newRequest),
+              onPressed: () async {
+                final sent = await showDialog<bool>(context: context, builder: (_) => const NewServiceRequestDialog());
+                if (sent == true) ref.invalidate(getProvider(path));
+              },
+            ),
+          ),
+        ],
+      ),
       body: Poller(
         every: const Duration(seconds: 10),
         onTick: () => ref.invalidate(getProvider(path)),

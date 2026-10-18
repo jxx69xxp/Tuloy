@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/config.dart';
-import '../../../core/ui.dart' show AppearanceSelector;
+import '../../../core/ui.dart' show AppearanceSelector, LanguagePicker;
 import '../../../l10n/app_localizations.dart';
 import '../../auth/presentation/auth_controller.dart';
 
@@ -13,7 +12,6 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final current = ref.watch(languageProvider);
     return Scaffold(
       appBar: AppBar(title: Text(l.settings)),
       // Wide screens: a readable column instead of rows stretched across the window.
@@ -22,14 +20,7 @@ class SettingsScreen extends ConsumerWidget {
           horizontal: MediaQuery.sizeOf(context).width > 720 ? (MediaQuery.sizeOf(context).width - 640) / 2 : 0,
         ),
         children: [
-          ListTile(title: Text(l.language, style: Theme.of(context).textTheme.titleSmall)),
-          for (final e in supportedLanguages.entries)
-            ListTile(
-              title: Text(e.value),
-              trailing: e.key == current ? const Icon(Icons.check) : null,
-              selected: e.key == current,
-              onTap: () => ref.read(authProvider.notifier).setLanguage(e.key),
-            ),
+          const LanguagePicker(),
           const Divider(),
           ListTile(title: Text(l.appearance, style: Theme.of(context).textTheme.titleSmall)),
           const Padding(padding: EdgeInsets.fromLTRB(16, 0, 16, 12), child: AppearanceSelector()),

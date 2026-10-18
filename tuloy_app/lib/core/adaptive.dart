@@ -9,6 +9,35 @@ const double kWideBreakpoint = 840;
 
 bool isWide(BuildContext context) => MediaQuery.sizeOf(context).width >= kWideBreakpoint;
 
+/// Guest app on a wide (web) screen: a phone-width column, and its screens see a phone-sized
+/// MediaQuery so they keep their mobile layout. Narrow screens get the child unchanged.
+class GuestFrame extends StatelessWidget {
+  const GuestFrame({super.key, required this.child});
+  final Widget child;
+  static const width = 480.0;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isWide(context)) return child;
+    final mq = MediaQuery.of(context);
+    return ColoredBox(
+      color: Theme.of(context).colorScheme.surfaceContainer,
+      child: Center(
+        child: SizedBox(
+          width: width,
+          child: Material(
+            elevation: 2,
+            child: MediaQuery(
+              data: mq.copyWith(size: Size(width, mq.size.height)),
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class RailItem {
   const RailItem(this.icon, this.label, this.path, {this.section});
   final IconData icon;
@@ -123,9 +152,20 @@ class AdaptiveShell extends StatelessWidget {
           floatingActionButton: fab,
           body: Row(
             children: [
-              SizedBox(
-                width: 232,
-                child: _Sidebar(items: items, selected: _selected, userName: userName, actions: actions),
+              ValueListenableBuilder<bool>(
+                valueListenable: sidebarCollapsed,
+                builder: (context, collapsed, _) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOutCubic,
+                  width: collapsed ? 72 : 232,
+                  child: _Sidebar(
+                    items: items,
+                    selected: _selected,
+                    userName: userName,
+                    actions: actions,
+                    collapsed: collapsed,
+                  ),
+                ),
               ),
               const VerticalDivider(width: 1),
               Expanded(
@@ -154,66 +194,112 @@ class AdaptiveShell extends StatelessWidget {
   }
 }
 
+/// Wide-screen sidebar width: full (labels) or a 72 px icon rail. Kept while moving between pages.
+final sidebarCollapsed = ValueNotifier(false);
+
 class _Sidebar extends StatelessWidget {
-  const _Sidebar({required this.items, required this.selected, required this.userName, required this.actions});
+  const _Sidebar({
+    required this.items,
+    required this.selected,
+    required this.userName,
+    required this.actions,
+    required this.collapsed,
+  });
   final List<RailItem> items;
   final int? selected;
   final String? userName;
   final List<Widget> actions;
+  final bool collapsed;
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    final l = AppLocalizations.of(context);
     final heading = t.textTheme.labelSmall?.copyWith(color: t.colorScheme.onSurfaceVariant, letterSpacing: 0.8);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 16, 12),
-          child: Row(
-            children: [
-              Image.asset('assets/logo/tuloy_icon.png', width: 28, height: 28, excludeFromSemantics: true),
-              const SizedBox(width: 10),
-              Text(AppLocalizations.of(context).appTitle, style: t.textTheme.titleMedium),
-            ],
-          ),
-        ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            children: [
-              for (var i = 0; i < items.length; i++) ...[
-                if (i == 0 || items[i].section != items[i - 1].section)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 16, 12, 4),
-                    child: items[i].section == null
-                        ? null
-                        : Semantics(header: true, child: Text(items[i].section!.toUpperCase(), style: heading)),
-                  ),
-                ListTile(
-                  dense: true,
-                  selected: i == selected,
-                  leading: Icon(items[i].icon, size: 20),
-                  title: Text(items[i].label),
-                  onTap: () => context.go(items[i].path),
-                ),
-              ],
-            ],
-          ),
-        ),
-        const Divider(height: 1),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(userName ?? '', overflow: TextOverflow.ellipsis, style: t.textTheme.bodyMedium),
+    final toggle = IconButton(
+      tooltip: collapsed ? l.expandMenu : l.collapseMenu,
+      icon: Icon(collapsed ? Icons.menu_open : Icons.menu),
+      onPressed: () => sidebarCollapsed.value = !collapsed,
+    );
+    return ClipRect(
+      child: OverflowBox(
+        // Lay out at the final width while the width animates, so nothing reflows mid-animation.
+        alignment: Alignment.topLeft,
+        minWidth: collapsed ? 72 : 232,
+        maxWidth: collapsed ? 72 : 232,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(collapsed ? 12 : 20, 12, 8, 8),
+              child: collapsed
+                  ? toggle
+                  : Row(
+                      children: [
+                        Image.asset('assets/logo/tuloy_icon.png', width: 28, height: 28, excludeFromSemantics: true),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(l.appTitle, style: t.textTheme.titleMedium)),
+                        toggle,
+                      ],
+                    ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                children: [
+                  for (var i = 0; i < items.length; i++) ...[
+                    if (i == 0 || items[i].section != items[i - 1].section)
+                      collapsed
+                          ? const Divider(height: 16, indent: 12, endIndent: 12)
+                          : Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 16, 12, 4),
+                              child: items[i].section == null
+                                  ? null
+                                  : Semantics(
+                                      header: true,
+                                      child: Text(items[i].section!.toUpperCase(), style: heading),
+                                    ),
+                            ),
+                    collapsed
+                        ? Tooltip(
+                            message: items[i].label,
+                            preferBelow: false,
+                            child: ListTile(
+                              dense: true,
+                              selected: i == selected,
+                              contentPadding: EdgeInsets.zero,
+                              title: Icon(items[i].icon, size: 22, semanticLabel: items[i].label),
+                              onTap: () => context.go(items[i].path),
+                            ),
+                          )
+                        : ListTile(
+                            dense: true,
+                            selected: i == selected,
+                            leading: Icon(items[i].icon, size: 20),
+                            title: Text(items[i].label),
+                            onTap: () => context.go(items[i].path),
+                          ),
+                  ],
+                ],
               ),
-              ...actions,
-            ],
-          ),
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: EdgeInsets.fromLTRB(collapsed ? 4 : 16, 8, 4, 8),
+              child: collapsed
+                  ? Column(mainAxisSize: MainAxisSize.min, children: actions)
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: Text(userName ?? '', overflow: TextOverflow.ellipsis, style: t.textTheme.bodyMedium),
+                        ),
+                        ...actions,
+                      ],
+                    ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

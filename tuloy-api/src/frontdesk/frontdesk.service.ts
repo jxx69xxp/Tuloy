@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Membership, Prisma } from '@prisma/client';
-import { BookingService, PAID_STATUSES, discountCents, paidCents, snap } from '../booking/booking.service';
+import { BookingService, PAID_STATUSES, discountCents, paidCents, paymentState, snap } from '../booking/booking.service';
 import { DAY_MS, canTransition, fromCents, isoDate, toCents, todayIn, zonedToUtc } from '../booking/domain';
 import { sameHotel } from '../common/auth';
 import { assetUrl } from '../common/storage';
@@ -73,18 +73,23 @@ export class FrontDeskService {
       roomType: t(snap(r).roomType.name, locale, hotel.defaultLocale),
       room: r.nights[0]?.room.number ?? null,
       balance: fromCents(Math.max(0, toCents(r.total) - discountCents(r.invoiceLines) - paidCents(r.payments))),
+      payment: paymentState(r.payments, toCents(r.total) - discountCents(r.invoiceLines)),
       currency: r.currency,
     }));
   }
 
   /** Booking detail + guest contact and internal notes (staff only). */
   async detail(m: Membership, id: string, userId: string, locale: Locale) {
-    const r = sameHotel(await this.prisma.reservation.findUnique({ where: { id }, include: { guest: true } }), m);
+    const r = sameHotel(
+      await this.prisma.reservation.findUnique({ where: { id }, include: { guest: true, payments: true, invoiceLines: true } }),
+      m,
+    );
     const history = await this.prisma.statusEvent.findMany({ where: { entityType: 'reservation', entityId: id }, orderBy: { at: 'asc' } });
     return {
       ...(await this.booking.view(id, userId, locale)),
       guest: { id: r.guest.id, fullName: r.guest.fullName, email: r.guest.email, phone: r.guest.phone },
       internalNotes: r.internalNotes,
+      payment: paymentState(r.payments, toCents(r.total) - discountCents(r.invoiceLines)),
       history: history.map((h) => ({ from: h.fromStatus, to: h.toStatus, at: h.at, note: h.note })),
     };
   }
@@ -235,14 +240,27 @@ export class FrontDeskService {
 
   /** Staff directory (read-only); admins edit it under /admin/staff. */
   async team(m: Membership) {
-    const rows = await this.prisma.membership.findMany({
-      where: { hotelId: m.hotelId, role: { in: ['STAFF', 'ADMIN'] }, user: { disabledAt: null } },
-      include: { user: true, department: true },
-    });
+    const { todayDate } = await this.hotelDay(m.hotelId);
+    const [rows, leave] = await Promise.all([
+      this.prisma.membership.findMany({
+        where: { hotelId: m.hotelId, role: { in: ['RESTAURANT', 'STAFF', 'ADMIN'] }, user: { disabledAt: null } },
+        include: { user: true, department: true },
+      }),
+      // Approved leave covering today, or starting later (shown as upcoming).
+      this.prisma.leaveRequest.findMany({
+        where: { hotelId: m.hotelId, status: 'approved', to: { gte: todayDate } },
+        orderBy: { from: 'asc' },
+      }),
+    ]);
+    const leaveOf = (userId: string) => leave.find((x) => x.userId === userId);
     return rows
       .map((r) => ({
         id: r.userId,
         employeeNo: r.employeeNo,
+        leave: (() => {
+          const x = leaveOf(r.userId);
+          return x && { from: isoDate(x.from), to: isoDate(x.to), type: x.type, today: x.from <= todayDate };
+        })(),
         photoUrl: r.photoKey ? assetUrl(r.photoKey) : null,
         fullName: r.user.fullName,
         email: r.user.email,

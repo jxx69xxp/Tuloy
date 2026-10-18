@@ -390,5 +390,10 @@
   "collapseMenu": "Itago ang menu",
   "expandMenu": "Ipakita ang menu",
   "roleRestaurant": "Restaurant staff",
-  "next": "Sunod"
+  "next": "Sunod",
+  "payAtDesk": "Sa desk mobayad ang bisita.",
+  "notAvailableForDates": "Puno kini nga klase sa kwarto niining mga petsa. Sulayi ang laing petsa o laing kwarto.",
+  "byType": "Sumala sa klase",
+  "byFloor": "Sumala sa andana",
+  "floorN": "Andana {floor}"
 }

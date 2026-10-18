@@ -1250,4 +1250,22 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get next => 'Susunod';
+
+  @override
+  String get payAtDesk => 'Sa desk magbabayad ang bisita.';
+
+  @override
+  String get notAvailableForDates =>
+      'Puno ang ganitong kuwarto sa mga petsang ito. Subukan ang ibang petsa o ibang kuwarto.';
+
+  @override
+  String get byType => 'Ayon sa uri';
+
+  @override
+  String get byFloor => 'Ayon sa palapag';
+
+  @override
+  String floorN(String floor) {
+    return 'Palapag $floor';
+  }
 }

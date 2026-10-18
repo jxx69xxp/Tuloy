@@ -2439,6 +2439,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next'**
   String get next;
+
+  /// No description provided for @payAtDesk.
+  ///
+  /// In en, this message translates to:
+  /// **'The guest pays at the desk.'**
+  String get payAtDesk;
+
+  /// No description provided for @notAvailableForDates.
+  ///
+  /// In en, this message translates to:
+  /// **'This room type is full for these dates. Try other dates or another room.'**
+  String get notAvailableForDates;
+
+  /// No description provided for @byType.
+  ///
+  /// In en, this message translates to:
+  /// **'By type'**
+  String get byType;
+
+  /// No description provided for @byFloor.
+  ///
+  /// In en, this message translates to:
+  /// **'By floor'**
+  String get byFloor;
+
+  /// No description provided for @floorN.
+  ///
+  /// In en, this message translates to:
+  /// **'Floor {floor}'**
+  String floorN(String floor);
 }
 
 class _AppLocalizationsDelegate

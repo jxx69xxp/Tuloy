@@ -390,5 +390,10 @@
   "collapseMenu": "Itago ang menu",
   "expandMenu": "Ipakita ang menu",
   "roleRestaurant": "Restaurant staff",
-  "next": "Susunod"
+  "next": "Susunod",
+  "payAtDesk": "Sa desk magbabayad ang bisita.",
+  "notAvailableForDates": "Puno ang ganitong kuwarto sa mga petsang ito. Subukan ang ibang petsa o ibang kuwarto.",
+  "byType": "Ayon sa uri",
+  "byFloor": "Ayon sa palapag",
+  "floorN": "Palapag {floor}"
 }

@@ -1249,4 +1249,22 @@ class AppLocalizationsCeb extends AppLocalizations {
 
   @override
   String get next => 'Sunod';
+
+  @override
+  String get payAtDesk => 'Sa desk mobayad ang bisita.';
+
+  @override
+  String get notAvailableForDates =>
+      'Puno kini nga klase sa kwarto niining mga petsa. Sulayi ang laing petsa o laing kwarto.';
+
+  @override
+  String get byType => 'Sumala sa klase';
+
+  @override
+  String get byFloor => 'Sumala sa andana';
+
+  @override
+  String floorN(String floor) {
+    return 'Andana $floor';
+  }
 }

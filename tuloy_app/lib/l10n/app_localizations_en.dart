@@ -1246,4 +1246,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get next => 'Next';
+
+  @override
+  String get payAtDesk => 'The guest pays at the desk.';
+
+  @override
+  String get notAvailableForDates =>
+      'This room type is full for these dates. Try other dates or another room.';
+
+  @override
+  String get byType => 'By type';
+
+  @override
+  String get byFloor => 'By floor';
+
+  @override
+  String floorN(String floor) {
+    return 'Floor $floor';
+  }
 }

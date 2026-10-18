@@ -592,5 +592,11 @@
   "collapseMenu": "Collapse menu",
   "expandMenu": "Expand menu",
   "roleRestaurant": "Restaurant staff",
-  "next": "Next"
+  "next": "Next",
+  "payAtDesk": "The guest pays at the desk.",
+  "notAvailableForDates": "This room type is full for these dates. Try other dates or another room.",
+  "byType": "By type",
+  "byFloor": "By floor",
+  "floorN": "Floor {floor}",
+  "@floorN": {"placeholders": {"floor": {"type": "String"}}}
 }

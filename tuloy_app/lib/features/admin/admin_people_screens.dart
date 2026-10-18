@@ -232,6 +232,7 @@ class _StaffEditState extends ConsumerState<_StaffEdit> {
             decoration: InputDecoration(labelText: l.role),
             items: [
               DropdownMenuItem(value: 'STAFF', child: Text(l.staffHome)),
+              DropdownMenuItem(value: 'RESTAURANT', child: Text(l.roleRestaurant)),
               DropdownMenuItem(value: 'ADMIN', child: Text(l.adminHome)),
             ],
             onChanged: (v) => setState(() => _role = v!),

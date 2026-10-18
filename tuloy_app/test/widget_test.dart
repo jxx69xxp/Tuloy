@@ -31,22 +31,24 @@ void main() {
     expect(go('/settings', auth: staff), isNull);
   });
 
-  test('web redirects: guests get the placeholder, staff/admin unchanged', () {
+  test('web: guests use the guest app; restaurant staff get only the restaurant area', () {
     String? go(String loc, {AsyncValue<User?> auth = const AsyncData(null), bool isWeb = true}) =>
         redirectFor(location: loc, auth: auth, isWeb: isWeb);
     final guest = AsyncData<User?>(_user(const []));
     final staff = AsyncData<User?>(_user(const [Membership(hotelId: hotelId, role: Role.staff)]));
+    final resto = AsyncData<User?>(_user(const [Membership(hotelId: hotelId, role: Role.restaurant)]));
 
-    expect(go('/guest', auth: guest), '/web-guest');
-    expect(go('/staff', auth: guest), '/web-guest');
-    expect(go('/admin', auth: guest), '/web-guest');
-    expect(go('/web-guest', auth: guest), isNull);
+    expect(go('/guest', auth: guest), isNull);
+    expect(go('/guest/bookings', auth: guest), isNull);
+    expect(go('/staff', auth: guest), '/guest');
+    expect(go('/admin', auth: guest), '/guest');
     expect(go('/settings', auth: guest), isNull);
-    expect(go('/web-guest', auth: guest, isWeb: false), '/guest');
-    expect(go('/signin', auth: guest, isWeb: false), '/guest');
     expect(go('/signin', auth: staff), '/staff');
-    expect(go('/web-guest', auth: staff), '/staff');
     expect(go('/guest'), '/signin');
+    expect(go('/signin', auth: resto), '/restaurant');
+    expect(go('/restaurant/menu', auth: resto), isNull);
+    expect(go('/staff', auth: resto), '/restaurant'); // no front desk for restaurant staff
+    expect(go('/staff/reservations', auth: resto), '/restaurant');
   });
 
   test('deep links survive the splash and sign-in detours', () {
@@ -76,8 +78,8 @@ void main() {
     expect(go(splash(deep), auth: staff), '/staff');
     expect(go(splash('/staff/tasks'), auth: admin), '/admin');
     expect(go(splash('/adminx'), auth: admin), '/admin');
-    // On web a guest still lands on the placeholder.
-    expect(go(splash('/guest/bookings'), auth: guest, isWeb: true), '/web-guest');
+    // On web a guest goes back to the guest page they asked for.
+    expect(go(splash('/guest/bookings'), auth: guest, isWeb: true), '/guest/bookings');
     expect(go(splash('/guest/bookings'), auth: guest), '/guest/bookings');
     // Only internal paths are honoured.
     expect(go(splash('//evil.com/admin'), auth: admin), '/admin');

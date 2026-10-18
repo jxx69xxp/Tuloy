@@ -130,7 +130,12 @@ class StaffHomeScreen extends ConsumerWidget {
                       () => context.push('$base/reservations'),
                       badge: n('pending'),
                     ),
-                    NavTile(Icons.task_alt, l.tasks, () => context.push('$base/tasks'), badge: n('myTasks')),
+                    NavTile(
+                      Icons.room_service_outlined,
+                      l.serviceRequests,
+                      () => context.push('$base/tasks'),
+                      badge: n('myTasks'),
+                    ),
                     NavTile(
                       Icons.restaurant,
                       l.restaurantOrders,
@@ -395,6 +400,31 @@ class StaffReservationScreen extends ConsumerWidget {
                       child: Text(l.markNoShow),
                     ),
                   ],
+                  if (const [BookingStatus.pending, BookingStatus.confirmed, BookingStatus.checkedIn].contains(status))
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.edit_calendar_outlined),
+                      label: Text(l.changeBooking),
+                      onPressed: () => showDialog<bool>(
+                        context: context,
+                        builder: (_) => ChangeBookingDialog(reservation: r),
+                      ),
+                    ),
+                  if (num2(r['balance']) > 0 &&
+                      const [
+                        BookingStatus.pending,
+                        BookingStatus.confirmed,
+                        BookingStatus.checkedIn,
+                        BookingStatus.checkedOut,
+                      ].contains(status))
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.point_of_sale),
+                      label: Text(l.recordPayment),
+                      onPressed: () => showDialog<bool>(
+                        context: context,
+                        builder: (_) =>
+                            RecordPaymentDialog(reservationId: id, balance: num2(r['balance']), currency: cur),
+                      ),
+                    ),
                   if (status == BookingStatus.pending || status == BookingStatus.confirmed)
                     TextButton(
                       style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
@@ -457,7 +487,22 @@ class _TasksState extends ConsumerState<TasksScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.tasks)),
+      appBar: AppBar(
+        title: Text(l.serviceRequests),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilledButton.icon(
+              icon: const Icon(Icons.add),
+              label: Text(l.newRequest),
+              onPressed: () async {
+                final sent = await showDialog<bool>(context: context, builder: (_) => const NewServiceRequestDialog());
+                if (sent == true) ref.invalidate(getProvider(path));
+              },
+            ),
+          ),
+        ],
+      ),
       body: Poller(
         every: const Duration(seconds: 10),
         onTick: () => ref.invalidate(getProvider(path)),

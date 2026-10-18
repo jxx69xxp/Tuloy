@@ -2325,6 +2325,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Submit'**
   String get submit;
+
+  /// No description provided for @cash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get cash;
+
+  /// No description provided for @card.
+  ///
+  /// In en, this message translates to:
+  /// **'Card'**
+  String get card;
+
+  /// No description provided for @arrival.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival'**
+  String get arrival;
+
+  /// No description provided for @departure.
+  ///
+  /// In en, this message translates to:
+  /// **'Departure'**
+  String get departure;
+
+  /// No description provided for @serviceRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Service requests'**
+  String get serviceRequests;
+
+  /// No description provided for @newRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'New request'**
+  String get newRequest;
+
+  /// No description provided for @guestBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Guest\'s booking'**
+  String get guestBooking;
+
+  /// No description provided for @bookRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Book room {room}'**
+  String bookRoom(String room);
+
+  /// No description provided for @bookAndCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Book and check in'**
+  String get bookAndCheckIn;
+
+  /// No description provided for @changeBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Change booking'**
+  String get changeBooking;
+
+  /// No description provided for @recordPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Record payment'**
+  String get recordPayment;
+
+  /// No description provided for @emailOrPhoneRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an email or phone number'**
+  String get emailOrPhoneRequired;
+
+  /// No description provided for @emailLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'The guest\'s sign-in email can\'t be changed here.'**
+  String get emailLocked;
+
+  /// No description provided for @onLeaveToday.
+  ///
+  /// In en, this message translates to:
+  /// **'On leave'**
+  String get onLeaveToday;
+
+  /// No description provided for @leaveUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave {dates}'**
+  String leaveUpcoming(String dates);
+
+  /// No description provided for @collapseMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse menu'**
+  String get collapseMenu;
+
+  /// No description provided for @expandMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand menu'**
+  String get expandMenu;
+
+  /// No description provided for @roleRestaurant.
+  ///
+  /// In en, this message translates to:
+  /// **'Restaurant staff'**
+  String get roleRestaurant;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get next;
 }
 
 class _AppLocalizationsDelegate

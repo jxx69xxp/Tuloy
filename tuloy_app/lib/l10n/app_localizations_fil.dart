@@ -196,7 +196,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get specialRequests => 'Espesyal na kahilingan (opsyonal)';
 
   @override
-  String get reserve => 'Mag-reserve';
+  String get reserve => 'I-reserve';
 
   @override
   String get review => 'Suriin at magbayad';
@@ -1188,4 +1188,66 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get submit => 'Ipasa';
+
+  @override
+  String get cash => 'Cash';
+
+  @override
+  String get card => 'Card';
+
+  @override
+  String get arrival => 'Pagdating';
+
+  @override
+  String get departure => 'Pag-alis';
+
+  @override
+  String get serviceRequests => 'Mga service request';
+
+  @override
+  String get newRequest => 'Bagong request';
+
+  @override
+  String get guestBooking => 'Booking ng bisita';
+
+  @override
+  String bookRoom(String room) {
+    return 'I-book ang kuwarto $room';
+  }
+
+  @override
+  String get bookAndCheckIn => 'I-book at i-check in';
+
+  @override
+  String get changeBooking => 'Baguhin ang booking';
+
+  @override
+  String get recordPayment => 'Itala ang bayad';
+
+  @override
+  String get emailOrPhoneRequired => 'Maglagay ng email o numero ng telepono';
+
+  @override
+  String get emailLocked =>
+      'Hindi mababago dito ang email na pang-sign in ng bisita.';
+
+  @override
+  String get onLeaveToday => 'Naka-leave';
+
+  @override
+  String leaveUpcoming(String dates) {
+    return 'Leave $dates';
+  }
+
+  @override
+  String get collapseMenu => 'Itago ang menu';
+
+  @override
+  String get expandMenu => 'Ipakita ang menu';
+
+  @override
+  String get roleRestaurant => 'Restaurant staff';
+
+  @override
+  String get next => 'Susunod';
 }
